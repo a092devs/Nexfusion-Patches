@@ -1,19 +1,15 @@
 package io.github.nexalloy.morphe.youtube.layout.buttons.action
 
-import app.morphe.extension.youtube.innertube.NextResponseOuterClass
 import app.morphe.extension.youtube.patches.components.QuickActionButtonsFilter
 import app.morphe.extension.youtube.patches.components.VideoActionButtonsFilter
-import io.github.nexalloy.callMethod
 import io.github.nexalloy.morphe.shared.misc.litho.filter.addLithoFilter
-import io.github.nexalloy.morphe.shared.misc.litho.node.hookTreeNodeResult
+import io.github.nexalloy.morphe.shared.misc.proto.hookElement
 import io.github.nexalloy.morphe.shared.misc.settings.preference.PreferenceCategory
 import io.github.nexalloy.morphe.shared.misc.settings.preference.PreferenceScreenPreference
 import io.github.nexalloy.morphe.shared.misc.settings.preference.SwitchPreference
 import io.github.nexalloy.morphe.youtube.misc.litho.filter.LithoFilter
-import io.github.nexalloy.morphe.youtube.misc.litho.node.TreeNodeElementHook
+import io.github.nexalloy.morphe.youtube.misc.proto.elementProtoParserHookPatch
 import io.github.nexalloy.morphe.youtube.misc.settings.PreferenceScreen
-import io.github.nexalloy.morphe.youtube.shared.WatchNextResponseParserFingerprint
-import io.github.nexalloy.morphe.youtube.video.information.VideoInformationPatch
 import io.github.nexalloy.patch
 
 val HideVideoActionButtons = patch(
@@ -22,8 +18,7 @@ val HideVideoActionButtons = patch(
 ) {
     dependsOn(
         LithoFilter,
-        TreeNodeElementHook,
-        VideoInformationPatch
+        elementProtoParserHookPatch
     )
 
     PreferenceScreen.PLAYER.addPreferences(
@@ -83,23 +78,5 @@ val HideVideoActionButtons = patch(
     addLithoFilter(VideoActionButtonsFilter())
     addLithoFilter(QuickActionButtonsFilter())
 
-    hookTreeNodeResult(VideoActionButtonsFilter::onLazilyConvertedElementLoaded)
-
-    WatchNextResponseParserFingerprint.hookMethod {
-        before {
-            val messageLite = it.args[0]
-
-            val nextResponse =
-                NextResponseOuterClass.NextResponse.parseFrom(messageLite.callMethod("toByteArray") as ByteArray)
-
-            if (!nextResponse.hasPrimaryContents()) {
-                return@before
-            }
-
-            val primaryContents = nextResponse.primaryContents
-            if (primaryContents.hasSingleColumnWatchNextResults()) {
-                VideoActionButtonsFilter.onSingleColumnWatchNextResultsLoaded(primaryContents.singleColumnWatchNextResults)
-            }
-        }
-    }
+    hookElement(VideoActionButtonsFilter::hideActionButtons)
 }

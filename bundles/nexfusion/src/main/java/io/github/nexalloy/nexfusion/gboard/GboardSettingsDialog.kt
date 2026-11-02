@@ -33,13 +33,13 @@ import kotlin.math.min
 /**
  * PixelBoard-style "Advanced settings" screen matching the native Material 3 Gboard settings UI.
  *
- * Implements the exact layout and options from PixelBoard by Akshay Kadam:
+ * Implements the exact layout and options from PixelBoard by NexAlloy:
  * - Enable AI Writing Tools
  * - Support All Keyboards
  * - Enable Advanced Voice Typing (Rambler)
  * - Material 3 Expressive Rounded Keys (Belka UI)
  * - Toolbar with back navigation and process restart utility (↻)
- * - Custom attribution footer ("Akshay Kadam")
+ * - Custom attribution footer ("NexAlloy")
  */
 object GboardSettingsDialog {
 
@@ -332,9 +332,9 @@ object GboardSettingsDialog {
 
         scrollContent.addView(card)
 
-        // Footer attribution ("Akshay Kadam")
+        // Footer attribution ("NexAlloy")
         val footerView = TextView(context).apply {
-            text = "Akshay Kadam"
+            text = "NexAlloy"
             textSize = 13f
             setTextColor(onSurfaceVariant)
             gravity = Gravity.CENTER

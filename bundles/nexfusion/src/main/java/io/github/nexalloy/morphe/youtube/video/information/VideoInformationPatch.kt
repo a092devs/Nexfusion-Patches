@@ -296,6 +296,7 @@ val VideoInformationPatch = patch(
     class VideoQualityProxy(val quality: Any) : VideoInformation.VideoQualityInterface {
         override fun patch_getQualityName(): String = getQualityName(quality)
         override fun patch_getResolution(): Int = getResolution(quality)
+        override fun patch_getFormatIds(): Collection<*> = emptyList<Any>()
         override fun toString(): String = quality.toString()
         override fun equals(other: Any?): Boolean =
             other is VideoQualityProxy && quality == other.quality

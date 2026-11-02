@@ -87,30 +87,12 @@ fun addLithoFilter(filter: Filter) {
  *              versionCheckPatch, and any app-specific fixes).
  */
 internal fun sharedLithoFilterPatch(
-    hookNonNativeBuffer: () -> Boolean,
     overrideUpbFeatureFlag: () -> Boolean,
-    useLegacyLithoFiltering: () -> Boolean,
     block: PatchExecutor.() -> Unit,
 ): Patch = patch(
     description = "Hooks the method which parses the bytes into a ComponentContext to filter components."
 ) {
     block()
-
-
-    LithoFilterPatch::class.java.getDeclaredMethod("useLegacyLithoFiltering")
-        .hookMethod(XC_MethodReplacement.returnConstant(useLegacyLithoFiltering()))
-
-    //region Pass the buffer into extension.
-    if (!hookNonNativeBuffer()) {
-        // Non-native buffer.
-        ProtobufBufferReferenceFingerprint.hookMethod {
-            before { param ->
-                LithoFilterPatch.setProtoBuffer(param.args[1] as ByteBuffer)
-            }
-        }
-    }
-
-    //endregion
 
     // region Hook the method that parses bytes into a ComponentContext.
 

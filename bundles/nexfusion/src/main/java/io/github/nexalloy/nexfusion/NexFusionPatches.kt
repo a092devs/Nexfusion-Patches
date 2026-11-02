@@ -15,12 +15,13 @@ import io.github.nexalloy.nexfusion.gboard.GboardPatches
 import io.github.nexalloy.nexfusion.gmail.GmailPatches
 import io.github.nexalloy.nexfusion.google.GoogleDiscoverPatches
 import io.github.nexalloy.nexfusion.instagram.InstagramPatches
+import io.github.nexalloy.nexfusion.kick.KickPatches
 import io.github.nexalloy.nexfusion.linkedin.LinkedInPatches
-import io.github.nexalloy.nexfusion.mixplorer.MixplorerPatches
 import io.github.nexalloy.nexfusion.protonvpn.ProtonVpnPatches
 import io.github.nexalloy.nexfusion.reddit.RedditPatches
 import io.github.nexalloy.nexfusion.spotify.SpotifyPatches
 import io.github.nexalloy.nexfusion.telegram.TelegramPatches
+import io.github.nexalloy.nexfusion.twitch.TwitchPatches
 import io.github.nexalloy.nexfusion.twitter.TwitterPatches
 
 /** Entry point of the NexFusion Patches bundle, named in its manifest. */
@@ -85,11 +86,7 @@ object NexFusionPatches : PatchBundle {
             patches = LinkedInPatches,
             appIconColor = 0x0A66C2,
         ),
-        AppPatchInfo(
-            appName = "MiXplorer",
-            packageName = "com.mixplorer",
-            patches = MixplorerPatches,
-        ),
+
         AppPatchInfo(
             appName = "Proton VPN",
             packageName = "ch.protonvpn.android",
@@ -125,6 +122,18 @@ object NexFusionPatches : PatchBundle {
             packageName = "org.telegram.messenger.web",
             patches = TelegramPatches,
             appIconColor = 0x2AABEE,
+        ),
+        AppPatchInfo(
+            appName = "Kick",
+            packageName = "com.kick.mobile",
+            patches = KickPatches,
+            appIconColor = 0x53FC18,
+        ),
+        AppPatchInfo(
+            appName = "Twitch",
+            packageName = "tv.twitch.android.app",
+            patches = TwitchPatches,
+            appIconColor = 0x9146FF,
         ),
     )
 }

@@ -25,6 +25,7 @@ val GboardCursorTrackpad = patch(
 val GboardQuickInsert = patch(
     name = "Quick insert",
     description = "Enables Gboard's super-insert (quick insert) suggestions row with dynamic multi-view.",
+    use = false,
 ) {
     gboardFlagOverrides(
         "super_insert" to FlagOverride.forceBoolean(),
@@ -101,6 +102,11 @@ val GboardSettingsMenu = patch(
     name = "Advanced settings menu",
     description = "Adds the Material 3 'Advanced settings' screen at the bottom of Gboard settings, and cleans up promotional links.",
 ) {
+    gboardFlagOverrides(
+        "emojify_app_allowlist" to FlagOverride.forceString("*"),
+        "fast_access_bar_app_whitelist" to FlagOverride.forceString("*"),
+        "proofread_supported_apps" to FlagOverride.forceString("*"),
+    )
     GboardSettingsHook.install(classLoader)
 }
 
@@ -247,7 +253,7 @@ val GboardAiWritingTools = patch(
         "llm_pc_supported_language_tags" to FlagOverride.forceString("*"),
         "writing_tools_supported_locales" to FlagOverride.forceString("*"),
         "proofread_supported_locales" to FlagOverride.forceString("*"),
-        "proofread_supported_apps" to FlagOverride.forceString(""),
+        "proofread_supported_apps" to FlagOverride.forceString("*"),
         "enable_device_intelligence" to FlagOverride.forceTrue(),
         "enable_access_point_keyboard" to FlagOverride.forceTrue(),
         "enable_nga_lab_modeless_smartedit" to FlagOverride.forceTrue(),
@@ -292,6 +298,7 @@ val GboardRoundedKeycaps = patch(
 val GboardScanTextOcr = patch(
     name = "Scan text (Camera OCR)",
     description = "Unlocks the Camera OCR scan text viewfinder in the Gboard toolbar to extract physical text.",
+    use = false,
 ) {
     gboardFlagOverrides(
         "enable_ocr" to FlagOverride.forceTrue(),
@@ -303,6 +310,7 @@ val GboardScanTextOcr = patch(
 val GboardScreenshotChips = patch(
     name = "Screenshot suggestion chips",
     description = "Shows floating suggestion chips for recently captured screenshots and clipboard images.",
+    use = false,
 ) {
     gboardFlagOverrides(
         "enable_screenshot_in_clipboard" to FlagOverride.forceTrue(),
@@ -335,6 +343,7 @@ val GboardEmojiPaletteV2 = patch(
 val GboardSmartCompose = patch(
     name = "Smart Compose autocompletion",
     description = "Enables in-line predictive text completion and ghost text across all input fields.",
+    use = false,
 ) {
     gboardFlagOverrides(
         "enable_smart_compose" to FlagOverride.promote(),
@@ -366,6 +375,7 @@ val GboardSpellCheckerChips = patch(
 val GboardEmogen = patch(
     name = "Emogen (GenAI Emoji Maker)",
     description = "Enables Gboard's generative AI emoji maker and access point.",
+    use = false,
 ) {
     gboardFlagOverrides(
         "enable_emogen" to FlagOverride.forceBoolean(),
@@ -379,6 +389,7 @@ val GboardEmogen = patch(
 val GboardSignToText = patch(
     name = "Sign-to-Text (Signboard ASL)",
     description = "Enables Sign-to-Text camera translation for American Sign Language.",
+    use = false,
 ) {
     gboardFlagOverrides(
         "enable_signboard" to FlagOverride.forceBoolean(),
@@ -406,6 +417,7 @@ val GboardIncognitoMode = patch(
 val GboardSmartAutoCorrection = patch(
     name = "Smart auto-correction & fast learning",
     description = "Enhances auto-correction accuracy, enables reverting auto-corrected words on backspace, and optimizes user history learning.",
+    use = false,
 ) {
     gboardFlagOverrides(
         "auto_correct_with_replace_text" to FlagOverride.forceBoolean(),
@@ -439,20 +451,22 @@ val GboardSmartAutoCorrection = patch(
 val GboardCandidateEmojiVibrancy = patch(
     name = "Candidate strip emoji vibrancy",
     description = "Ensures emoji glyphs in suggestion candidates render at full opacity (alpha 255) instead of dull translucent text styles.",
+    use = false,
 ) {
     runCatching {
         val autoCenterClass = classLoader.loadClass("com.google.android.libraries.inputmethod.widgets.text.AutoCenterScaleTextView")
         XposedBridge.hookAllMethods(
             autoCenterClass,
-            "onDraw",
+            "onTextChanged",
             object : XC_MethodHook() {
-                override fun beforeHookedMethod(param: MethodHookParam) {
+                override fun afterHookedMethod(param: MethodHookParam) {
                     val tv = param.thisObject as? TextView ?: return
                     GboardCandidateEmojiRuntime.adjustCandidatePaint(tv)
                 }
             }
         )
     }
+    Unit
 }
 
 val GboardClipboardHistorySlider = patch(
@@ -487,6 +501,7 @@ val GboardGoogleSansTypography = patch(
 val GboardUndoControls = patch(
     name = "Undo action controls",
     description = "Enables proactive 1-tap Undo buttons in the suggestion strip after text replacements and autocorrection.",
+    use = false,
 ) {
     gboardFlagOverrides(
         "undo_proactive_post_correction" to FlagOverride.forceTrue(),
@@ -508,11 +523,11 @@ val GboardQuickAndMagicEmoji = patch(
 ) {
     gboardFlagOverrides(
         "enable_fast_access_bar" to FlagOverride.forceTrue(),
-        "fast_access_bar_app_whitelist" to FlagOverride.forceString(""),
+        "fast_access_bar_app_whitelist" to FlagOverride.forceString("*"),
         "enable_emojify" to FlagOverride.forceTrue(),
         "enable_emojify_settings_option" to FlagOverride.forceTrue(),
         "enable_emojify_language_tags" to FlagOverride.forceString("*"),
-        "emojify_app_allowlist" to FlagOverride.forceString(""),
+        "emojify_app_allowlist" to FlagOverride.forceString("*"),
         "enable_emojify_shortcut_when_followed_by_emoji" to FlagOverride.forceTrue(),
         "enable_emojify_when_talkback_on" to FlagOverride.forceTrue(),
         "enable_emojify_model" to FlagOverride.forceTrue(),

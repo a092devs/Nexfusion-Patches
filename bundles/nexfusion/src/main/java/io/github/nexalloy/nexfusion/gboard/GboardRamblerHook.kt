@@ -5,12 +5,8 @@ import android.content.Context
 import android.os.Build
 import android.preference.PreferenceManager
 import android.util.Log
-import android.view.View
-import android.view.ViewGroup
-import android.view.inputmethod.EditorInfo
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
-import de.robv.android.xposed.XposedHelpers
 
 /**
  * Implements Gemini "Rambler" Natural Voice Typing and companion lifecycle fixes:
@@ -45,12 +41,14 @@ object GboardRamblerHook {
     private const val PREF_ENABLE_AUTO_PUNCTUATION = "pref_key_enable_auto_punctuation"
     private const val PREF_USE_GOOGLE_VOICE = "pref_key_use_google_voice_typing"
 
+    private val ramblerPreferencesEnsured = java.util.concurrent.atomic.AtomicBoolean(false)
+    private val backgroundExecutor = java.util.concurrent.Executors.newSingleThreadExecutor()
+
     fun install(classLoader: ClassLoader) {
         hookVoiceSettingsSelectors(classLoader)
         hookMicActivation(classLoader)
         hookVoiceTextPromptFix(classLoader)
         hookLanguageDownloadGuard(classLoader)
-        hookImeLifecycle(classLoader)
         hookClipboardDataHandler(classLoader)
         hookSpellCheckerChips(classLoader)
         suppressPromoBanners(classLoader)
@@ -74,8 +72,10 @@ object GboardRamblerHook {
                 XposedBridge.hookMethod(method, object : XC_MethodHook() {
                     override fun beforeHookedMethod(param: MethodHookParam) {
                         val ctx = param.args.getOrNull(0) as? Context
-                        if (ctx != null) {
-                            ensureRamblerPreferences(ctx)
+                        if (ctx != null && ramblerPreferencesEnsured.compareAndSet(false, true)) {
+                            backgroundExecutor.execute {
+                                ensureRamblerPreferences(ctx)
+                            }
                         }
                         param.result = true
                     }
@@ -205,53 +205,6 @@ object GboardRamblerHook {
         }
     }
 
-    private fun hookImeLifecycle(classLoader: ClassLoader) {
-        val imeClass = runCatching {
-            classLoader.loadClass("android.inputmethodservice.InputMethodService")
-        }.getOrNull() ?: return
-
-        // 1. Samsung / Vivo clipboard sync fix on foreground focus
-        runCatching {
-            XposedHelpers.findAndHookMethod(
-                imeClass,
-                "onStartInputView",
-                EditorInfo::class.java,
-                Boolean::class.javaPrimitiveType,
-                object : XC_MethodHook() {
-                    override fun afterHookedMethod(param: MethodHookParam) {
-                        val ime = param.thisObject as? Context ?: return
-                        ensureRamblerPreferences(ime)
-                        syncClipboardOnForeground(ime, param.thisObject)
-                    }
-                }
-            )
-        }
-
-        // 2. Battery-Friendly Lifecycle (#3): clean release of speech recognition when keyboard hides
-        val finishHook = object : XC_MethodHook() {
-            override fun afterHookedMethod(param: MethodHookParam) {
-                val ime = param.thisObject as? Context ?: return
-                terminateSpeechRecognitionIfIdle(ime, param.thisObject)
-            }
-        }
-
-        runCatching {
-            XposedHelpers.findAndHookMethod(
-                imeClass,
-                "onFinishInputView",
-                Boolean::class.javaPrimitiveType,
-                finishHook
-            )
-        }
-        runCatching {
-            XposedHelpers.findAndHookMethod(
-                imeClass,
-                "hideWindow",
-                finishHook
-            )
-        }
-    }
-
     private fun hookClipboardDataHandler(classLoader: ClassLoader) {
         // Gboard 18.5.3/18.5.4: frc.ft(...)
         // Gboard 18.4.1/18.3.1: fml.ft(...)
@@ -266,12 +219,14 @@ object GboardRamblerHook {
                 XposedBridge.hookMethod(ftMethod, object : XC_MethodHook() {
                     override fun afterHookedMethod(param: MethodHookParam) {
                         val receiver = param.thisObject ?: return
-                        for (field in receiver.javaClass.declaredFields) {
-                            if (field.name == "f") {
-                                field.isAccessible = true
-                                val handler = field.get(receiver)
-                                if (handler is ClipboardManager.OnPrimaryClipChangedListener) {
-                                    handler.onPrimaryClipChanged()
+                        runCatching {
+                            for (field in receiver.javaClass.declaredFields) {
+                                if (field.name == "f") {
+                                    field.isAccessible = true
+                                    val handler = field.get(receiver)
+                                    if (handler is ClipboardManager.OnPrimaryClipChangedListener) {
+                                        handler.onPrimaryClipChanged()
+                                    }
                                 }
                             }
                         }
@@ -279,55 +234,6 @@ object GboardRamblerHook {
                 })
                 Log.i(TAG, "NexFusion: Hooked clipboard sync handler in $className.ft(...)")
             }
-        }
-    }
-
-    private fun syncClipboardOnForeground(context: Context, imeInstance: Any? = null) {
-        try {
-            val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
-            if (cm.hasPrimaryClip()) {
-                val clip = cm.primaryClip
-                if (clip != null && clip.itemCount > 0) {
-                    // Triggering clip reading confirms foreground permission and notifies listeners
-                    clip.getItemAt(0)?.coerceToText(context)
-                }
-            }
-            if (imeInstance != null) {
-                for (field in imeInstance.javaClass.declaredFields) {
-                    val fieldType = field.type
-                    if (ClipboardManager.OnPrimaryClipChangedListener::class.java.isAssignableFrom(fieldType) ||
-                        fieldType.name.contains("ClipboardDataHandler")
-                    ) {
-                        field.isAccessible = true
-                        val handler = field.get(imeInstance)
-                        if (handler is ClipboardManager.OnPrimaryClipChangedListener) {
-                            handler.onPrimaryClipChanged()
-                        }
-                    }
-                }
-            }
-        } catch (_: Throwable) {
-        }
-    }
-
-    private fun terminateSpeechRecognitionIfIdle(context: Context, imeInstance: Any) {
-        try {
-            // Check for active NgaInputManager or SpeechRecognizer instances in the IME
-            val fields = imeInstance.javaClass.declaredFields
-            for (f in fields) {
-                val typeName = f.type.name
-                if (typeName.contains("NgaInputManager") || typeName.contains("Dictation") || typeName.contains("Speech")) {
-                    f.isAccessible = true
-                    val manager = f.get(imeInstance) ?: continue
-                    for (m in manager.javaClass.declaredMethods) {
-                        if (m.parameterTypes.isEmpty() && (m.name == "stopListening" || m.name == "stopDictation" || m.name == "cancel")) {
-                            m.isAccessible = true
-                            m.invoke(manager)
-                        }
-                    }
-                }
-            }
-        } catch (_: Throwable) {
         }
     }
 
@@ -419,29 +325,6 @@ object GboardRamblerHook {
                     }
                 }
             }
-        }
-
-        // 4. View-level suppression for any remaining "Help improve" feedback or promo chip
-        runCatching {
-            XposedHelpers.findAndHookMethod(
-                View::class.java,
-                "onAttachedToWindow",
-                object : XC_MethodHook() {
-                    override fun afterHookedMethod(param: MethodHookParam) {
-                        val view = param.thisObject as? View ?: return
-                        val tag = view.tag?.toString() ?: ""
-                        val desc = view.contentDescription?.toString() ?: ""
-                        val isPromoOrFeedback = tag.contains("rambler-al-feedback", ignoreCase = true) ||
-                                tag.contains("voice_donation_promo", ignoreCase = true) ||
-                                tag.contains("agentic_dictation_promo", ignoreCase = true) ||
-                                desc.contains("Help improve", ignoreCase = true)
-                        if (isPromoOrFeedback) {
-                            view.visibility = View.GONE
-                            (view.parent as? ViewGroup)?.removeView(view)
-                        }
-                    }
-                }
-            )
         }
     }
 }

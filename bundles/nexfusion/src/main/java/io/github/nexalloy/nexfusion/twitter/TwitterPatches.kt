@@ -138,15 +138,50 @@ private fun IHook.installTwitterAdSuppressor() {
     if (missing.isNotEmpty()) {
         PatcherLog.info { "NexFusion: X promoted-item probes not found in this build: ${missing.joinToString()}" }
     }
+
+    // 1. JSON-layer ad filtering (stable across releases, immune to obfuscated presenter shifts)
+    val jsonEntryClasses = listOf(
+        "com.twitter.model.json.timeline.urt.JsonTimelineEntry\$\$JsonObjectMapper",
+        "com.twitter.model.json.timeline.urt.JsonTimelineModuleItem\$\$JsonObjectMapper"
+    )
+    for (jsonCls in jsonEntryClasses) {
+        hookMethodsIfExists(jsonCls, "parse", "JSON timeline entry filter") {
+            after = { param ->
+                runCatching {
+                    val result = param.result ?: return@runCatching
+                    val entryId = runCatching {
+                        XposedHelpers.getObjectField(result, "a") as? String
+                    }.getOrNull() ?: runCatching {
+                        XposedHelpers.callMethod(result, "c") as? String
+                    }.getOrNull()
+                    if (entryId != null) {
+                        val isAd = entryId.contains("promoted", ignoreCase = true) ||
+                                entryId.contains("rtb", ignoreCase = true) ||
+                                entryId.startsWith("superhero", ignoreCase = true) ||
+                                entryId.startsWith("eventsummary", ignoreCase = true) ||
+                                entryId.startsWith("main-event-", ignoreCase = true) ||
+                                entryId.startsWith("pivot", ignoreCase = true)
+                        if (isAd) {
+                            param.result = null
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 2. UI-layer presenter funnel filtering
     val adSuppressorBlock: HookDsl<IHookCallback>.() -> Unit = {
         before = { param ->
-            val item = param.args.getOrNull(1)
-            if (item != null && filter.isPromoted(item)) {
-                val presenter = filter.emptyPresenter()
-                if (presenter != null) {
-                    val method = param.method
-                    if (method !is Method || method.returnType.isInstance(presenter)) {
-                        param.result = presenter
+            runCatching {
+                val item = param.args.getOrNull(1)
+                if (item != null && filter.isPromoted(item)) {
+                    val presenter = filter.emptyPresenter()
+                    if (presenter != null) {
+                        val method = param.method
+                        if (method !is Method || method.returnType.isInstance(presenter)) {
+                            param.result = presenter
+                        }
                     }
                 }
             }
@@ -154,7 +189,7 @@ private fun IHook.installTwitterAdSuppressor() {
     }
     val hookedFunnel = hookMethodsIfExists(
         "com.x.urt.b", "a", "presenter funnel",
-        shape = { it.size == 5 && it[0] == java.lang.Integer.TYPE && it[1].name.endsWith(".items.o0") },
+        shape = { it.size == 5 && it[0] == java.lang.Integer.TYPE },
         block = adSuppressorBlock,
     )
     if (hookedFunnel == 0) {

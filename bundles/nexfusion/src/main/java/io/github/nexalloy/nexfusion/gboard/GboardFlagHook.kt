@@ -41,7 +41,7 @@ class FlagOverride private constructor(
         fun forceDouble(value: Double): FlagOverride = FlagOverride({ it is Double || it is Float }, value)
 
         /** Replaces any string, like the "all languages" allowlist policies. */
-        fun forceString(value: String): FlagOverride = FlagOverride({ it is String }, value)
+        fun forceString(value: String): FlagOverride = FlagOverride({ it == null || it is String }, value)
     }
 }
 
@@ -67,9 +67,10 @@ private val SCREENSHOT_PREF_KEYS = setOf(
     "enable_auto_paste_chips"
 )
 
-private val overrides = LinkedHashMap<String, FlagOverride>()
+private val overrides = ConcurrentHashMap<String, FlagOverride>()
 private val nameFields = ConcurrentHashMap<Class<*>, Field>()
 private val nameMethods = ConcurrentHashMap<Class<*>, java.lang.reflect.Method>()
+private val receiverNameCache = java.util.concurrent.ConcurrentHashMap<Int, String>()
 private val dynamicBooleanPrefOverrides = ConcurrentHashMap<String, Boolean>()
 private val dynamicStringPrefOverrides = ConcurrentHashMap<String, String>()
 private var installed = false
@@ -124,11 +125,13 @@ fun PatchExecutor.enableGboardPreferences(
         }
     }
 
-    seed(appContext)
-    if (android.os.Build.VERSION.SDK_INT >= 24) {
-        runCatching {
-            val dps = appContext.createDeviceProtectedStorageContext()
-            if (dps != null) seed(dps)
+    java.util.concurrent.Executors.newSingleThreadExecutor().execute {
+        seed(appContext)
+        if (android.os.Build.VERSION.SDK_INT >= 24) {
+            runCatching {
+                val dps = appContext.createDeviceProtectedStorageContext()
+                if (dps != null) seed(dps)
+            }
         }
     }
 
@@ -145,12 +148,6 @@ fun PatchExecutor.enableGboardPreferences(
                 object : XC_MethodHook() {
                     override fun beforeHookedMethod(param: MethodHookParam) {
                         val key = param.args[0] as? String ?: return
-                        if (key in SCREENSHOT_PREF_KEYS && dynamicBooleanPrefOverrides.containsKey(key)) {
-                            param.result = true
-                            return
-                        }
-                        val sp = param.thisObject as? android.content.SharedPreferences
-                        if (sp != null && sp.contains(key)) return
                         val override = dynamicBooleanPrefOverrides[key] ?: return
                         param.result = override
                     }
@@ -164,8 +161,6 @@ fun PatchExecutor.enableGboardPreferences(
                 object : XC_MethodHook() {
                     override fun beforeHookedMethod(param: MethodHookParam) {
                         val key = param.args[0] as? String ?: return
-                        val sp = param.thisObject as? android.content.SharedPreferences
-                        if (sp != null && sp.contains(key)) return
                         val override = dynamicStringPrefOverrides[key] ?: return
                         param.result = override
                     }
@@ -237,22 +232,17 @@ fun PatchExecutor.enableGboardWritingToolsPreference() {
  * Gboard patch while it runs, so a disabled patch never contributes its flags.
  */
 fun PatchExecutor.gboardFlagOverrides(vararg entries: Pair<String, FlagOverride>) {
-    synchronized(overrides) {
-        for ((name, override) in entries) overrides.putIfAbsent(name, override)
-    }
+    for ((name, override) in entries) overrides.putIfAbsent(name, override)
     if (installed) return
 
     val hook = object : XC_MethodHook() {
         override fun afterHookedMethod(param: MethodHookParam) {
             val receiver = param.thisObject ?: return
             val name = flagName(receiver) ?: return
-            val override = synchronized(overrides) { overrides[name] } ?: return
+            val override = overrides[name] ?: return
             val oldVal = param.result
             val newVal = override.applyTo(oldVal)
             param.result = newVal
-            if (oldVal != newVal) {
-                Log.i("NexAlloy", "NexFusion: Gboard flag '$name': $oldVal -> $newVal")
-            }
         }
     }
 
@@ -281,6 +271,11 @@ fun PatchExecutor.gboardFlagOverrides(vararg entries: Pair<String, FlagOverride>
 
 /** The flag's name, read from method h() or the name field of its class; null when the receiver is unexpected. */
 private fun flagName(receiver: Any): String? {
+    val id = System.identityHashCode(receiver)
+    val cached = receiverNameCache[id]
+    if (cached != null) {
+        return if (cached.isEmpty()) null else cached
+    }
     val receiverClass = receiver.javaClass
 
     // 1. Check for public method h() returning String (present in Gboard 18.4.1 actb, actq, etc.)
@@ -295,7 +290,10 @@ private fun flagName(receiver: Any): String? {
     }
     if (method != null) {
         val name = runCatching { method.invoke(receiver) as? String }.getOrNull()
-        if (!name.isNullOrEmpty()) return name
+        if (!name.isNullOrEmpty()) {
+            receiverNameCache[id] = name
+            return name
+        }
     }
 
     // 2. Fall back to field 'a' or first String field
@@ -311,6 +309,12 @@ private fun flagName(receiver: Any): String? {
         if (resolved == null) return null
         nameFields.putIfAbsent(receiverClass, resolved) ?: resolved
     }
-    return runCatching { field.get(receiver) as? String }.getOrNull()
+    val name = runCatching { field.get(receiver) as? String }.getOrNull()
+    if (!name.isNullOrEmpty()) {
+        receiverNameCache[id] = name
+        return name
+    }
+    receiverNameCache[id] = ""
+    return null
 }
 

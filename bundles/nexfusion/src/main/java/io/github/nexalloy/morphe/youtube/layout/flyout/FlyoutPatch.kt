@@ -63,13 +63,7 @@ val flyoutPatch = patch(
         )
     }
 
-    StartVideoInformerFingerprint.hookMethod {
-        before {
-            FlyoutUtils.resetVideoMarkedAsForKids()
-        }
-    }
 
-    hookElement(FlyoutUtils::onCommentsLoaded)
 
     // Track and initialize flyout menu buttons generically.
     val getSubMessageMethod = ::getSubMessageReference.method
