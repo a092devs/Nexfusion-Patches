@@ -7,6 +7,22 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.2.0
+
+- `NexFusion` 4.2.0:
+  * Facebook Media Downloader Restoration:
+    - Fixed download failures by dynamically traversing GraphQL model hierarchies (`GraphQLStory`, `GraphQLStoryAttachment`, `GraphQLMedia`, `FeedUnit`) rather than relying on brittle field type comparisons.
+    - Dynamically scanned Reels overflow menu builder parameters for container lists, video identifiers, player stores, and player origins.
+    - Resiliently synthesized action rows using reflection over declared icon drawables, eliminating unresolved class lookups.
+    - Protected story capability constructors, save actions, and menu injectors with safe direct lookups and isolated error boundaries.
+  * Instagram Reels Meta AI Removal:
+    - Expanded MobileConfig feature gating with flags disabling Reels Meta AI shortcuts, search bar suggestions, and upsells.
+    - Added layout and view ID targets covering Meta AI floating action pills, prompt suggestions, and AI agent buttons.
+    - Implemented intelligent view hierarchy collapsing that identifies Meta AI labels, content descriptions, and container bubbles across both activity resumes and bottom-sheet dialog presentations without leaving blank UI artifacts.
+  * Ecosystem Alignment & Compatibility:
+    - Synchronized bundle version to 4.2.0 with the NexFusion manager ecosystem.
+    - Maintained universal cross-compatibility across all supported application targets.
+
 ## 4.1.0
 
 - `NexFusion` 4.1.0:
