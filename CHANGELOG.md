@@ -7,6 +7,16 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.1.0
+
+- `NexFusion` 4.1.0:
+  * CI & Release Infrastructure:
+    - Added `beta` branch validation to Android CI workflows.
+    - Gated automated release dispatching strictly to the `main` branch to guarantee production release stability.
+  * Ecosystem Alignment & Compatibility:
+    - Synchronized patch bundle versioning to 4.1.0 with the NexFusion 4.1.0 manager ecosystem.
+    - Verified full runtime cross-compatibility, dynamic DexKit hook resolution, and resource injection integrity across all 20 supported target applications.
+
 ## 4.0.0
 
 - `NexFusion` 4.0.0:

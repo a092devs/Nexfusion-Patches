@@ -159,8 +159,8 @@ NexFusion discovers bundles through **patch sources**. A source can be configure
 - **Direct Feed Source:** A JSON endpoint declaring bundle versions, download URLs, and metadata:
   ```json
   {
-    "version": "4.0.0",
-    "download_url": "https://github.com/a092devs/Nexfusion-Patches/releases/download/4.0.0/nexfusion-4.0.0.nxb",
+    "version": "4.1.0",
+    "download_url": "https://github.com/a092devs/Nexfusion-Patches/releases/download/4.1.0/nexfusion-4.1.0.nxb",
     "description": "Unified community runtime patch bundle"
   }
   ```
