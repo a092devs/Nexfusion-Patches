@@ -25,6 +25,7 @@ import io.github.nexfusion.hookMethod
 import io.github.nexfusion.morphe.findMethodDirect
 import io.github.nexfusion.patch
 import org.luckypray.dexkit.query.enums.StringMatchType
+import java.lang.reflect.Modifier
 import java.util.Collections
 import java.util.Locale
 import java.util.WeakHashMap
@@ -707,7 +708,10 @@ private val META_AI_MOBILE_CONFIG_FLAGS = setOf(
 private fun isMetaAiText(text: CharSequence?): Boolean {
     if (text == null) return false
     val s = text.toString().lowercase(Locale.ROOT)
-    return s.contains("meta ai") || s.contains("ask meta ai") || s.contains("meta_ai") || s.contains("ask_meta_ai")
+    return s.contains("meta ai") || s.contains("ask meta") || s.contains("meta_ai") ||
+        s.contains("ask_meta_ai") || s.contains("create with ai") || s.contains("create_with_ai") ||
+        s.contains("imagine") || (s.contains("summarize") && s.contains("ai")) ||
+        s.contains("biz_ai_agent") || s.contains("prompt meta ai")
 }
 
 private fun installMetaAiViewHiderOnDecor(decorView: View) {
@@ -732,8 +736,18 @@ private fun installMetaAiViewHiderOnDecor(decorView: View) {
             val tag = root.tag?.toString()
             val clsName = root.javaClass.simpleName
 
+            if (clsName.contains("ComponentHost") || clsName.contains("LithoView")) {
+                val textContent = runCatching {
+                    root.javaClass.getMethod("getTextContent").invoke(root)
+                }.getOrNull()
+                if (textContent != null && isMetaAiText(textContent.toString())) {
+                    root.visibility = View.GONE
+                    changed = true
+                }
+            }
+
             val shouldHide = (targetIds.isNotEmpty() && id != View.NO_ID && id in targetIds) ||
-                (resName != null && (resName.contains("meta_ai") || resName.contains("ask_meta_ai") || resName.contains("create_with_ai") || resName.contains("biz_ai_agent"))) ||
+                (resName != null && (resName.contains("meta_ai") || resName.contains("ask_meta_ai") || resName.contains("create_with_ai") || resName.contains("biz_ai_agent") || resName.contains("gen_ai"))) ||
                 isMetaAiText(contentDesc) ||
                 isMetaAiText(viewText) ||
                 isMetaAiText(tag) ||
@@ -744,8 +758,8 @@ private fun installMetaAiViewHiderOnDecor(decorView: View) {
                 val parentResName = if (parent != null && parent.id != View.NO_ID) {
                     runCatching { context.resources.getResourceEntryName(parent.id) }.getOrNull()?.lowercase(Locale.ROOT)
                 } else null
-                val isPillContainer = parent != null && parent.childCount in 1..4 &&
-                    (parent.isClickable || parentResName?.contains("pill") == true || parentResName?.contains("chip") == true || parentResName?.contains("button") == true || parentResName?.contains("container") == true)
+                val isPillContainer = parent != null && parent.childCount in 1..5 &&
+                    (parent.isClickable || parentResName?.contains("pill") == true || parentResName?.contains("chip") == true || parentResName?.contains("button") == true || parentResName?.contains("container") == true || parentResName?.contains("prompt") == true)
                 if (isPillContainer) {
                     parent!!.visibility = View.GONE
                 } else {
@@ -787,7 +801,14 @@ val HideMetaAi = patch(
 
     // 2. MobileConfig flags interceptor
     runCatching {
-        val unsafeContextClass = classLoader.loadClass("com.facebook.mobileconfig.factory.MobileConfigUnsafeContext")
+        val candidateClasses = listOf(
+            "com.facebook.mobileconfig.MobileConfigManagerHolderImpl",
+            "com.facebook.mobileconfig.factory.MobileConfigSafeContext",
+            "com.facebook.mobileconfig.MobileConfigDependenciesInFBApps",
+            "com.facebook.mobileconfig.MobileConfigOverridesTableHolder",
+            "com.facebook.mobileconfig.MobileConfigContext",
+            "com.facebook.mobileconfig.factory.MobileConfigUnsafeContext",
+        )
         val hook = object : XC_MethodHook() {
             override fun beforeHookedMethod(param: MethodHookParam) {
                 val paramId = param.args.firstOrNull { it is Long } as? Long ?: return
@@ -797,14 +818,21 @@ val HideMetaAi = patch(
             }
         }
         var hooked = 0
-        for (method in unsafeContextClass.declaredMethods) {
-            if (method.returnType == java.lang.Boolean.TYPE && method.parameterTypes.any { it == java.lang.Long.TYPE }) {
-                XposedBridge.hookMethod(method, hook)
-                hooked++
+        for (clsName in candidateClasses) {
+            val clazz = runCatching { classLoader.loadClass(clsName) }.getOrNull() ?: continue
+            for (method in clazz.declaredMethods) {
+                if (!Modifier.isAbstract(method.modifiers) &&
+                    method.returnType == java.lang.Boolean.TYPE &&
+                    method.parameterTypes.any { it == java.lang.Long.TYPE }) {
+                    runCatching {
+                        XposedBridge.hookMethod(method, hook)
+                        hooked++
+                    }
+                }
             }
         }
-        PatcherLog.info { "NexFusion Instagram: MobileConfigUnsafeContext Meta AI flags hooked on $hooked methods" }
-    }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: MobileConfigUnsafeContext hook skipped" } }
+        PatcherLog.info { "NexFusion Instagram: MobileConfig Meta AI flags hooked on $hooked methods" }
+    }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: MobileConfig hook skipped" } }
 
     // 3. View hider in onResume
     runCatching {
@@ -839,6 +867,22 @@ val HideMetaAi = patch(
         }
         PatcherLog.info { "NexFusion Instagram: Hide Meta AI dialog view hider installed" }
     }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: Hide Meta AI dialog view hider skipped" } }
+
+    // 5. View hider in Fragment.onViewCreated (Reels clips viewer, direct inbox fragments)
+    runCatching {
+        val fragmentClass = classLoader.loadClass("androidx.fragment.app.Fragment")
+        for (method in fragmentClass.declaredMethods) {
+            if (method.name == "onViewCreated" && method.parameterTypes.size == 2 && method.parameterTypes[0] == View::class.java) {
+                XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam) {
+                        val view = param.args.getOrNull(0) as? View ?: return
+                        installMetaAiViewHiderOnDecor(view)
+                    }
+                })
+            }
+        }
+        PatcherLog.info { "NexFusion Instagram: Hide Meta AI fragment view hider installed" }
+    }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: Hide Meta AI fragment view hider skipped" } }
 }
 
 val TurnOffHdrBoosts = patch(

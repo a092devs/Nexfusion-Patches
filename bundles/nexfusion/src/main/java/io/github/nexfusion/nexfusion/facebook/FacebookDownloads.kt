@@ -350,12 +350,26 @@ internal class FacebookMediaReader(
         } else {
             val story = postOf(item)
             if (story != null) {
-                val attachments = call(story, attachmentsGetter) as? List<*>
-                if (attachments != null) {
+                var attachments = call(story, attachmentsGetter) as? List<*>
+                if (attachments.isNullOrEmpty()) {
+                    attachments = treeList(story, "attachments".hashCode())
+                }
+                if (attachments.isNullOrEmpty()) {
+                    attachments = (tree(story, "attachments".hashCode()) as? List<*>)
+                }
+                if (attachments.isNullOrEmpty()) {
+                    attachments = story.javaClass.methods.firstOrNull {
+                        it.parameterTypes.isEmpty() && (it.name.contains("attachment", ignoreCase = true) || List::class.java.isAssignableFrom(it.returnType)) && it.name !in SKIP_GETTERS
+                    }?.let { call(story, it) as? List<*> }
+                }
+                if (!attachments.isNullOrEmpty()) {
                     for (attachment in attachments) {
                         if (attachment != null) addAttachmentMedia(attachment, media)
                         if (media.size >= MAX_ITEMS) break
                     }
+                }
+                if (media.isEmpty()) {
+                    findMediaByMethod(story)?.let { media += it }
                 }
             } else {
                 media += item
@@ -427,15 +441,19 @@ internal class FacebookMediaReader(
     }
 
     private fun addAttachmentMedia(attachment: Any, out: MutableList<Any>) {
-        val subattachments = call(attachment, subattachmentsGetter) as? List<*>
+        val subattachments = (call(attachment, subattachmentsGetter) as? List<*>)
+            ?: treeList(attachment, "subattachments".hashCode())
+            ?: (tree(attachment, "subattachments".hashCode()) as? List<*>)
         if (!subattachments.isNullOrEmpty()) {
             for (sub in subattachments) {
                 if (sub == null) continue
-                call(sub, mediaGetter)?.let { out += it }
+                val m = call(sub, mediaGetter) ?: tree(sub, "media".hashCode()) ?: findMediaByMethod(sub)
+                if (m != null) out += m
                 if (out.size >= MAX_ITEMS) return
             }
         } else {
-            call(attachment, mediaGetter)?.let { out += it }
+            val m = call(attachment, mediaGetter) ?: tree(attachment, "media".hashCode()) ?: findMediaByMethod(attachment)
+            if (m != null) out += m
         }
     }
 
@@ -520,10 +538,18 @@ internal class FacebookMediaReader(
 
     /** Follows a share to the post that holds the media, as Facebook's own menu does. */
     fun postOf(item: Any?): Any? {
-        if (item == null || !isA(item, STORY)) return null
+        if (item == null) return null
+        if (!isA(item, STORY)) {
+            if (isA(item, STORY_ATTACHMENT) || isA(item, MEDIA)) return null
+            val subStory = item.javaClass.methods.firstOrNull {
+                it.parameterTypes.isEmpty() && isA(it.returnType, STORY) && it.name !in SKIP_GETTERS
+            }?.let { call(item, it) }
+            if (subStory != null && isA(subStory, STORY)) return postOf(subStory)
+            return null
+        }
         var story = item
         repeat(4) {
-            val shared = call(story, attachedStoryGetter) ?: return@repeat
+            val shared = call(story, attachedStoryGetter) ?: tree(story, "attached_story".hashCode()) ?: return@repeat
             story = shared
         }
         return story
@@ -537,10 +563,10 @@ internal class FacebookMediaReader(
         string(ownerList, "name".hashCode())?.takeIf { it.isNotBlank() }?.let { return it }
         val media = when {
             isA(story, MEDIA) -> story
-            isA(story, STORY_ATTACHMENT) -> call(story, mediaGetter)
+            isA(story, STORY_ATTACHMENT) -> call(story, mediaGetter) ?: tree(story, "media".hashCode()) ?: findMediaByMethod(story)
             else -> {
-                val attachments = call(story, attachmentsGetter) as? List<*>
-                (attachments?.firstOrNull())?.let { call(it, mediaGetter) }
+                val attachments = (call(story, attachmentsGetter) as? List<*>) ?: treeList(story, "attachments".hashCode())
+                (attachments?.firstOrNull())?.let { call(it, mediaGetter) ?: tree(it, "media".hashCode()) ?: findMediaByMethod(it) }
             }
         }
         val mediaOwner = tree(media, "owner".hashCode())
@@ -557,6 +583,30 @@ internal class FacebookMediaReader(
     }
 
     private fun tree(model: Any?, field: Int): Any? = invokeInt(model, "getTree", field)
+
+    private fun treeList(model: Any?, field: Int): List<*>? {
+        if (model == null) return null
+        return (invokeInt(model, "getTreeList", field) as? List<*>)
+            ?: (invokeInt(model, "getImmutableListField", field) as? List<*>)
+            ?: runCatching {
+                model.javaClass.methods.firstOrNull {
+                    it.name == "getTreeList" && it.parameterTypes.size == 1 && it.parameterTypes[0] == Int::class.javaPrimitiveType
+                }?.invoke(model, field) as? List<*>
+            }.getOrNull()
+    }
+
+    private fun findMediaByMethod(model: Any?): Any? {
+        if (model == null) return null
+        for (m in model.javaClass.methods) {
+            if (m.parameterTypes.isEmpty() && m.returnType != java.lang.Void.TYPE && m.name !in SKIP_GETTERS) {
+                if (isA(m.returnType, MEDIA) || m.name.equals("getMedia", ignoreCase = true)) {
+                    val res = runCatching { m.invoke(model) }.getOrNull()
+                    if (res != null) return res
+                }
+            }
+        }
+        return null
+    }
 
     private fun string(model: Any?, field: Int): String? =
         invokeInt(model, "getString", field) as? String
@@ -638,10 +688,21 @@ internal class FacebookMediaReader(
 
     private fun isA(value: Any?, className: String): Boolean {
         if (value == null) return false
-        var type: Class<*>? = value.javaClass
-        while (type != null) {
-            if (type.name == className) return true
-            type = type.superclass
+        return isA(value.javaClass, className)
+    }
+
+    private fun isA(clazz: Class<*>?, className: String): Boolean {
+        if (clazz == null) return false
+        val targetSimple = className.substringAfterLast('.')
+        val visited = mutableSetOf<Class<*>>()
+        val queue = ArrayDeque<Class<*>>()
+        queue.add(clazz)
+        while (queue.isNotEmpty()) {
+            val curr = queue.removeFirst()
+            if (!visited.add(curr)) continue
+            if (curr.name == className || curr.simpleName == targetSimple) return true
+            curr.superclass?.let { queue.add(it) }
+            for (iface in curr.interfaces) queue.add(iface)
         }
         return false
     }
@@ -1408,24 +1469,53 @@ val DownloadFacebookMedia = patch(
                         }
 
                         fun createRow(listener: Any, title: String, controlId: String): Any? {
-                            val params = constructor.parameterTypes
-                            val args = arrayOfNulls<Any?>(params.size)
-                            for (i in params.indices) {
-                                val p = params[i]
-                                args[i] = when {
-                                    p.isInterface && p.isInstance(listener) -> listener
-                                    p == java.lang.Boolean.TYPE || p == java.lang.Boolean::class.java -> false
-                                    p == String::class.java || p == CharSequence::class.java -> {
-                                        when {
-                                            i == 3 || (i == 1 && params.size < 6) -> title
-                                            i == 5 || (i == 2 && params.size < 6) -> controlId
-                                            else -> null
+                            val constructors = sampleRow.javaClass.constructors.sortedByDescending { it.parameterTypes.size }
+                            for (ctor in constructors) {
+                                val params = ctor.parameterTypes
+                                val args = arrayOfNulls<Any?>(params.size)
+                                for (i in params.indices) {
+                                    val p = params[i]
+                                    args[i] = when {
+                                        p.isInterface && p.isAssignableFrom(listener.javaClass) -> listener
+                                        p == java.lang.Boolean.TYPE || p == java.lang.Boolean::class.java -> false
+                                        p == java.lang.Integer.TYPE || p == java.lang.Integer::class.java -> 0
+                                        p == java.lang.Long.TYPE || p == java.lang.Long::class.java -> 0L
+                                        p == java.lang.Float.TYPE || p == java.lang.Float::class.java -> 0f
+                                        p == java.lang.Double.TYPE || p == java.lang.Double::class.java -> 0.0
+                                        p == String::class.java || p == CharSequence::class.java -> {
+                                            when {
+                                                i == 3 || (i == 1 && params.size < 6) -> title
+                                                i == 5 || (i == 2 && params.size < 6) -> controlId
+                                                else -> null
+                                            }
                                         }
+                                        downloadIcon != null && p.isAssignableFrom(downloadIcon.javaClass) -> downloadIcon
+                                        else -> null
                                     }
-                                    else -> downloadIcon
                                 }
+                                val instance = runCatching { ctor.newInstance(*args) }.getOrNull()
+                                if (instance != null) return instance
                             }
-                            return runCatching { constructor.newInstance(*args) }.getOrNull()
+                            return runCatching {
+                                val copy = sampleRow.javaClass.getConstructor().newInstance()
+                                for (field in sampleRow.javaClass.declaredFields) {
+                                    if (Modifier.isStatic(field.modifiers)) continue
+                                    field.isAccessible = true
+                                    when {
+                                        field.type.isInterface && field.type.isAssignableFrom(listener.javaClass) -> field.set(copy, listener)
+                                        field.type == String::class.java -> {
+                                            val cur = field.get(sampleRow) as? String ?: ""
+                                            if (cur.contains("clear", ignoreCase = true) || cur.contains("mode", ignoreCase = true)) {
+                                                field.set(copy, title)
+                                            } else {
+                                                field.set(copy, cur)
+                                            }
+                                        }
+                                        else -> field.set(copy, field.get(sampleRow))
+                                    }
+                                }
+                                copy
+                            }.getOrNull()
                         }
 
                         val downloadVideoRow = createRow(videoListener, "Download reel", "fds_control_download_reel")
@@ -1451,7 +1541,7 @@ val DownloadFacebookMedia = patch(
                             }
                         }
                         if (targetIndex == -1) {
-                            targetIndex = minOf(2, rows.size)
+                            targetIndex = minOf(1, rows.size)
                         }
 
                         if (downloadAudioRow != null) rows.add(targetIndex, downloadAudioRow)

@@ -281,12 +281,10 @@ val postMenuFillers = findMethodListDirect {
         if (anchor == null) {
             candidates.filter { it.returnTypeName == "void" && it.paramTypeNames.size >= 3 && it.paramTypeNames[0] == "android.view.Menu" && it.paramTypeNames[1] == "android.view.View" }
         } else {
-            findMethod { matcher { name = anchor.name } }
-                .filter { method ->
-                    method.returnTypeName == "void" &&
-                        method.paramTypeNames == anchor.paramTypeNames
-                }
-                .distinctBy { it.descriptor }
+            candidates.filter { method ->
+                method.returnTypeName == "void" &&
+                    method.paramTypeNames == anchor.paramTypeNames
+            }.distinctBy { it.descriptor }
         }
     }.getOrDefault(emptyList())
 }
@@ -295,26 +293,26 @@ val postMenuFillers = findMethodListDirect {
 val storyAttachmentsGetter = findMethodDirect {
     findMethod {
         matcher {
-            declaredClass("com.facebook.graphql.model.GraphQLStory", StringMatchType.Equals, false)
+            declaredClass("com.facebook.graphql.model.GraphQLStory", StringMatchType.Contains, false)
             usingNumbers(listOf("attachments".hashCode()))
         }
     }.filter {
         it.paramTypeNames.isEmpty() &&
-            it.returnTypeName == "com.google.common.collect.ImmutableList"
-    }.distinctBy { it.descriptor }.singleOrNull()
+            (it.returnTypeName.contains("ImmutableList") || it.returnTypeName.contains("List"))
+    }.distinctBy { it.descriptor }.firstOrNull()
         ?: throw IllegalStateException("GraphQLStory's attachments getter was not found")
 }
 
 val storyAttachedStoryGetter = findMethodDirect {
     findMethod {
         matcher {
-            declaredClass("com.facebook.graphql.model.GraphQLStory", StringMatchType.Equals, false)
+            declaredClass("com.facebook.graphql.model.GraphQLStory", StringMatchType.Contains, false)
             usingNumbers(listOf("attached_story".hashCode()))
         }
     }.filter {
         it.paramTypeNames.isEmpty() &&
-            it.returnTypeName == "com.facebook.graphql.model.GraphQLStory"
-    }.distinctBy { it.descriptor }.singleOrNull()
+            it.returnTypeName.contains("GraphQLStory")
+    }.distinctBy { it.descriptor }.firstOrNull()
         ?: throw IllegalStateException("GraphQLStory's attached_story getter was not found")
 }
 
@@ -323,15 +321,15 @@ val attachmentMediaGetter = findMethodDirect {
         matcher {
             declaredClass(
                 "com.facebook.graphql.model.GraphQLStoryAttachment",
-                StringMatchType.Equals,
+                StringMatchType.Contains,
                 false,
             )
             usingNumbers(listOf("media".hashCode()))
         }
     }.filter {
         it.paramTypeNames.isEmpty() &&
-            it.returnTypeName == "com.facebook.graphql.model.GraphQLMedia"
-    }.distinctBy { it.descriptor }.singleOrNull()
+            it.returnTypeName.contains("GraphQLMedia")
+    }.distinctBy { it.descriptor }.firstOrNull()
         ?: throw IllegalStateException("GraphQLStoryAttachment's media getter was not found")
 }
 
@@ -340,15 +338,15 @@ val attachmentSubattachmentsGetter = findMethodDirect {
         matcher {
             declaredClass(
                 "com.facebook.graphql.model.GraphQLStoryAttachment",
-                StringMatchType.Equals,
+                StringMatchType.Contains,
                 false,
             )
             usingNumbers(listOf("subattachments".hashCode()))
         }
     }.filter {
         it.paramTypeNames.isEmpty() &&
-            it.returnTypeName == "com.google.common.collect.ImmutableList"
-    }.distinctBy { it.descriptor }.singleOrNull()
+            (it.returnTypeName.contains("ImmutableList") || it.returnTypeName.contains("List"))
+    }.distinctBy { it.descriptor }.firstOrNull()
         ?: throw IllegalStateException("GraphQLStoryAttachment's subattachments getter was not found")
 }
 
