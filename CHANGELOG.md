@@ -7,6 +7,22 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.2.1
+
+- `NexFusion` 4.2.1:
+  * Facebook Media Downloader Restoration:
+    - Fixed interface reflection in model resolution to properly traverse both inheritance hierarchies and interfaces (`GraphQLStory`, `GraphQLStoryAttachment`, `GraphQLMedia`, `FeedUnit`).
+    - Added comprehensive TreeJNI fallbacks (`treeList("attachments")`, `tree("media")`) and method reflection for attachment, media, and poster extractions.
+    - Corrected parameter signature and primitive type handling for Reels More Sheet row instantiation, ensuring download options appear reliably.
+    - Optimized DexKit fingerprinting filters to prevent full-dex scanning bottlenecks across split APKs.
+  * Instagram Reels Meta AI Removal:
+    - Replaced abstract interface hooks with concrete runtime class hooking across all MobileConfig contexts.
+    - Extended view hierarchy hider into Fragment lifecycle events (`onViewCreated`) to ensure continuous coverage when scrolling Reels clips.
+    - Added Litho component text detection and expanded keyword coverage for Reels AI action chips, prompts, and summary pills.
+  * Ecosystem & Patch Submodule Sync:
+    - Synchronized core extension submodules to latest development revisions from the dev branch.
+    - Bumped bundle release version to 4.2.1 with universal cross-compatibility across all supported app targets.
+
 ## 4.2.0
 
 - `NexFusion` 4.2.0:
