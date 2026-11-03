@@ -7,6 +7,14 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.2.3
+
+- `NexFusion` 4.2.3:
+  * Facebook Media Downloader Reliability:
+    - Expanded post context menu anchors to reliably hook standard feed and video posts (`VideoFeedStoryMenuHelper`, `DOWNLOAD_VIDEO`, `SAVE_VIDEO`, `SAVE_POST`).
+    - Enhanced Reels more bottom sheet builders to inject top-level "Download reel" and "Download audio" actions directly into sheet rows.
+    - Updated viewer download permission gates to bypass restrictions using both string identifiers and hash codes.
+
 ## 4.2.2
 
 - `NexFusion` 4.2.2:
