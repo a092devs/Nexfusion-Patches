@@ -1154,18 +1154,23 @@ private fun showOptions(activity: Activity, items: List<FacebookItem>, username:
 
 private fun resolveDownloadIcon(sampleRow: Any, app: Context): Any? {
     return runCatching {
+        sampleRow.javaClass.declaredFields.firstOrNull { field ->
+            !Modifier.isStatic(field.modifiers) &&
+                !field.type.isPrimitive &&
+                field.type != String::class.java &&
+                field.type != CharSequence::class.java &&
+                field.type != java.lang.Boolean.TYPE &&
+                field.type != java.lang.Boolean::class.java &&
+                !field.type.isInterface
+        }?.apply { isAccessible = true }?.get(sampleRow)
+    }.getOrNull() ?: runCatching {
         val eeLClass = Class.forName("X.eeL", true, app.classLoader)
         val u1fClass = Class.forName("X.1Uf", true, app.classLoader)
         val a8lField = u1fClass.getField("A8L")
         val a8lVal = a8lField.get(null)
         val a00Method = eeLClass.getMethod("A00", u1fClass)
         a00Method.invoke(null, a8lVal)
-    }.getOrElse {
-        val iconField = sampleRow.javaClass.declaredFields.firstOrNull {
-            it.type.name.endsWith("eeL")
-        }?.apply { isAccessible = true }
-        iconField?.get(sampleRow)
-    }
+    }.getOrNull()
 }
 
 private fun rowMatchesIdOrTitle(row: Any, query: String): Boolean {
@@ -1181,18 +1186,35 @@ private fun rowMatchesIdOrTitle(row: Any, query: String): Boolean {
     }.getOrDefault(false)
 }
 
-/** The item behind a post menu's props object: Facebook keeps it in the one Object field. */
+/** The item behind a post menu's props object: searches props and its fields for a GraphQL model. */
 private fun itemOfProps(props: Any): Any? {
+    if (isGraphQlModel(props, STORY) || isGraphQlModel(props, STORY_ATTACHMENT) || isGraphQlModel(props, MEDIA) || isGraphQlModel(props, "com.facebook.graphql.model.FeedUnit")) {
+        return props
+    }
     val candidates = ArrayList<Any>()
-    for (field in props.javaClass.declaredFields) {
-        if (Modifier.isStatic(field.modifiers) || field.type != Any::class.java) continue
-        runCatching {
-            field.isAccessible = true
-            field.get(props)?.let { candidates += it }
+    var currentClass: Class<*>? = props.javaClass
+    while (currentClass != null && currentClass != Any::class.java) {
+        for (field in currentClass.declaredFields) {
+            if (Modifier.isStatic(field.modifiers) || field.type.isPrimitive) continue
+            runCatching {
+                field.isAccessible = true
+                field.get(props)?.let { value ->
+                    candidates += value
+                    if (!value.javaClass.isPrimitive && !value.javaClass.name.startsWith("java.")) {
+                        for (subField in value.javaClass.declaredFields) {
+                            if (!Modifier.isStatic(subField.modifiers) && !subField.type.isPrimitive) {
+                                subField.isAccessible = true
+                                subField.get(value)?.let { candidates += it }
+                            }
+                        }
+                    }
+                }
+            }
         }
+        currentClass = currentClass.superclass
     }
     return candidates.firstOrNull { candidate ->
-        isGraphQlModel(candidate, STORY) || isGraphQlModel(candidate, STORY_ATTACHMENT) || isGraphQlModel(candidate, MEDIA)
+        isGraphQlModel(candidate, STORY) || isGraphQlModel(candidate, STORY_ATTACHMENT) || isGraphQlModel(candidate, MEDIA) || isGraphQlModel(candidate, "com.facebook.graphql.model.FeedUnit")
     } ?: candidates.firstOrNull()
 }
 
@@ -1200,7 +1222,7 @@ private fun isGraphQlModel(value: Any?, className: String): Boolean {
     if (value == null) return false
     var type: Class<*>? = value.javaClass
     while (type != null) {
-        if (type.name == className) return true
+        if (type.name == className || type.interfaces.any { it.name == className }) return true
         type = type.superclass
     }
     return false
@@ -1301,193 +1323,219 @@ val DownloadFacebookMedia = patch(
     // Reel More Sheet: hook bQt->A04 to add "Download options" row to the sheet's List
     var reelHooks = 0
     runCatching {
-        ::reelMoreSheetBuilder.dexMethod.hookMethod {
-            after { param ->
-                runCatching {
-                    val playerOrigin = param.args.getOrNull(4)
-                    val playerStore = param.args.getOrNull(5)
-                    val videoId = param.args.getOrNull(7) as? String ?: return@after
-                    val rows = param.args.getOrNull(8) as? MutableList<Any> ?: return@after
-                    if (rows.isEmpty()) return@after
+        for (dex in ::reelMoreSheetBuilders.dexMethodList) {
+            dex.hookMethod {
+                after { param ->
+                    runCatching {
+                        @Suppress("UNCHECKED_CAST")
+                        val rows = (param.args.firstOrNull { it is MutableList<*> } as? MutableList<Any>)
+                            ?: (param.result as? MutableList<Any>)
+                            ?: return@after
+                        if (rows.isEmpty()) return@after
 
-                    var items: List<FacebookItem> = emptyList()
-                    var username: String? = null
-                    if (playerStore != null && playerOrigin != null) {
-                        val storeMethod = playerStore.javaClass.methods.firstOrNull {
-                            it.parameterTypes.size == 2 && it.parameterTypes[1] == String::class.java
-                        }
-                        val z3E = storeMethod?.invoke(playerStore, playerOrigin, videoId)
-                        if (z3E != null) {
-                            val mediaField = z3E.javaClass.declaredFields.firstOrNull {
-                                it.type.name == "com.facebook.graphql.model.GraphQLMedia"
-                            }?.apply { isAccessible = true }
-                            val media = mediaField?.get(z3E)
-                            if (media != null) {
-                                items = reader.items(media)
-                                username = reader.usernameOf(media)
+                        val videoId = param.args.filterIsInstance<String>().firstOrNull { str ->
+                            PlayerSources.find(str) != null || (str.all { it.isDigit() } && str.length in 10..25)
+                        } ?: param.args.filterIsInstance<String>().firstOrNull { it.length > 5 }
+                            ?: return@after
+
+                        val playerOrigin = param.args.firstOrNull { it != null && it.javaClass.name.contains("PlayerOrigin") }
+                        val playerStore = param.args.firstOrNull { obj ->
+                            obj != null && obj.javaClass.methods.any {
+                                it.parameterTypes.size == 2 && it.parameterTypes[1] == String::class.java
                             }
                         }
-                    }
-                    if (items.isEmpty()) {
-                        val source = PlayerSources.find(videoId)
-                        val url = source?.hdUrl ?: source?.sdUrl ?: FacebookDash.bestVideoUrl(source?.manifest)
-                        if (url != null) {
-                            items = listOf(
-                                FacebookItem(
-                                    url = url,
-                                    isVideo = true,
-                                    imageUrl = null,
-                                    audioUrl = FacebookDash.bestAudioUrl(source?.manifest),
-                                ),
-                            )
+
+                        var items: List<FacebookItem> = emptyList()
+                        var username: String? = null
+                        if (playerStore != null && playerOrigin != null) {
+                            val storeMethod = playerStore.javaClass.methods.firstOrNull {
+                                it.parameterTypes.size == 2 && it.parameterTypes[1] == String::class.java
+                            }
+                            val z3E = storeMethod?.invoke(playerStore, playerOrigin, videoId)
+                            if (z3E != null) {
+                                val mediaField = z3E.javaClass.declaredFields.firstOrNull {
+                                    it.type.name == "com.facebook.graphql.model.GraphQLMedia"
+                                }?.apply { isAccessible = true }
+                                val media = mediaField?.get(z3E)
+                                if (media != null) {
+                                    items = reader.items(media)
+                                    username = reader.usernameOf(media)
+                                }
+                            }
                         }
-                    }
-                    if (items.isEmpty()) return@after
-
-                    val sampleRow = rows.first()
-                    val downloadIcon = resolveDownloadIcon(sampleRow, app)
-
-                    val constructor = sampleRow.javaClass.constructors.firstOrNull {
-                        it.parameterTypes.size == 7
-                    } ?: return@after
-
-                    val clickInterface = constructor.parameterTypes[0]
-                    val videoListener = Proxy.newProxyInstance(
-                        clickInterface.classLoader,
-                        arrayOf(clickInterface),
-                    ) { _, method, _ ->
-                        if (method.declaringClass != Any::class.java) {
-                            enqueue(app, items, username)
+                        if (items.isEmpty()) {
+                            val source = PlayerSources.find(videoId)
+                            val url = source?.hdUrl ?: source?.sdUrl ?: FacebookDash.bestVideoUrl(source?.manifest)
+                            if (url != null) {
+                                items = listOf(
+                                    FacebookItem(
+                                        url = url,
+                                        isVideo = true,
+                                        imageUrl = null,
+                                        audioUrl = FacebookDash.bestAudioUrl(source?.manifest),
+                                    ),
+                                )
+                            }
                         }
-                        null
-                    }
+                        if (items.isEmpty()) return@after
 
-                    val downloadVideoRow = constructor.newInstance(
-                        videoListener,
-                        downloadIcon,
-                        java.lang.Boolean.FALSE,
-                        "Download reel",
-                        null,
-                        "fds_control_download_reel",
-                        null,
-                    )
+                        val sampleRow = rows.first()
+                        val downloadIcon = resolveDownloadIcon(sampleRow, app)
 
-                    val audioListener = Proxy.newProxyInstance(
-                        clickInterface.classLoader,
-                        arrayOf(clickInterface),
-                    ) { _, method, _ ->
-                        if (method.declaringClass != Any::class.java) {
-                            downloadAudio(app, items.first(), username)
+                        val constructor = sampleRow.javaClass.constructors.maxByOrNull {
+                            it.parameterTypes.size
+                        } ?: return@after
+
+                        val clickInterface = constructor.parameterTypes.firstOrNull { it.isInterface }
+                            ?: return@after
+                        val videoListener = Proxy.newProxyInstance(
+                            clickInterface.classLoader,
+                            arrayOf(clickInterface),
+                        ) { _, method, _ ->
+                            if (method.declaringClass != Any::class.java) {
+                                enqueue(app, items, username)
+                            }
+                            null
                         }
-                        null
-                    }
 
-                    val downloadAudioRow = constructor.newInstance(
-                        audioListener,
-                        downloadIcon,
-                        java.lang.Boolean.FALSE,
-                        "Download audio",
-                        null,
-                        "fds_control_download_audio",
-                        null,
-                    )
-
-                    var targetIndex = -1
-                    for (i in rows.indices) {
-                        if (rowMatchesIdOrTitle(rows[i], "clear_mode") ||
-                            rowMatchesIdOrTitle(rows[i], "Clear mode")) {
-                            targetIndex = i
-                            break
+                        val audioListener = Proxy.newProxyInstance(
+                            clickInterface.classLoader,
+                            arrayOf(clickInterface),
+                        ) { _, method, _ ->
+                            if (method.declaringClass != Any::class.java) {
+                                downloadAudio(app, items.first(), username)
+                            }
+                            null
                         }
-                    }
-                    if (targetIndex == -1) {
+
+                        fun createRow(listener: Any, title: String, controlId: String): Any? {
+                            val params = constructor.parameterTypes
+                            val args = arrayOfNulls<Any?>(params.size)
+                            for (i in params.indices) {
+                                val p = params[i]
+                                args[i] = when {
+                                    p.isInterface && p.isInstance(listener) -> listener
+                                    p == java.lang.Boolean.TYPE || p == java.lang.Boolean::class.java -> false
+                                    p == String::class.java || p == CharSequence::class.java -> {
+                                        when {
+                                            i == 3 || (i == 1 && params.size < 6) -> title
+                                            i == 5 || (i == 2 && params.size < 6) -> controlId
+                                            else -> null
+                                        }
+                                    }
+                                    else -> downloadIcon
+                                }
+                            }
+                            return runCatching { constructor.newInstance(*args) }.getOrNull()
+                        }
+
+                        val downloadVideoRow = createRow(videoListener, "Download reel", "fds_control_download_reel")
+                        val downloadAudioRow = createRow(audioListener, "Download audio", "fds_control_download_audio")
+                        if (downloadVideoRow == null) return@after
+
+                        var targetIndex = -1
                         for (i in rows.indices) {
-                            if (rowMatchesIdOrTitle(rows[i], "captions") ||
-                                rowMatchesIdOrTitle(rows[i], "quality") ||
-                                rowMatchesIdOrTitle(rows[i], "speed")) {
-                                targetIndex = i + 1
+                            if (rowMatchesIdOrTitle(rows[i], "clear_mode") ||
+                                rowMatchesIdOrTitle(rows[i], "Clear mode")) {
+                                targetIndex = i
                                 break
                             }
                         }
-                    }
-                    if (targetIndex == -1) {
-                        targetIndex = minOf(2, rows.size)
-                    }
+                        if (targetIndex == -1) {
+                            for (i in rows.indices) {
+                                if (rowMatchesIdOrTitle(rows[i], "captions") ||
+                                    rowMatchesIdOrTitle(rows[i], "quality") ||
+                                    rowMatchesIdOrTitle(rows[i], "speed")) {
+                                    targetIndex = i + 1
+                                    break
+                                }
+                            }
+                        }
+                        if (targetIndex == -1) {
+                            targetIndex = minOf(2, rows.size)
+                        }
 
-                    rows.add(targetIndex, downloadAudioRow)
-                    rows.add(targetIndex, downloadVideoRow)
-                    log("added Download reel and Download audio rows to Reel More Sheet (index=$targetIndex, videoId=$videoId)")
-                }.onFailure { log("Reel more sheet hook error: ${it.message}") }
+                        if (downloadAudioRow != null) rows.add(targetIndex, downloadAudioRow)
+                        rows.add(targetIndex, downloadVideoRow)
+                        log("added Download reel and Download audio rows to Reel More Sheet (index=$targetIndex, videoId=$videoId)")
+                    }.onFailure { log("Reel more sheet hook error: ${it.message}") }
+                }
             }
+            reelHooks++
         }
-        reelHooks++
     }.onFailure { log("Reel more sheet hook failed: ${it.message}") }
 
     // Story capability: CsG.<init> and CsG.A0G
     var storyHooks = 0
     runCatching {
-        ::storyCapabilityConstructor.dexMethod.hookMethod {
-            after { param ->
-                runCatching {
-                    val csG = param.thisObject ?: return@after
-                    val field = csG.javaClass.declaredFields.firstOrNull {
-                        it.name == "A0P" || (it.type == java.lang.Boolean::class.java && Modifier.isPublic(it.modifiers))
-                    }?.apply { isAccessible = true }
-                    field?.set(csG, java.lang.Boolean.TRUE)
+        for (dex in ::storyCapabilityConstructors.dexMethodList) {
+            dex.hookMethod {
+                after { param ->
+                    runCatching {
+                        val csG = param.thisObject ?: return@after
+                        val field = csG.javaClass.declaredFields.firstOrNull {
+                            it.name == "A0P" || (it.type == java.lang.Boolean::class.java && Modifier.isPublic(it.modifiers))
+                        }?.apply { isAccessible = true }
+                        field?.set(csG, java.lang.Boolean.TRUE)
+                    }
                 }
             }
+            storyHooks++
         }
-        storyHooks++
     }.onFailure { log("story capability constructor hook failed: ${it.message}") }
 
     runCatching {
-        ::storySaveCapabilityMethod.dexMethod.hookMethod {
-            after { param -> param.result = true }
+        for (dex in ::storySaveCapabilityMethods.dexMethodList) {
+            dex.hookMethod {
+                after { param -> param.result = true }
+            }
+            storyHooks++
         }
-        storyHooks++
     }.onFailure { log("story capability method hook failed: ${it.message}") }
 
     // Story save action: eVD->A00
     runCatching {
-        ::storySaveAction.dexMethod.hookMethod {
-            before { param ->
-                runCatching {
-                    val storyCard = param.args.firstOrNull { it != null && it.javaClass.name.endsWith("StoryCard") }
-                        ?: param.args.getOrNull(0) ?: return@before
-                    val id = runCatching {
-                        storyCard.javaClass.getMethod("getId").invoke(storyCard) as? String
-                    }.getOrNull()
-                    var items = reader.items(storyCard)
-                    if (items.isEmpty()) {
-                        val bbd = runCatching {
-                            storyCard.javaClass.getMethod("getMedia").invoke(storyCard)
+        for (dex in ::storySaveActions.dexMethodList) {
+            dex.hookMethod {
+                before { param ->
+                    runCatching {
+                        val storyCard = param.args.firstOrNull { it != null && it.javaClass.name.endsWith("StoryCard") }
+                            ?: param.args.getOrNull(0) ?: return@before
+                        val id = runCatching {
+                            storyCard.javaClass.getMethod("getId").invoke(storyCard) as? String
                         }.getOrNull()
-                        if (bbd != null) items = reader.items(bbd)
-                    }
-                    if (items.isEmpty() && id != null) {
-                        val src = PlayerSources.find(id)
-                        val url = src?.hdUrl ?: src?.sdUrl ?: FacebookDash.bestVideoUrl(src?.manifest)
-                        if (url != null) {
-                            items = listOf(
-                                FacebookItem(
-                                    url = url,
-                                    isVideo = true,
-                                    imageUrl = null,
-                                    audioUrl = FacebookDash.bestAudioUrl(src?.manifest),
-                                ),
-                            )
+                        var items = reader.items(storyCard)
+                        if (items.isEmpty()) {
+                            val bbd = runCatching {
+                                storyCard.javaClass.getMethod("getMedia").invoke(storyCard)
+                            }.getOrNull()
+                            if (bbd != null) items = reader.items(bbd)
                         }
-                    }
-                    if (items.isNotEmpty()) {
-                        val username = reader.usernameOf(storyCard)
-                        enqueue(app, items, username)
-                        param.result = null
-                        log("story save action handled for story id=$id, items=${items.size}")
-                    }
-                }.onFailure { log("story save action hook error: ${it.message}") }
+                        if (items.isEmpty() && id != null) {
+                            val src = PlayerSources.find(id)
+                            val url = src?.hdUrl ?: src?.sdUrl ?: FacebookDash.bestVideoUrl(src?.manifest)
+                            if (url != null) {
+                                items = listOf(
+                                    FacebookItem(
+                                        url = url,
+                                        isVideo = true,
+                                        imageUrl = null,
+                                        audioUrl = FacebookDash.bestAudioUrl(src?.manifest),
+                                    ),
+                                )
+                            }
+                        }
+                        if (items.isNotEmpty()) {
+                            val username = reader.usernameOf(storyCard)
+                            enqueue(app, items, username)
+                            param.result = null
+                            log("story save action handled for story id=$id, items=${items.size}")
+                        }
+                    }.onFailure { log("story save action hook error: ${it.message}") }
+                }
             }
+            storyHooks++
         }
-        storyHooks++
     }.onFailure { log("story save action hook failed: ${it.message}") }
 
     // Photo viewer: the two reads of can_viewer_download say yes while this patch is on.
@@ -1503,14 +1551,12 @@ val DownloadFacebookMedia = patch(
 
     // The photo viewer's own Save photo action is wrapped, so a tap saves the biggest image.
     var photoActionHooked = false
-    val action = runCatching { ::savePhotoAction.method }.getOrNull()
-    if (action != null) {
-        runCatching {
-            action.isAccessible = true
-            XposedBridge.hookMethod(action, object : XC_MethodHook() {
-                override fun afterHookedMethod(param: MethodHookParam) {
-                    val original = param.result as? MenuItem.OnMenuItemClickListener ?: return
-                    val photo = param.args.getOrNull(0) ?: return
+    runCatching {
+        for (dex in ::savePhotoActions.dexMethodList) {
+            dex.hookMethod {
+                after { param ->
+                    val original = param.result as? MenuItem.OnMenuItemClickListener ?: return@after
+                    val photo = param.args.getOrNull(0) ?: return@after
                     param.result = FacebookPhotoAction(
                         original = original,
                         photo = photo,
@@ -1519,10 +1565,10 @@ val DownloadFacebookMedia = patch(
                         username = runCatching { reader.usernameOf(photo) }.getOrNull(),
                     )
                 }
-            })
+            }
             photoActionHooked = true
-        }.onFailure { log("savePhotoAction hook skipped: ${it.message}") }
-    }
+        }
+    }.onFailure { log("savePhotoAction hook skipped: ${it.message}") }
 
     val totalHooks = menuHooks + gateHooks + (if (photoActionHooked) 1 else 0) + reelHooks + storyHooks + playerParamsHooks
     log("post menus=$menuHooks, can_viewer_download gates=$gateHooks, photo action=$photoActionHooked, reel=$reelHooks, story=$storyHooks, playerParams=$playerParamsHooks (total=$totalHooks)")

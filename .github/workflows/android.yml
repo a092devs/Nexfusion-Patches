@@ -9,6 +9,8 @@ on:
 jobs:
     build:
         runs-on: ubuntu-latest
+        permissions:
+            contents: write
 
         steps:
             - uses: actions/checkout@v6
@@ -59,6 +61,20 @@ jobs:
                 name: nexfusion-ci-bundles
                 path: bundles/*/build/outputs/bundle/*.nxb
 
+            - name: Create Beta Pre-Release
+              if: github.event_name == 'push' && github.ref == 'refs/heads/beta'
+              run: |
+                mkdir -p beta-dist
+                cp bundles/*/build/outputs/bundle/*.nxb beta-dist/
+                gh release delete beta --cleanup-tag --yes || true
+                gh release create beta beta-dist/* \
+                  --prerelease \
+                  --target "${{ github.sha }}" \
+                  --title "Nexfusion Patches Beta" \
+                  --notes "Beta test bundle with Facebook download fixes and Instagram Reels Meta AI removal. Standalone .nxb bundle attached below."
+              env:
+                GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     auto-release:
         name: Trigger release build
         needs: build
@@ -77,22 +93,22 @@ jobs:
               env:
                   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               run: |
-                  set -euo pipefail
+                set -euo pipefail
 
-                  VERSION=$(grep -m1 -oP '^##\s+\K[0-9]+\.[0-9]+\.[0-9]+$' CHANGELOG.md || true)
+                VERSION=$(grep -m1 -oP '^##\s+\K[0-9]+\.[0-9]+\.[0-9]+$' CHANGELOG.md || true)
 
-                  if [[ -z "$VERSION" ]]; then
-                    echo "::error::CHANGELOG.md has no 'X.Y.Z' section to release; add one before pushing."
-                    exit 1
-                  fi
+                if [[ -z "$VERSION" ]]; then
+                  echo "::error::CHANGELOG.md has no 'X.Y.Z' section to release; add one before pushing."
+                  exit 1
+                fi
 
-                  if gh release view "$VERSION" >/dev/null 2>&1; then
-                    echo "Release $VERSION already exists; nothing to release."
-                    exit 0
-                  fi
+                if gh release view "$VERSION" >/dev/null 2>&1; then
+                  echo "Release $VERSION already exists; nothing to release."
+                  exit 0
+                fi
 
-                  gh workflow run release.yml \
-                    --repo "$GITHUB_REPOSITORY" \
-                    --ref "$GITHUB_REF_NAME" \
-                    -f tag="$VERSION"
-                  echo "Dispatched release build for $VERSION."
+                gh workflow run release.yml \
+                  --repo "$GITHUB_REPOSITORY" \
+                  --ref "$GITHUB_REF_NAME" \
+                  -f tag="$VERSION"
+                echo "Dispatched release build for $VERSION."

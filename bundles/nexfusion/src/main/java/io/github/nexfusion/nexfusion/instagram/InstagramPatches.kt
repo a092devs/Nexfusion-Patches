@@ -1,6 +1,7 @@
 package io.github.nexfusion.nexfusion.instagram
 
 import android.app.Activity
+import android.app.Dialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -13,6 +14,7 @@ import android.view.ViewStub
 import android.view.ViewTreeObserver
 import android.view.Window
 import android.view.WindowManager
+import android.widget.TextView
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XC_MethodHook.MethodHookParam
 import de.robv.android.xposed.XC_MethodReplacement
@@ -649,7 +651,7 @@ val DontSendReelWatchHistory = patch(
     PatcherLog.info { "NexFusion Instagram: reel watch history Tigon filter enabled" }
 }
 
-private val metaAiHiderSessions = Collections.synchronizedMap(WeakHashMap<Activity, ViewTreeObserver.OnPreDrawListener>())
+private val metaAiHiderSessions = Collections.synchronizedMap(WeakHashMap<View, ViewTreeObserver.OnPreDrawListener>())
 
 private val META_AI_VIEW_IDS = listOf(
     "meta_ai",
@@ -665,6 +667,26 @@ private val META_AI_VIEW_IDS = listOf(
     "row_thread_composer_meta_ai_discover",
     "row_thread_composer_meta_ai_invocation",
     "row_thread_composer_meta_ai_voice",
+    "layout_meta_ai_large_ask_pill",
+    "layout_meta_ai_prompt_pill",
+    "meta_ai_pill_keyword",
+    "meta_ai_hcm_prompt_pills",
+    "meta_ai_actionbar_button",
+    "biz_ai_agent_pills_on_media_stub",
+    "biz_ai_agent_pills_toolbar_stub",
+    "direct_composer_meta_ai_composer_upsell",
+    "direct_composer_meta_ai_discovery_button",
+    "direct_composer_meta_ai_invocation_button",
+    "direct_composer_meta_ai_nux_disclaimer",
+    "direct_composer_meta_ai_voice_button",
+    "direct_composer_meta_ai_voice_button_v2",
+    "direct_composer_overflow_button_meta_ai_v2",
+    "restyleplus_create_with_ai_pill",
+    "reel_netego_meta_ai_stories_overlay",
+    "reel_netego_meta_ai_stories_stub",
+    "ai_rewrite_bottom_sheet_meta_ai_icon_view",
+    "ai_rewrite_nux_meta_ai_icon_view",
+    "ai_rewrite_nux_meta_ai_text",
 )
 
 private val META_AI_MOBILE_CONFIG_FLAGS = setOf(
@@ -673,12 +695,24 @@ private val META_AI_MOBILE_CONFIG_FLAGS = setOf(
     0x81040a001b1093L, // Messages search bar Meta AI ring
     0x81168700017258L, // Home top bar Meta AI chats / hatch button
     0x8110c200115a92L, // About this reel summary factory
+    0x810ba900064043L, // Reels / post ask meta ai upsell
+    0x8103A800000EB2L, // Direct tap & hold ask meta ai
+    0x81061700032BF3L, // Regenerate ai message
+    0x81061700052BF5L, // Direct ai feedback
+    0x810f6600074387L, // Sidechat meta ai
+    0x82061300050e2dL, // Ask meta ai mustache pill
+    0x82061300040e2cL, // Imagine mustache pill
 )
 
-private fun installMetaAiViewHider(activity: Activity) {
-    if (metaAiHiderSessions.containsKey(activity)) return
-    val decorView = activity.window?.decorView ?: return
-    val context = activity
+private fun isMetaAiText(text: CharSequence?): Boolean {
+    if (text == null) return false
+    val s = text.toString().lowercase(Locale.ROOT)
+    return s.contains("meta ai") || s.contains("ask meta ai") || s.contains("meta_ai") || s.contains("ask_meta_ai")
+}
+
+private fun installMetaAiViewHiderOnDecor(decorView: View) {
+    if (metaAiHiderSessions.containsKey(decorView)) return
+    val context = decorView.context ?: return
 
     val targetIds = META_AI_VIEW_IDS.mapNotNull { name ->
         val id = context.resources.getIdentifier(name, "id", context.packageName)
@@ -688,17 +722,39 @@ private fun installMetaAiViewHider(activity: Activity) {
     fun hideMetaAiViews(root: View, budget: IntArray = intArrayOf(5000)): Boolean {
         if (budget[0]-- <= 0) return false
         var changed = false
-        val id = root.id
-        if (id != View.NO_ID && root !is ViewStub) {
-            val resName = runCatching { context.resources.getResourceEntryName(id) }.getOrNull()?.lowercase(Locale.ROOT)
-            val shouldHide = (targetIds.isNotEmpty() && id in targetIds) ||
-                (resName != null && (resName.contains("meta_ai") || resName.contains("ask_meta_ai")))
+        if (root !is ViewStub) {
+            val id = root.id
+            val resName = if (id != View.NO_ID) {
+                runCatching { context.resources.getResourceEntryName(id) }.getOrNull()?.lowercase(Locale.ROOT)
+            } else null
+            val contentDesc = root.contentDescription
+            val viewText = (root as? TextView)?.text
+            val tag = root.tag?.toString()
+            val clsName = root.javaClass.simpleName
+
+            val shouldHide = (targetIds.isNotEmpty() && id != View.NO_ID && id in targetIds) ||
+                (resName != null && (resName.contains("meta_ai") || resName.contains("ask_meta_ai") || resName.contains("create_with_ai") || resName.contains("biz_ai_agent"))) ||
+                isMetaAiText(contentDesc) ||
+                isMetaAiText(viewText) ||
+                isMetaAiText(tag) ||
+                (clsName.contains("MetaAi", ignoreCase = true) || clsName.contains("AskMetaAi", ignoreCase = true))
+
             if (shouldHide && root.visibility != View.GONE) {
-                root.visibility = View.GONE
+                val parent = root.parent as? ViewGroup
+                val parentResName = if (parent != null && parent.id != View.NO_ID) {
+                    runCatching { context.resources.getResourceEntryName(parent.id) }.getOrNull()?.lowercase(Locale.ROOT)
+                } else null
+                val isPillContainer = parent != null && parent.childCount in 1..4 &&
+                    (parent.isClickable || parentResName?.contains("pill") == true || parentResName?.contains("chip") == true || parentResName?.contains("button") == true || parentResName?.contains("container") == true)
+                if (isPillContainer) {
+                    parent!!.visibility = View.GONE
+                } else {
+                    root.visibility = View.GONE
+                }
                 changed = true
             }
         }
-        if (root is ViewGroup) {
+        if (root is ViewGroup && root.visibility != View.GONE) {
             for (i in 0 until root.childCount) {
                 changed = hideMetaAiViews(root.getChildAt(i), budget) || changed
             }
@@ -711,7 +767,7 @@ private fun installMetaAiViewHider(activity: Activity) {
         true
     }
 
-    metaAiHiderSessions[activity] = preDrawListener
+    metaAiHiderSessions[decorView] = preDrawListener
     decorView.viewTreeObserver.addOnPreDrawListener(preDrawListener)
 }
 
@@ -758,13 +814,31 @@ val HideMetaAi = patch(
                 XposedBridge.hookMethod(method, object : XC_MethodHook() {
                     override fun afterHookedMethod(param: MethodHookParam) {
                         val activity = param.thisObject as? Activity ?: return
-                        installMetaAiViewHider(activity)
+                        val decor = activity.window?.decorView ?: return
+                        installMetaAiViewHiderOnDecor(decor)
                     }
                 })
             }
         }
-        PatcherLog.info { "NexFusion Instagram: Hide Meta AI view hider installed" }
+        PatcherLog.info { "NexFusion Instagram: Hide Meta AI activity view hider installed" }
     }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: Hide Meta AI view hider skipped" } }
+
+    // 4. View hider in Dialog.show (reels comments, reels more sheets, bottom sheets)
+    runCatching {
+        val dialogClass = classLoader.loadClass("android.app.Dialog")
+        for (method in dialogClass.declaredMethods) {
+            if (method.name == "show" && method.parameterTypes.isEmpty()) {
+                XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam) {
+                        val dialog = param.thisObject as? Dialog ?: return
+                        val decor = dialog.window?.decorView ?: return
+                        installMetaAiViewHiderOnDecor(decor)
+                    }
+                })
+            }
+        }
+        PatcherLog.info { "NexFusion Instagram: Hide Meta AI dialog view hider installed" }
+    }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: Hide Meta AI dialog view hider skipped" } }
 }
 
 val TurnOffHdrBoosts = patch(

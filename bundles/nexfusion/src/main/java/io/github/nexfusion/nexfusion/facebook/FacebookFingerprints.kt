@@ -240,33 +240,55 @@ val preEofReelsInjectors = findMethodListDirect { methodsHolding("PreEofIfuSecti
  * Android menu and the view that opened it, which is where the downloader gets its Context.
  */
 val postMenuFillers = findMethodListDirect {
-    val candidates = methodsUsingAll(listOf("VideoFeedStoryMenuHelper", "DOWNLOAD_VIDEO"))
-        .ifEmpty { methodsHolding("DOWNLOAD_VIDEO") }
-        .ifEmpty { methodsHolding("VideoFeedStoryMenuHelper") }
-
-    val anchor = candidates.firstOrNull { method ->
-        method.returnTypeName == "void" &&
-            method.paramTypeNames.size >= 3 &&
-            method.paramTypeNames[0] == "android.view.Menu" &&
-            method.paramTypeNames[1] == "android.view.View" &&
-            method.paramTypeNames.any { it.contains("PlayerOrigin") }
-    } ?: candidates.firstOrNull { method ->
-        method.returnTypeName == "void" &&
-            method.paramTypeNames.size >= 3 &&
-            method.paramTypeNames[0] == "android.view.Menu" &&
-            method.paramTypeNames[1] == "android.view.View"
-    }
-
-    if (anchor == null) {
-        emptyList()
-    } else {
-        findMethod { matcher { name = anchor.name } }
-            .filter { method ->
-                method.returnTypeName == "void" &&
-                    method.paramTypeNames == anchor.paramTypeNames
+    runCatching {
+        val candidates = methodsUsingAll(listOf("VideoFeedStoryMenuHelper", "DOWNLOAD_VIDEO"))
+            .ifEmpty { methodsHolding("DOWNLOAD_VIDEO") }
+            .ifEmpty { methodsHolding("VideoFeedStoryMenuHelper") }
+            .ifEmpty {
+                findMethod {
+                    matcher {
+                        paramCount = 3
+                        paramTypes = listOf("android.view.Menu", "android.view.View", null)
+                        returnType = "void"
+                        usingStrings(listOf("SAVE_VIDEO"), StringMatchType.Contains)
+                    }
+                }
             }
-            .distinctBy { it.descriptor }
-    }
+            .ifEmpty {
+                findMethod {
+                    matcher {
+                        paramCount = 3
+                        paramTypes = listOf("android.view.Menu", "android.view.View", null)
+                        returnType = "void"
+                        usingStrings(listOf("COPY_LINK"), StringMatchType.Contains)
+                    }
+                }
+            }
+
+        val anchor = candidates.firstOrNull { method ->
+            method.returnTypeName == "void" &&
+                method.paramTypeNames.size >= 3 &&
+                method.paramTypeNames[0] == "android.view.Menu" &&
+                method.paramTypeNames[1] == "android.view.View" &&
+                method.paramTypeNames.any { it.contains("PlayerOrigin") }
+        } ?: candidates.firstOrNull { method ->
+            method.returnTypeName == "void" &&
+                method.paramTypeNames.size >= 3 &&
+                method.paramTypeNames[0] == "android.view.Menu" &&
+                method.paramTypeNames[1] == "android.view.View"
+        }
+
+        if (anchor == null) {
+            candidates.filter { it.returnTypeName == "void" && it.paramTypeNames.size >= 3 && it.paramTypeNames[0] == "android.view.Menu" && it.paramTypeNames[1] == "android.view.View" }
+        } else {
+            findMethod { matcher { name = anchor.name } }
+                .filter { method ->
+                    method.returnTypeName == "void" &&
+                        method.paramTypeNames == anchor.paramTypeNames
+                }
+                .distinctBy { it.descriptor }
+        }
+    }.getOrDefault(emptyList())
 }
 
 /** The GraphQL getters the post model exposes for the downloader's attachment walk. */
@@ -344,14 +366,15 @@ val canViewerDownloadGates = findMethodListDirect {
 }
 
 /** The photo viewer's own Save photo action, which the patch wraps with the downloader's. */
-val savePhotoAction = findMethodDirect {
-    findMethod {
-        matcher { name = "newSavePhotoAction" }
-    }.filter {
-        it.paramTypeNames.size == 1 &&
-            it.returnTypeName == "android.view.MenuItem\$OnMenuItemClickListener"
-    }.distinctBy { it.descriptor }.singleOrNull()
-        ?: throw IllegalStateException("the photo viewer's newSavePhotoAction was not found")
+val savePhotoActions = findMethodListDirect {
+    runCatching {
+        findMethod {
+            matcher { name = "newSavePhotoAction" }
+        }.filter {
+            it.paramTypeNames.size == 1 &&
+                it.returnTypeName == "android.view.MenuItem\$OnMenuItemClickListener"
+        }.distinctBy { it.descriptor }
+    }.getOrDefault(emptyList())
 }
 
 val deferredCardState = findClassDirect {
@@ -374,12 +397,22 @@ val deferredCardState = findClassDirect {
  * The Reel "More" bottom sheet builder: void static method anchored on "fds_control_clear_mode",
  * which adds setting rows (including Clear mode) to the sheet's List<Any>.
  */
-val reelMoreSheetBuilder = findMethodDirect {
-    val matches = findMethod {
-        matcher { usingStrings(listOf("fds_control_clear_mode"), StringMatchType.Equals) }
-    }.filter { it.returnTypeName == "void" }.distinctBy { it.descriptor }
-    check(matches.isNotEmpty()) { "expected at least 1 reelMoreSheetBuilder, found 0" }
-    matches.first()
+val reelMoreSheetBuilders = findMethodListDirect {
+    runCatching {
+        findMethod {
+            matcher { usingStrings(listOf("fds_control_clear_mode"), StringMatchType.Contains) }
+        }.filter { it.returnTypeName == "void" }.distinctBy { it.descriptor }
+            .ifEmpty {
+                findMethod {
+                    matcher { usingStrings(listOf("fds_control_save_video"), StringMatchType.Contains) }
+                }.filter { it.returnTypeName == "void" }.distinctBy { it.descriptor }
+            }
+            .ifEmpty {
+                findMethod {
+                    matcher { usingStrings(listOf("fds_control_remix_video"), StringMatchType.Contains) }
+                }.filter { it.returnTypeName == "void" }.distinctBy { it.descriptor }
+            }
+    }.getOrDefault(emptyList())
 }
 
 /**
@@ -400,26 +433,25 @@ val videoPlayerParamsConstructors = findMethodListDirect {
  * The story viewer's capability class (X.CsG on 583), which evaluates
  * story capabilities like whether the story can be saved.
  */
-val storyCapabilityClass = findClassDirect {
-    val callback = getClassData("Lcom/facebook/stories/viewer/ui/buckets/regular/topbar/menu/StoryViewerMoreButtonCallback;")
-        ?: error("StoryViewerMoreButtonCallback not found")
-    val csGName = callback.methods.asSequence()
-        .flatMap { it.instructions.asSequence() }
-        .mapNotNull { it.fieldRef }
-        .firstOrNull { it.typeName == "java.lang.Boolean" }
-        ?.declaredClassName
-        ?: error("Capability class with Boolean field not found in StoryViewerMoreButtonCallback")
-    findClass { matcher { className(csGName, StringMatchType.Equals) } }.distinctBy { it.name }.single()
-}
-
-val storyCapabilityConstructor = findMethodDirect {
-    val clazz = storyCapabilityClass()
-    findMethod {
-        matcher {
-            declaredClass(clazz.name, StringMatchType.Equals, false)
-            name = "<init>"
-        }
-    }.distinctBy { it.descriptor }.single()
+val storyCapabilityConstructors = findMethodListDirect {
+    runCatching {
+        val callback = getClassData("Lcom/facebook/stories/viewer/ui/buckets/regular/topbar/menu/StoryViewerMoreButtonCallback;")
+            ?: return@findMethodListDirect emptyList()
+        val csGName = callback.methods.asSequence()
+            .flatMap { it.instructions.asSequence() }
+            .mapNotNull { it.fieldRef }
+            .firstOrNull { it.typeName == "java.lang.Boolean" }
+            ?.declaredClassName
+            ?: return@findMethodListDirect emptyList()
+        val clazz = findClass { matcher { className(csGName, StringMatchType.Equals) } }.firstOrNull()
+            ?: return@findMethodListDirect emptyList()
+        findMethod {
+            matcher {
+                declaredClass(clazz.name, StringMatchType.Equals, false)
+                name = "<init>"
+            }
+        }.distinctBy { it.descriptor }
+    }.getOrDefault(emptyList())
 }
 
 /**
@@ -427,45 +459,54 @@ val storyCapabilityConstructor = findMethodDirect {
  * StoryViewerMoreButtonCallback's 2-param ImmutableList.Builder method (A0C on 583)
  * calls it before adding the Save Story menu item.
  */
-val storySaveCapabilityMethod = findMethodDirect {
-    val clazz = storyCapabilityClass()
-    val callback = getClassData("Lcom/facebook/stories/viewer/ui/buckets/regular/topbar/menu/StoryViewerMoreButtonCallback;")
-        ?: error("StoryViewerMoreButtonCallback not found")
-    val builderMethod = callback.methods.singleOrNull { method ->
-        method.paramTypeNames.size == 2 &&
-            method.paramTypeNames[1] == "com.google.common.collect.ImmutableList\$Builder" &&
-            method.instructions.any { it.methodRef?.declaredClassName == clazz.name }
-    } ?: error("Story menu builder method (A0C) not found in StoryViewerMoreButtonCallback")
-    val target = builderMethod.instructions.asSequence()
-        .mapNotNull { it.methodRef }
-        .firstOrNull { it.declaredClassName == clazz.name && it.returnTypeName == "boolean" && it.paramTypeNames.isEmpty() }
-        ?: error("Save capability method not found on ${clazz.name}")
-    findMethod {
-        matcher {
-            declaredClass(clazz.name, StringMatchType.Equals, false)
-            name = target.name
-            returnType = "boolean"
-            paramCount = 0
-        }
-    }.distinctBy { it.descriptor }.single()
+val storySaveCapabilityMethods = findMethodListDirect {
+    runCatching {
+        val callback = getClassData("Lcom/facebook/stories/viewer/ui/buckets/regular/topbar/menu/StoryViewerMoreButtonCallback;")
+            ?: return@findMethodListDirect emptyList()
+        val csGName = callback.methods.asSequence()
+            .flatMap { it.instructions.asSequence() }
+            .mapNotNull { it.fieldRef }
+            .firstOrNull { it.typeName == "java.lang.Boolean" }
+            ?.declaredClassName
+            ?: return@findMethodListDirect emptyList()
+        val clazz = findClass { matcher { className(csGName, StringMatchType.Equals) } }.firstOrNull()
+            ?: return@findMethodListDirect emptyList()
+        val builderMethod = callback.methods.firstOrNull { method ->
+            method.paramTypeNames.size == 2 &&
+                method.paramTypeNames[1] == "com.google.common.collect.ImmutableList\$Builder" &&
+                method.instructions.any { it.methodRef?.declaredClassName == clazz.name }
+        } ?: return@findMethodListDirect emptyList()
+        val target = builderMethod.instructions.asSequence()
+            .mapNotNull { it.methodRef }
+            .firstOrNull { it.declaredClassName == clazz.name && it.returnTypeName == "boolean" && it.paramTypeNames.isEmpty() }
+            ?: return@findMethodListDirect emptyList()
+        findMethod {
+            matcher {
+                declaredClass(clazz.name, StringMatchType.Equals, false)
+                name = target.name
+                returnType = "boolean"
+                paramCount = 0
+            }
+        }.distinctBy { it.descriptor }
+    }.getOrDefault(emptyList())
 }
 
 /**
  * The story save action method called when the user taps Save in the story more menu.
  * Takes StoryCard as 1st parameter and references "PublishingTaskStatusUnknown" and "media_type".
  */
-val storySaveAction = findMethodDirect {
-    val matches = findMethod {
-        matcher {
-            usingStrings(listOf("PublishingTaskStatusUnknown"), StringMatchType.Contains)
-        }
-    }.filter { method ->
-        method.returnTypeName == "void" &&
-            method.paramTypeNames.size in 1..2 &&
-            method.paramTypeNames.contains("com.facebook.stories.model.StoryCard")
-    }.distinctBy { it.descriptor }
-    check(matches.isNotEmpty()) { "expected at least 1 storySaveAction, found 0" }
-    matches.first()
+val storySaveActions = findMethodListDirect {
+    runCatching {
+        findMethod {
+            matcher {
+                usingStrings(listOf("PublishingTaskStatusUnknown"), StringMatchType.Contains)
+            }
+        }.filter { method ->
+            method.returnTypeName == "void" &&
+                method.paramTypeNames.size in 1..2 &&
+                method.paramTypeNames.contains("com.facebook.stories.model.StoryCard")
+        }.distinctBy { it.descriptor }
+    }.getOrDefault(emptyList())
 }
 
 /**
