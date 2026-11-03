@@ -703,6 +703,24 @@ private val META_AI_MOBILE_CONFIG_FLAGS = setOf(
     0x810f6600074387L, // Sidechat meta ai
     0x82061300050e2dL, // Ask meta ai mustache pill
     0x82061300040e2cL, // Imagine mustache pill
+    0x8103af00020eb4L, // Meta AI gate in X.02SH
+    0x8203bd00630a20L, // Reels Meta AI
+    0x81062100001c31L, // Reels / comments AI prompt
+    0x81062100061c37L,
+    0x81062100051c36L,
+    0x81062100071c38L,
+    0x81062100081c39L,
+    0x810621000a1c3bL,
+    0x81062100011c32L,
+    0x81062100021c33L,
+    0x81062100031c34L,
+    0x81062100041c35L,
+    0x81062100091c3aL,
+    0x810621000b1c3cL,
+    0x810621000c1c3dL,
+    0x810621000d1c3eL,
+    0x810621000e1c3fL,
+    0x810621000f1c40L,
 )
 
 private fun isMetaAiText(text: CharSequence?): Boolean {
@@ -799,7 +817,43 @@ val HideMetaAi = patch(
     InstagramRequestFilter.enable(InstagramRequestFilter.Rule.META_AI)
     InstagramRequestFilter.ensureHooks(classLoader)
 
-    // 2. MobileConfig flags interceptor
+    // 2. MobileConfig flags interceptor via DexKit fingerprints
+    runCatching {
+        val hook = object : XC_MethodHook() {
+            override fun beforeHookedMethod(param: MethodHookParam) {
+                val paramId = param.args.firstOrNull { it is Long } as? Long ?: return
+                if (paramId in META_AI_MOBILE_CONFIG_FLAGS) {
+                    param.result = false
+                }
+            }
+        }
+        var hooked = 0
+        for (dex in ::mobileConfigFlagMethods.dexMethodList) {
+            runCatching {
+                dex.hookMethod(hook)
+                hooked++
+            }
+        }
+        PatcherLog.info { "NexFusion Instagram: MobileConfig Meta AI flags hooked on $hooked methods" }
+    }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: MobileConfig fingerprint hook skipped" } }
+
+    // 2b. Meta AI gate methods (e.g. X.02SH gate methods for reels and feed AI)
+    runCatching {
+        var gateHooked = 0
+        for (dex in ::metaAiGateMethods.dexMethodList) {
+            runCatching {
+                dex.hookMethod(object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        param.result = false
+                    }
+                })
+                gateHooked++
+            }
+        }
+        PatcherLog.info { "NexFusion Instagram: Meta AI gate methods hooked on $gateHooked methods" }
+    }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: Meta AI gate hook skipped" } }
+
+    // 2c. MobileConfig reflection fallback on known manager classes
     runCatching {
         val candidateClasses = listOf(
             "com.facebook.mobileconfig.MobileConfigManagerHolderImpl",
@@ -831,8 +885,8 @@ val HideMetaAi = patch(
                 }
             }
         }
-        PatcherLog.info { "NexFusion Instagram: MobileConfig Meta AI flags hooked on $hooked methods" }
-    }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: MobileConfig hook skipped" } }
+        PatcherLog.info { "NexFusion Instagram: MobileConfig reflection fallback hooked on $hooked methods" }
+    }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: MobileConfig reflection hook skipped" } }
 
     // 3. View hider in onResume
     runCatching {

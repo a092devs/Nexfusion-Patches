@@ -200,6 +200,9 @@ internal object PlayerSources {
         override fun removeEldestEntry(eldest: Map.Entry<String, Source>?): Boolean = size > MAX_SOURCES
     }
 
+    @Volatile
+    var latestSource: Source? = null
+
     private val ID_PATTERN = Regex("\\d{8,25}")
 
     fun record(params: Any) {
@@ -215,9 +218,11 @@ internal object PlayerSources {
                 ?: findManifest(dataSource)
 
             if (hdUrl != null || sdUrl != null || manifest != null) {
+                val s = Source(videoId, hdUrl, sdUrl, manifest)
                 synchronized(sources) {
-                    sources[videoId] = Source(videoId, hdUrl, sdUrl, manifest)
+                    sources[videoId] = s
                 }
+                latestSource = s
                 log("PlayerSources recorded videoId=$videoId (hd=${hdUrl != null}, manifest=${manifest != null})")
             }
         }.onFailure { log("PlayerSources record error: $it") }
@@ -1396,6 +1401,7 @@ val DownloadFacebookMedia = patch(
                         val videoId = param.args.filterIsInstance<String>().firstOrNull { str ->
                             PlayerSources.find(str) != null || (str.all { it.isDigit() } && str.length in 10..25)
                         } ?: param.args.filterIsInstance<String>().firstOrNull { it.length > 5 }
+                            ?: PlayerSources.latestSource?.videoId
                             ?: return@after
 
                         val playerOrigin = param.args.firstOrNull { it != null && it.javaClass.name.contains("PlayerOrigin") }
@@ -1424,7 +1430,7 @@ val DownloadFacebookMedia = patch(
                             }
                         }
                         if (items.isEmpty()) {
-                            val source = PlayerSources.find(videoId)
+                            val source = PlayerSources.find(videoId) ?: PlayerSources.latestSource
                             val url = source?.hdUrl ?: source?.sdUrl ?: FacebookDash.bestVideoUrl(source?.manifest)
                             if (url != null) {
                                 items = listOf(

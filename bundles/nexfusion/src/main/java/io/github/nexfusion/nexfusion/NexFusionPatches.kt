@@ -57,6 +57,12 @@ object NexFusionPatches : PatchBundle {
             appIconColor = 0x0866FF,
         ),
         AppPatchInfo(
+            appName = "Facebook (Wakizashi)",
+            packageName = "com.facebook.wakizashi",
+            patches = FacebookPatches,
+            appIconColor = 0x0866FF,
+        ),
+        AppPatchInfo(
             appName = "Instagram",
             packageName = "com.instagram.android",
             patches = InstagramPatches,

@@ -264,6 +264,16 @@ val postMenuFillers = findMethodListDirect {
                     }
                 }
             }
+            .ifEmpty {
+                findMethod {
+                    matcher {
+                        paramCount = 3
+                        paramTypes = listOf("android.view.Menu", "android.view.View", null)
+                        returnType = "void"
+                        usingStrings(listOf("SAVE_POST"), StringMatchType.Contains)
+                    }
+                }
+            }
 
         val anchor = candidates.firstOrNull { method ->
             method.returnTypeName == "void" &&
@@ -399,16 +409,21 @@ val reelMoreSheetBuilders = findMethodListDirect {
     runCatching {
         findMethod {
             matcher { usingStrings(listOf("fds_control_clear_mode"), StringMatchType.Contains) }
-        }.filter { it.returnTypeName == "void" }.distinctBy { it.descriptor }
+        }.distinctBy { it.descriptor }
             .ifEmpty {
                 findMethod {
                     matcher { usingStrings(listOf("fds_control_save_video"), StringMatchType.Contains) }
-                }.filter { it.returnTypeName == "void" }.distinctBy { it.descriptor }
+                }.distinctBy { it.descriptor }
             }
             .ifEmpty {
                 findMethod {
                     matcher { usingStrings(listOf("fds_control_remix_video"), StringMatchType.Contains) }
-                }.filter { it.returnTypeName == "void" }.distinctBy { it.descriptor }
+                }.distinctBy { it.descriptor }
+            }
+            .ifEmpty {
+                findMethod {
+                    matcher { usingStrings(listOf("clear_mode"), StringMatchType.Contains) }
+                }.distinctBy { it.descriptor }
             }
     }.getOrDefault(emptyList())
 }
@@ -434,6 +449,7 @@ val videoPlayerParamsConstructors = findMethodListDirect {
 val storyCapabilityConstructors = findMethodListDirect {
     runCatching {
         val callback = getClassData("Lcom/facebook/stories/viewer/ui/buckets/regular/topbar/menu/StoryViewerMoreButtonCallback;")
+            ?: getClassData("com.facebook.stories.viewer.ui.buckets.regular.topbar.menu.StoryViewerMoreButtonCallback")
             ?: return@findMethodListDirect emptyList()
         val csGName = callback.methods.asSequence()
             .flatMap { it.instructions.asSequence() }
@@ -460,6 +476,7 @@ val storyCapabilityConstructors = findMethodListDirect {
 val storySaveCapabilityMethods = findMethodListDirect {
     runCatching {
         val callback = getClassData("Lcom/facebook/stories/viewer/ui/buckets/regular/topbar/menu/StoryViewerMoreButtonCallback;")
+            ?: getClassData("com.facebook.stories.viewer.ui.buckets.regular.topbar.menu.StoryViewerMoreButtonCallback")
             ?: return@findMethodListDirect emptyList()
         val csGName = callback.methods.asSequence()
             .flatMap { it.instructions.asSequence() }
@@ -502,7 +519,7 @@ val storySaveActions = findMethodListDirect {
         }.filter { method ->
             method.returnTypeName == "void" &&
                 method.paramTypeNames.size in 1..2 &&
-                method.paramTypeNames.contains("com.facebook.stories.model.StoryCard")
+                method.paramTypeNames.any { it.contains("StoryCard") }
         }.distinctBy { it.descriptor }
     }.getOrDefault(emptyList())
 }

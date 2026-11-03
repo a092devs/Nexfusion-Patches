@@ -7,6 +7,22 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.2.2
+
+- `NexFusion` 4.2.2:
+  * Facebook Media Downloader Hardening:
+    - Fixed Reels more sheet action builder hook by broadening method matcher return types to support non-void builders in modern releases (e.g. Facebook v585).
+    - Added fallback search patterns for clear mode and save actions, ensuring the download menu option appears reliably on Reels, feed posts, and stories.
+    - Added active player source fallback for reliable video ID and stream resolution across varied Reel player contexts.
+    - Added support for Facebook Wakizashi (`com.facebook.wakizashi`) target package.
+  * Instagram Reels & Feed Meta AI Removal:
+    - Implemented DexKit bytecode fingerprinting for core boolean MobileConfig evaluation methods (`Bae`, `Baf`) to intercept runtime feature gates directly on concrete implementers.
+    - Hooked Meta AI gate methods (class `X.02SH` and associated gate controllers) to suppress Reels AI suggestions, imagine prompts, and action pills.
+    - Expanded MobileConfig flag IDs with 18 newly discovered flags covering Reels, search, and comment summaries.
+  * Upstream Component Synchronization:
+    - Synchronized all extension submodules with the latest upstream dev branch commits (including YouTube components filters, dynamic lyrics, and settings strings).
+    - Verified cross-compatibility across all supported target applications.
+
 ## 4.2.1
 
 - `NexFusion` 4.2.1:

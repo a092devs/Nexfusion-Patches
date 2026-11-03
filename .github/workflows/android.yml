@@ -61,6 +61,13 @@ jobs:
                 name: nexfusion-ci-bundles
                 path: bundles/*/build/outputs/bundle/*.nxb
 
+            - name: Publish Bundle Notice
+              run: |
+                echo "## 📦 Standalone Bundle Downloads" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "> **Note:** GitHub Actions packages runtime artifacts in the table above into a `.zip` archive by default." >> $GITHUB_STEP_SUMMARY
+                echo "> To download the direct standalone **`.nxb`** files without zip packaging, visit the **[Releases](https://github.com/${{ github.repository }}/releases)** page." >> $GITHUB_STEP_SUMMARY
+
             - name: Create Beta Pre-Release
               if: github.event_name == 'push' && github.ref == 'refs/heads/beta'
               run: |
