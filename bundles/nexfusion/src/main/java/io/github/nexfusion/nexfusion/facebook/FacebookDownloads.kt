@@ -1327,7 +1327,6 @@ val DownloadFacebookMedia = patch(
             dex.hookMethod {
                 after { param ->
                     runCatching {
-                        @Suppress("UNCHECKED_CAST")
                         val rows = (param.args.firstOrNull { it is MutableList<*> } as? MutableList<Any>)
                             ?: (param.result as? MutableList<Any>)
                             ?: return@after
