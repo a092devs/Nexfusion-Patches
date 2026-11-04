@@ -157,7 +157,11 @@ jobs:
                     {
                       echo ""
                       echo "### Compatibility"
-                      echo "- **NexFusion Series:** \`$compat_series\` (minimum manager version: \`$min_mgr\`)"
+                      if [[ -n "$min_mgr" ]]; then
+                        echo "- **NexFusion Series:** \`$compat_series\` (minimum manager version: \`$min_mgr\`)"
+                      else
+                        echo "- **NexFusion Series:** \`$compat_series\`"
+                      fi
                       echo "<!-- compat-series: $compat_series -->"
                       echo "<!-- min-manager: $min_mgr -->"
                     } >> release-notes.md
