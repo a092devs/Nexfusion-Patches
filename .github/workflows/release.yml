@@ -152,18 +152,12 @@ jobs:
 
                   # Append machine-readable and human-readable compatibility metadata
                   compat_series="$(sed -nE 's/.*compatibilitySeries = "([^"]+)".*/\1/p' bundles/nexfusion/build.gradle.kts | head -n1)"
-                  min_mgr="$(sed -nE 's/.*minManagerVersion = "([^"]+)".*/\1/p' bundles/nexfusion/build.gradle.kts | head -n1)"
                   if [[ -n "$compat_series" ]]; then
                     {
                       echo ""
                       echo "### Compatibility"
-                      if [[ -n "$min_mgr" ]]; then
-                        echo "- **NexFusion Series:** \`$compat_series\` (minimum manager version: \`$min_mgr\`)"
-                      else
-                        echo "- **NexFusion Series:** \`$compat_series\`"
-                      fi
+                      echo "- **NexFusion Series:** \`$compat_series\`"
                       echo "<!-- compat-series: $compat_series -->"
-                      echo "<!-- min-manager: $min_mgr -->"
                     } >> release-notes.md
                   fi
 

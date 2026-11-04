@@ -53,8 +53,8 @@ nexfusionBundle {
     author = "a092devs"
     descriptionResource = "bundle_description"
     resourcePackageId = 0x4e
-    compatibilitySeries = "4.2"
-    minManagerVersion = "4.0.0"
+    compatibilitySeries = "3.6"
+    minManagerVersion = ""
 }
 
 // Exclude Morphe-specific files that depend on protobuf/innertube/javascriptengine
