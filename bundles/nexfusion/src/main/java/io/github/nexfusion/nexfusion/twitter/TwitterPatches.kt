@@ -94,6 +94,30 @@ val TwitterShowSensitiveMedia = patch(
     installSensitiveMediaDisabler()
 }
 
+val TwitterRemoveViewCount = patch(
+    name = "Remove View Count",
+    description = "Removes public tweet view counters across timelines and tweet detail views.",
+    use = false,
+) {
+    neutralizeTwitterFlags("view_counts_public_visibility_enabled")
+}
+
+val TwitterHideTimelineBookmarks = patch(
+    name = "Hide Timeline Bookmarks",
+    description = "Hides the inline bookmark button from tweet action bars in the timeline.",
+    use = false,
+) {
+    neutralizeTwitterFlags("bookmarks_in_timelines_enabled")
+}
+
+val TwitterDisableImmersivePlayer = patch(
+    name = "Disable Immersive Player",
+    description = "Disables the full-screen vertical swipe video player in explore and timelines.",
+    use = false,
+) {
+    neutralizeTwitterFlags("explore_relaunch_enable_immersive_player_across_twitter")
+}
+
 val TwitterPatches = arrayOf(
     TwitterRemoveAds,
     TwitterUnlockVideoDownloads,
@@ -104,6 +128,9 @@ val TwitterPatches = arrayOf(
     TwitterDmDebloat,
     TwitterPauseSearchSuggestions,
     TwitterShowSensitiveMedia,
+    TwitterRemoveViewCount,
+    TwitterHideTimelineBookmarks,
+    TwitterDisableImmersivePlayer,
 )
 
 // ---- Remove Ads ---------------------------------------------------------------------------------

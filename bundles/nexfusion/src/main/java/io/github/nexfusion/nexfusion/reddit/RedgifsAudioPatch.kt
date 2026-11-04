@@ -318,9 +318,13 @@ val RedgifsAudio = patch(
                         if (mediaPath == null && str.contains("redgifs.com/")) {
                             mediaPath = str
                         } else if (cellId == null && str.length in 8..150) {
-                            val decoded = runCatching {
-                                Base64.decode(str, Base64.DEFAULT).decodeToString()
-                            }.getOrNull()
+                            val decoded = if (str.startsWith(RedgifsAudioHelper.METADATA_CELL_ID_PREFIX)) {
+                                str
+                            } else {
+                                runCatching {
+                                    Base64.decode(str, Base64.DEFAULT).decodeToString()
+                                }.getOrNull()
+                            }
                             if (decoded != null && decoded.startsWith(RedgifsAudioHelper.METADATA_CELL_ID_PREFIX)) {
                                 cellId = decoded.removePrefix(RedgifsAudioHelper.METADATA_CELL_ID_PREFIX)
                             }

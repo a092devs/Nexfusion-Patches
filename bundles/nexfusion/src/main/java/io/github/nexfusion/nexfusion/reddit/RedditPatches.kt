@@ -266,9 +266,36 @@ val HideViewCounts = patch(
         ?.let { XposedBridge.hookMethod(it, XC_MethodReplacement.returnConstant(null)) }
 }
 
+val OpenLinksExternally = patch(
+    name = "Open Reddit links externally",
+    description = "Always opens links in your default external web browser instead of Reddit's in-app Custom Tabs browser.",
+    use = false,
+) {
+    runCatching {
+        XposedBridge.hookAllMethods(
+            Activity::class.java,
+            "startActivity",
+            object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    val intent = param.args.firstOrNull() as? android.content.Intent ?: return
+                    if (intent.action == android.content.Intent.ACTION_VIEW && intent.data?.scheme?.startsWith("http") == true) {
+                        intent.removeExtra("android.support.customtabs.extra.SESSION")
+                        intent.removeExtra("androidx.browser.customtabs.extra.SESSION")
+                        intent.removeExtra("android.support.customtabs.extra.TOOLBAR_COLOR")
+                        intent.removeExtra("androidx.browser.customtabs.extra.TOOLBAR_COLOR")
+                        intent.setPackage(null)
+                        intent.component = null
+                    }
+                }
+            }
+        )
+    }
+}
+
 val RedditPatches = arrayOf(
     DisableScreenshotBanner,
     OpenLinksDirectly,
+    OpenLinksExternally,
     RedgifsAudio,
     RedgifsHd,
     DisableAutoRefresh,

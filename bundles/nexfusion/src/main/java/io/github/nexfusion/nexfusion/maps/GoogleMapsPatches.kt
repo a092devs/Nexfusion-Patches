@@ -177,7 +177,6 @@ val MapsHighRefreshRate = patch(
                         method,
                         object : XC_MethodHook() {
                             override fun beforeHookedMethod(param: MethodHookParam) {
-                                // Default target rate unconstrained
                                 val fps = param.args.firstOrNull() as? Long
                                 if (fps != null && (fps == 0L || fps == 30L || fps == 60L)) {
                                     param.args[0] = 120L
@@ -187,6 +186,208 @@ val MapsHighRefreshRate = patch(
                     )
                 }
             }
+        }
+    }
+}
+
+val MapsEnableSpeedometer = patch(
+    name = "Enable speedometer & speed limits",
+    description = "Forces the real-time driving speedometer and speed limit indicators to be permanently enabled and visible regardless of country or regional restrictions.",
+) {
+    val speedometerKeys = setOf(
+        "speedometer_enabled",
+        "speed_limits_enabled",
+        "speed_limits_ever_shown",
+        "show_speedometer",
+        "driving_mode_speedometer",
+        "isSpeedometerEligible",
+        "speedometerSettingEnabled",
+        "speedLimitSettingEnabled",
+        "allowShowSpeedLimitAndWatermark",
+        "displayConfig.isSpeedometerClickable",
+        "displayConfig.isSpeedometerMphLabelEnabled",
+    )
+
+    runCatching {
+        val spImplClass = runCatching { Class.forName("android.app.SharedPreferencesImpl") }.getOrNull()
+        if (spImplClass != null) {
+            XposedBridge.hookAllMethods(
+                spImplClass,
+                "getBoolean",
+                object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        val key = param.args.firstOrNull() as? String ?: return
+                        if (key in speedometerKeys) {
+                            param.result = true
+                        }
+                    }
+                }
+            )
+        }
+    }
+}
+
+val MapsKeepScreenOn = patch(
+    name = "Keep screen awake",
+    description = "Prevents the screen from dimming or turning off during active navigation and map exploration.",
+) {
+    runCatching {
+        XposedBridge.hookAllMethods(
+            Activity::class.java,
+            "onStart",
+            object : XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    val activity = param.thisObject as? Activity ?: return
+                    activity.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                }
+            }
+        )
+    }
+
+    runCatching {
+        XposedBridge.hookAllMethods(
+            Activity::class.java,
+            "onResume",
+            object : XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    val activity = param.thisObject as? Activity ?: return
+                    activity.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                }
+            }
+        )
+    }
+
+    runCatching {
+        XposedBridge.hookAllMethods(
+            Window::class.java,
+            "clearFlags",
+            object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    val flags = param.args.firstOrNull() as? Int ?: return
+                    if ((flags and WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) != 0) {
+                        param.args[0] = flags and WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON.inv()
+                    }
+                }
+            }
+        )
+    }
+}
+
+val MapsAlwaysShowCompass = patch(
+    name = "Always show compass",
+    description = "Keeps the compass needle and bearing indicator permanently visible on the map instead of automatically hiding when facing North.",
+) {
+    runCatching {
+        val compassButtonClasses = listOf(
+            "com.google.android.libraries.geo.mapcore.internal.ui.CompassButtonView",
+            "com.google.android.apps.gmm.mapcore.CompassButtonView",
+        )
+        for (className in compassButtonClasses) {
+            val clazz = runCatching { classLoader.loadClass(className) }.getOrNull() ?: continue
+            XposedBridge.hookAllMethods(
+                clazz,
+                "setVisibility",
+                object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        param.args[0] = View.VISIBLE
+                    }
+                }
+            )
+            XposedBridge.hookAllMethods(
+                clazz,
+                "setAlpha",
+                object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        val alpha = (param.args.firstOrNull() as? Number)?.toFloat() ?: 1.0f
+                        if (alpha < 0.2f) {
+                            param.args[0] = 1.0f
+                        }
+                    }
+                }
+            )
+        }
+    }
+
+    runCatching {
+        XposedBridge.hookAllMethods(
+            View::class.java,
+            "setVisibility",
+            object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    val view = param.thisObject as? View ?: return
+                    val desc = view.contentDescription?.toString().orEmpty()
+                    val tag = view.tag?.toString().orEmpty()
+                    if (tag.contains("compass", ignoreCase = true) ||
+                        desc.contains("compass", ignoreCase = true)
+                    ) {
+                        param.args[0] = View.VISIBLE
+                    }
+                }
+            }
+        )
+    }
+}
+
+val MapsZoomButtons = patch(
+    name = "Force zoom buttons",
+    description = "Forces dedicated zoom in and zoom out (+/-) buttons to always appear on map screens for easier one-handed navigation.",
+) {
+    runCatching {
+        val spImplClass = runCatching { Class.forName("android.app.SharedPreferencesImpl") }.getOrNull()
+        if (spImplClass != null) {
+            XposedBridge.hookAllMethods(
+                spImplClass,
+                "getBoolean",
+                object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        val key = param.args.firstOrNull() as? String ?: return
+                        if (key.contains("zoom_button", ignoreCase = true) ||
+                            key == "allowZoomButtonsEnabled"
+                        ) {
+                            param.result = true
+                        }
+                    }
+                }
+            )
+        }
+    }
+}
+
+val MapsDisablePrompts = patch(
+    name = "Suppress calibration prompts",
+    description = "Suppresses repetitive compass figure-8 calibration popups and location accuracy alert dialogs.",
+) {
+    runCatching {
+        val spImplClass = runCatching { Class.forName("android.app.SharedPreferencesImpl") }.getOrNull()
+        if (spImplClass != null) {
+            XposedBridge.hookAllMethods(
+                spImplClass,
+                "getInt",
+                object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        val key = param.args.firstOrNull() as? String ?: return
+                        if (key == "calibrate_compass_figure_eight_dialog_shown_count" ||
+                            key == "calibrate_compass_ar_camera_dialog_shown_count"
+                        ) {
+                            param.result = 999
+                        }
+                    }
+                }
+            )
+            XposedBridge.hookAllMethods(
+                spImplClass,
+                "getBoolean",
+                object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        val key = param.args.firstOrNull() as? String ?: return
+                        if (key == "calibrate_compass_dialog" ||
+                            key == "calibrate_compass_dialog_ar_camera"
+                        ) {
+                            param.result = false
+                        }
+                    }
+                }
+            )
         }
     }
 }
@@ -299,6 +500,11 @@ val MapsBlackTheme = patch(
 val GoogleMapsPatches = arrayOf(
     MapsHideAds,
     MapsHighRefreshRate,
+    MapsEnableSpeedometer,
+    MapsKeepScreenOn,
+    MapsAlwaysShowCompass,
+    MapsZoomButtons,
+    MapsDisablePrompts,
     MapsDisableTelemetry,
     MapsHideClutter,
     MapsBlackTheme,
@@ -375,4 +581,3 @@ private fun View.collapse() {
         layoutParams = lp
     }
 }
-

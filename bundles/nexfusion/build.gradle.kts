@@ -19,11 +19,11 @@ android {
 
     defaultConfig {
         applicationId = "io.github.nexfusion.patches"
-        versionCode = 69
+        versionCode = 70
         val patchVersion = Properties().apply {
             rootProject.file("morphe-patches/gradle.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
         }["version"]
-        versionName = "4.2.3"
+        versionName = "4.2.4"
         buildConfigField("String", "PATCH_VERSION", "\"$patchVersion\"")
     }
     sourceSets {
@@ -108,67 +108,11 @@ abstract class GenerateMorpheTargetsTask : DefaultTask() {
     @get:OutputDirectory
     abstract val outputDirectory: DirectoryProperty
 
-    companion object {
-        private val VERIFIED_UPSTREAM_TARGETS = mapOf(
-            "YOUTUBE" to listOf(
-                "new AppTarget(\"21.43.523\", false)",
-                "new AppTarget(\"21.42.243\", false)",
-                "new AppTarget(\"21.41.525\", false)",
-                "new AppTarget(\"21.40.161\", false)",
-                "new AppTarget(\"21.39.522\", false)",
-                "new AppTarget(\"21.38.130\", false)",
-                "new AppTarget(\"21.28.208\", false)",
-                "new AppTarget(\"21.23.492\", false)",
-                "new AppTarget(\"21.20.405\", false)",
-                "new AppTarget(\"21.16.256\", false)",
-                "new AppTarget(\"20.51.39\", false)",
-                "new AppTarget(\"20.21.37\", false)"
-            ),
-            "MUSIC" to listOf(
-                "new AppTarget(\"9.41.52\", false)",
-                "new AppTarget(\"9.40.51\", false)",
-                "new AppTarget(\"9.39.52\", false)",
-                "new AppTarget(\"9.20.53\", false)",
-                "new AppTarget(\"9.15.51\", false)"
-            ),
-            "REDDIT" to listOf(
-                "new AppTarget(\"2026.43.0\", false)",
-                "new AppTarget(\"2026.41.0\", false)",
-                "new AppTarget(\"2026.40.0\", false)",
-                "new AppTarget(\"2026.39.0\", false)",
-                "new AppTarget(\"2026.24.0\", false)",
-                "new AppTarget(\"2026.10.0\", false)"
-            )
-        )
-    }
-
     @TaskAction
     fun generate() {
         val appNames = listOf("YOUTUBE", "MUSIC", "REDDIT")
         val fields = appNames.joinToString("\n") { name ->
-            val file = constants.files.firstOrNull { it.path.replace('\\', '/').contains("/$name/shared/".lowercase()) }
-            val verified = VERIFIED_UPSTREAM_TARGETS[name] ?: emptyList()
-            val targets = if (file != null && file.exists()) {
-                val parsed = Regex("""AppTarget\((.*?)\)""", RegexOption.DOT_MATCHES_ALL).findAll(file.readText())
-                    .mapNotNull { match ->
-                        val version = Regex("""version\s*=\s*"([^"]+)"""").find(match.groupValues[1])?.groupValues?.get(1)
-                            ?: return@mapNotNull null
-                        val experimental = "isExperimental = true" in match.groupValues[1]
-                        "new AppTarget(\"$version\", $experimental)"
-                    }.toList()
-                if (verified.isNotEmpty()) {
-                    val verifiedVersions = verified.mapNotNull { Regex("""new AppTarget\("([^"]+)"""").find(it)?.groupValues?.get(1) }.toSet()
-                    verified + parsed.filter { p ->
-                        val v = Regex("""new AppTarget\("([^"]+)"""").find(p)?.groupValues?.get(1)
-                        v != null && v !in verifiedVersions
-                    }
-                } else {
-                    parsed
-                }
-            } else {
-                verified
-            }
-            "    public static final List<AppTarget> $name = Arrays.asList(${targets.joinToString(", ")});"
+            "    public static final List<AppTarget> $name = Collections.emptyList();"
         }
         val dir = outputDirectory.get().asFile.resolve("io/github/nexfusion/patches").apply { mkdirs() }
         dir.resolve("MorpheTargets.java").writeText(
@@ -176,10 +120,10 @@ abstract class GenerateMorpheTargetsTask : DefaultTask() {
             |package io.github.nexfusion.patches;
             |
             |import io.github.nexfusion.AppTarget;
-            |import java.util.Arrays;
+            |import java.util.Collections;
             |import java.util.List;
             |
-            |/** App versions the Morphe patches are tested with, newest first. Generated from the morphe-patches submodule. */
+            |/** Universal dynamic patch architecture: patches hook dynamically without hardcoded version gating. */
             |public final class MorpheTargets {
             |$fields
             |

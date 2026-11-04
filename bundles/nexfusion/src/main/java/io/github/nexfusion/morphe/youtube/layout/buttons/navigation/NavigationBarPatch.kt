@@ -10,6 +10,8 @@ import io.github.nexfusion.HookDsl
 import io.github.nexfusion.IScopedHookCallback
 import io.github.nexfusion.hookMethod
 import io.github.nexfusion.morphe.setExtensionIsPatchIncluded
+import io.github.nexfusion.morphe.shared.misc.settings.preference.ListPreference
+import io.github.nexfusion.morphe.shared.misc.settings.preference.NonInteractivePreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.PreferenceScreenPreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.PreferenceScreenPreference.Sorting
 import io.github.nexfusion.morphe.shared.misc.settings.preference.SwitchPreference
@@ -23,6 +25,7 @@ import io.github.nexfusion.morphe.youtube.misc.navigation.hookNavigationButtonCr
 import io.github.nexfusion.morphe.youtube.misc.playservice.VersionCheck
 import io.github.nexfusion.morphe.youtube.misc.playservice.is_20_26_or_greater
 import io.github.nexfusion.morphe.youtube.misc.playservice.is_20_31_or_greater
+import io.github.nexfusion.morphe.youtube.misc.playservice.is_21_35_or_greater
 import io.github.nexfusion.morphe.youtube.misc.settings.PreferenceScreen
 import io.github.nexfusion.patch
 import io.github.nexfusion.scopedHook
@@ -45,18 +48,35 @@ val NavigationBar = patch(
         SwitchPreference("morphe_hide_create_button"),
         SwitchPreference("morphe_hide_subscriptions_button"),
         SwitchPreference("morphe_hide_notifications_button"),
-//        SwitchPreference("morphe_show_search_button"),
-//        ListPreference("morphe_show_search_button_index"),
-//        SwitchPreference("morphe_show_settings_button"),
-//        ListPreference("morphe_show_settings_button_index"),
-//        SwitchPreference("morphe_show_settings_button_type", summary = true),
+        SwitchPreference("morphe_show_search_button"),
+        SwitchPreference("morphe_show_watch_later_button"),
+        SwitchPreference("morphe_show_settings_button"),
+        SwitchPreference("morphe_show_settings_button_type", summary = true),
+        NonInteractivePreference(
+            key = "morphe_navigation_buttons_order",
+            tag = app.morphe.extension.youtube.settings.preference.NavigationButtonsOrderPreference::class.java,
+            selectable = true
+        ),
         SwitchPreference("morphe_swap_create_with_notifications_button", summary = true),
-//        SwitchPreference("morphe_hide_navigation_bar"),
-//        SwitchPreference("morphe_narrow_navigation_buttons", summary = true),
+        SwitchPreference("morphe_hide_navigation_bar"),
+        SwitchPreference("morphe_narrow_navigation_buttons", summary = true),
         SwitchPreference("morphe_hide_navigation_button_labels"),
+        SwitchPreference("morphe_disable_icon_only_navigation_buttons", summary = true)
+    )
+
+    if (is_21_35_or_greater) {
+        navPreferences += SwitchPreference("morphe_disable_toolbar_navigation_tabs", summary = true)
+    }
+
+    navPreferences += listOf(
         SwitchPreference("morphe_hide_navigation_new_content_dot"),
         SwitchPreference("morphe_navigation_bar_animations", summary = true),
-//        SwitchPreference("morphe_disable_translucent_navigation", summary = true)
+        ListPreference("morphe_navigation_bar_style"),
+        SwitchPreference("morphe_navigation_bar_glass", summary = true),
+        NonInteractivePreference(
+            key = "morphe_navigation_bar_glass_opacity",
+            tag = app.morphe.extension.shared.settings.preference.SeekBarPreference::class.java
+        )
     )
 
     if (is_20_31_or_greater) {
@@ -65,7 +85,7 @@ val NavigationBar = patch(
 
     PreferenceScreen.GENERAL.addPreferences(
         PreferenceScreenPreference(
-            key = "morphe_navigation_buttons_screen",
+            key = "morphe_navigation_bar_screen",
             sorting = Sorting.UNSORTED,
             preferences = navPreferences
         )
@@ -96,9 +116,9 @@ val NavigationBar = patch(
     // gets, so all of them are turned on whenever the window is drawn edge to edge. The bar then
     // looks the same on every account, and the opaque option below paints over the same
     // translucent bar everywhere.
-    insertLiteralOverride(45630927L, NavigationBarPatch::useTranslucentNavigationBar)
+    insertLiteralOverride(45630927L, NavigationBarPatch::useTranslucentNavigationBarBackground)
     insertLiteralOverride(45632194L, NavigationBarPatch::useTranslucentNavigationBar)
-    insertLiteralOverride(45631257L, NavigationBarPatch::useTranslucentNavigationBar)
+    insertLiteralOverride(45631257L, NavigationBarPatch::useFeedBehindNavigationBar)
     insertLiteralOverride(45752241L, NavigationBarPatch::useFixedBottomBarRoom)
     insertLiteralOverride(45724388L, false)
 

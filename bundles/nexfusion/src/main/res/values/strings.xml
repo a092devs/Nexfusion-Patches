@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">NexFusion Patches</string>
-    <string name="bundle_description">Unified patch suite for YouTube, YT Music, Google Photos, Crunchyroll, Discord, Facebook, Gboard, Gmail, Google (Discover), Google Maps, Instagram, Kick, LinkedIn, Proton VPN, Reddit, Telegram, Twitch, and X.</string>
+    <string name="bundle_description">Unified patch suite with dynamic bytecode hooks and feature enhancements for supported applications.</string>
 </resources>

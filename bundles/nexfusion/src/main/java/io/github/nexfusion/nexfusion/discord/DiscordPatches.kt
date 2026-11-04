@@ -42,12 +42,30 @@ val DisableAdvertisingIdentifiers = patch(
     installPrivacyStubs(PrivacyTargets.advertising)
 }
 
+val KeepBluetoothAudioClear = patch(
+    name = "Keep Bluetooth audio clear in calls",
+    description = "Prevents Discord from forcing Bluetooth SCO mode during calls, keeping high-quality music/audio profile.",
+    use = false,
+) {
+    for (className in listOf("com.discord.audio.DiscordAudioManager", "com.discord.audio.DiscordAudioManager2")) {
+        val cls = runCatching { classLoader.loadClass(className) }.getOrNull() ?: continue
+        for (m in cls.declaredMethods) {
+            if (m.name == "setCommunicationModeOn") {
+                runCatching {
+                    de.robv.android.xposed.XposedBridge.hookMethod(m, de.robv.android.xposed.XC_MethodReplacement.DO_NOTHING)
+                }
+            }
+        }
+    }
+}
+
 val DiscordPatches = arrayOf(
     DisableCrashReporting,
     DisableTelemetry,
     DisableInstallAttribution,
     DisableAdvertisingIdentifiers,
     UsePhoneFont,
+    KeepBluetoothAudioClear,
 )
 
 private fun IHook.installPrivacyStubs(targets: List<PrivacyTarget>) {

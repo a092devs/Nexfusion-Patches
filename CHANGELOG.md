@@ -7,6 +7,36 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.2.4
+
+- `NexFusion` 4.2.4:
+  * Google Maps Feature Expansion:
+    - Added Enable speedometer & speed limits patch to unlock real-time driving speed and speed limit indicators globally without regional restrictions.
+    - Added Keep screen awake patch to prevent display dimming or sleeping during navigation and map exploration.
+    - Added Always show compass patch to keep the compass needle and bearing indicator permanently visible even when facing North.
+    - Added Force zoom buttons patch to restore dedicated on-screen zoom in and zoom out controls (+/-).
+    - Added Suppress calibration prompts patch to bypass repetitive compass figure-8 calibration and location accuracy dialogs.
+  * YouTube Navigation Bar & Layout:
+    - Added Navigation buttons order and Toolbar buttons order custom ordering preferences.
+    - Added Glass navigation bar lit rim toggle and translucent navigation background overrides.
+    - Added Show Watch Later button setting.
+    - Synchronized navigation bar preference screen to morphe_navigation_bar_screen.
+    - Added toolbar navigation tabs disabling and icon-only button controls for modern YouTube builds.
+  * X (Twitter) Enhancements:
+    - Added Remove View Count patch to suppress public tweet view counters across timelines and tweet detail views.
+    - Added Hide Timeline Bookmarks patch to remove the inline bookmark button from tweet action bars in the timeline.
+    - Added Disable Immersive Player patch to prevent full-screen vertical swipe video player in explore and timelines.
+  * Reddit Fixes & Enhancements:
+    - Fixed Redgifs audio stream extraction on Reddit 2026.40+ by supporting unencoded plain metadata cells.
+    - Added Open Reddit links externally patch to route web links directly to default external browsers instead of in-app Custom Tabs.
+  * Discord Audio Enhancement:
+    - Added Keep Bluetooth audio clear in calls patch to prevent forcing Bluetooth SCO profile during voice calls, preserving high-fidelity audio.
+  * Bundle Metadata & Description:
+    - Streamlined bundle description to eliminate redundant app enumeration.
+  * Universal Dynamic Patching:
+    - Enforced dynamic runtime matching across all 20 supported target applications without hardcoded target version constraints.
+    - Preserved universal cross-compatibility across all supported target applications.
+
 ## 4.2.3
 
 - `NexFusion` 4.2.3:
