@@ -3,7 +3,8 @@ package io.github.nexfusion.nexfusion.mxplayer
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import de.robv.android.xposed.XC_MethodHook
@@ -12,10 +13,12 @@ import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
 import io.github.nexfusion.PatcherLog
 import io.github.nexfusion.patch
+import java.io.IOException
+import java.net.URL
 
 val MxPlayerBlockAds = patch(
     name = "Block ads",
-    description = "Removes startup splash ads, Google Mobile Ads (AdMob), InMobi, and in-feed/banner ad views in MX Player.",
+    description = "Removes startup splash ads, Google AdMob, Monetize-v2 ad engine, banner/interstitial/native ads, and player ads in MX Player.",
 ) {
     // 1. SharedPreferences remote config & ad status overrides
     runCatching {
@@ -27,17 +30,29 @@ val MxPlayerBlockAds = patch(
                 override fun beforeHookedMethod(param: MethodHookParam) {
                     val key = param.args.firstOrNull() as? String ?: return
                     when (key) {
+                        // In MX Player, shouldWelcomeAdEnabled is an INVERTED flag: true = Welcome Ad DISABLED.
                         "shouldWelcomeAdEnabled",
-                        "is_splash_ad_enabled",
-                        "ad_enabled",
-                        "interstitial_ad_enabled" -> {
-                            param.result = false
-                        }
                         "ad_removed",
                         "is_ad_removed",
                         "no_ads",
-                        "pro_unlocked" -> {
+                        "pro_unlocked",
+                        "is_pro",
+                        "is_vip",
+                        "is_subscribed" -> {
                             param.result = true
+                        }
+                        "is_splash_ad_enabled",
+                        "ad_enabled",
+                        "interstitial_ad_enabled",
+                        "rewarded_ad_enabled",
+                        "banner_ad_enabled",
+                        "native_ad_enabled",
+                        "app_open_ad_enabled",
+                        "bannerForPlayer",
+                        "key_has_check_video_ad",
+                        "local_pause_recomm",
+                        "for_you_entry_enabled" -> {
+                            param.result = false
                         }
                     }
                 }
@@ -45,7 +60,176 @@ val MxPlayerBlockAds = patch(
         )
     }
 
-    // 2. Suppress AdMob (Google Mobile Ads) views & loaders
+    // 2. GlobalConfig pure local phone mode & feature gates
+    runCatching {
+        val globalConfigCandidates = listOf(
+            "com.mxtech.videoplayer.ad.GlobalConfig",
+            "com.mxtech.videoplayer.GlobalConfig",
+            "com.mxtech.videoplayer.ad.config.GlobalConfig",
+            "com.mxtech.videoplayer.ad.common.GlobalConfig",
+            "com.mxtech.videoplayer.ad.utils.GlobalConfig",
+            "com.mxtech.videoplayer.utils.GlobalConfig",
+        )
+        val gcClass = globalConfigCandidates.firstNotNullOfOrNull {
+            runCatching { classLoader.loadClass(it) }.getOrNull()
+        }
+        if (gcClass != null) {
+            gcClass.declaredMethods.filter { it.returnType == Boolean::class.javaPrimitiveType }.forEach { method ->
+                when (method.name) {
+                    "j", "B" -> {
+                        // j() = pure local mode, B() = local music
+                        XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(true))
+                    }
+                    "C", "i", "o", "F", "y", "A", "w", "v", "E", "D", "t", "u", "x", "f", "l" -> {
+                        // C() = online mode, i/o = region OTT, F = streaming, y = live TV, A = Tube,
+                        // w = games, v = shorts/fatafat, E = upcoming, D = OTT download, t = bazaar,
+                        // u = download promo, x = secondary online tab, f = Amazon game, l = YT search
+                        XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(false))
+                    }
+                }
+            }
+        }
+    }
+
+    // 3. Monetize-v2 Ad Engine suppression (AdInitializer, SharedStateManager, BannerManager, etc.)
+    runCatching {
+        val monetizeClasses = listOf(
+            "com.mxplay.monetize.v2.shared.SharedStateManager",
+            "com.mxplay.monetize.v2.adinitializer.AdInitializer",
+            "com.mxplay.monetize.v2.admanager.AdManagerV2",
+            "com.mxplay.monetize.v2.loader.BannerManager",
+            "com.mxplay.monetize.v2.interstitial.InterstitialV2",
+            "com.mxplay.monetize.v2.rewarded.RewardedAdPlacement",
+            "com.mxplay.monetize.v2.nativead.PanelNative",
+            "com.mxplay.monetize.v2.nativead.TrayNative",
+            "com.mxplay.monetize.v2.videoroll.VideoRollManager",
+            "com.mxplay.monetize.v2.loader.OpenAds",
+            "com.mxtech.videoplayer.ad.online.ad.appopen.AppOpenAdManager",
+            "com.mxtech.videoplayer.ad.online.abtest.LocalOnlyExitAdTest",
+        )
+        for (className in monetizeClasses) {
+            val clazz = runCatching { classLoader.loadClass(className) }.getOrNull() ?: continue
+            clazz.declaredMethods.forEach { method ->
+                if (method.name == "<init>" || method.name == "<clinit>") return@forEach
+                val returnType = method.returnType
+                if (returnType == Boolean::class.javaPrimitiveType) {
+                    XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(false))
+                } else if (returnType == Void.TYPE) {
+                    if (method.name.startsWith("load") ||
+                        method.name.startsWith("show") ||
+                        method.name.startsWith("preload") ||
+                        method.name.startsWith("init") ||
+                        method.name == "a" || method.name == "b" || method.name == "c" ||
+                        method.name == "e" || method.name == "p" || method.name == "P" || method.name == "O" ||
+                        method.parameterTypes.isEmpty()
+                    ) {
+                        XposedBridge.hookMethod(method, XC_MethodReplacement.DO_NOTHING)
+                    }
+                } else if (!returnType.isPrimitive && (method.name.startsWith("load") || method.name.startsWith("get") || method.name == "a")) {
+                    XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(null))
+                }
+            }
+        }
+    }
+
+    // 4. Welcome Screen Ad & AppOpen Ad suppression in ActivityWelcomeMX
+    runCatching {
+        val welcomeActivityClass = runCatching {
+            classLoader.loadClass("com.mxtech.videoplayer.ad.ActivityWelcomeMX")
+        }.getOrNull()
+        if (welcomeActivityClass != null) {
+            XposedBridge.hookAllMethods(
+                welcomeActivityClass,
+                "onCreate",
+                object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        // Disarm boolean ad flags (q0, etc.) on the welcome activity instance
+                        welcomeActivityClass.declaredFields.filter { it.type == Boolean::class.javaPrimitiveType }.forEach { field ->
+                            runCatching {
+                                field.isAccessible = true
+                                if (field.name == "q0") {
+                                    field.setBoolean(param.thisObject, false)
+                                }
+                            }
+                        }
+                    }
+                }
+            )
+        }
+    }
+
+    // 5. Video Player screen ad hooks (ActivityScreen)
+    runCatching {
+        val screenClasses = listOf(
+            "com.mxtech.videoplayer.ad.ActivityScreen",
+            "com.mxtech.videoplayer.ActivityScreen",
+        )
+        for (className in screenClasses) {
+            val clazz = runCatching { classLoader.loadClass(className) }.getOrNull() ?: continue
+            clazz.declaredMethods.forEach { method ->
+                val nameLower = method.name.lowercase()
+                if (nameLower.contains("preroll") ||
+                    nameLower.contains("midroll") ||
+                    nameLower.contains("pausead") ||
+                    nameLower.contains("pause_recomm") ||
+                    nameLower.contains("videoroll") ||
+                    nameLower.contains("bannerforplayer") ||
+                    nameLower.contains("preloadcustom")
+                ) {
+                    if (method.returnType == Boolean::class.javaPrimitiveType) {
+                        XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(false))
+                    } else if (method.returnType == Void.TYPE) {
+                        XposedBridge.hookMethod(method, XC_MethodReplacement.DO_NOTHING)
+                    }
+                }
+                if (method.name == "isLocalToOnlineRecom") {
+                    XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(false))
+                }
+            }
+        }
+    }
+
+    // 6. Folder list native ad rows & promo shortcut strip (LocalTilesManager & AdMediaListFragment)
+    runCatching {
+        val tilesClass = runCatching {
+            classLoader.loadClass("com.mxtech.videoplayer.ad.local.tiles.LocalTilesManager")
+        }.getOrNull()
+        if (tilesClass != null) {
+            tilesClass.declaredMethods.forEach { method ->
+                if (method.returnType == Void.TYPE) {
+                    XposedBridge.hookMethod(method, XC_MethodReplacement.DO_NOTHING)
+                } else if (method.returnType == Boolean::class.javaPrimitiveType) {
+                    XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(false))
+                } else if (method.returnType == List::class.java) {
+                    XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(emptyList<Any>()))
+                }
+            }
+        }
+
+        val mediaFragmentClasses = listOf(
+            "com.mxtech.videoplayer.ad.a",
+            "com.mxtech.videoplayer.list.MediaListFragment",
+        )
+        for (className in mediaFragmentClasses) {
+            val clazz = runCatching { classLoader.loadClass(className) }.getOrNull() ?: continue
+            clazz.declaredMethods.forEach { method ->
+                val nameLower = method.name.lowercase()
+                if (nameLower.contains("tile") ||
+                    nameLower.contains("promo") ||
+                    nameLower.contains("foryou") ||
+                    nameLower.contains("nativead")
+                ) {
+                    if (method.returnType == Boolean::class.javaPrimitiveType) {
+                        XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(false))
+                    } else if (method.returnType == Void.TYPE) {
+                        XposedBridge.hookMethod(method, XC_MethodReplacement.DO_NOTHING)
+                    }
+                }
+            }
+        }
+    }
+
+    // 7. Suppress AdMob (Google Mobile Ads) views & loaders
     runCatching {
         val adViewClasses = listOf(
             "com.google.android.gms.ads.AdView",
@@ -74,7 +258,7 @@ val MxPlayerBlockAds = patch(
         }
     }
 
-    // 3. Suppress Interstitial and AdLoader calls
+    // 8. Suppress Interstitial and AdLoader calls from third-party networks
     runCatching {
         val adClasses = listOf(
             "com.google.android.gms.ads.interstitial.InterstitialAd",
@@ -100,8 +284,14 @@ val MxPlayerBlockAds = patch(
         }
     }
 
-    // 4. Collapse ad container view layouts dynamically
+    // 9. Collapse ad container view layouts dynamically
     runCatching {
+        val adKeywords = setOf(
+            "ad_container", "native_ad", "banner_ad", "adview", "ll_ad", "fl_ad", "feed_ad",
+            "splash_ad", "interstitial_ad", "ad_frame", "ad_layout", "ad_view_container",
+            "ad_wrapper", "ad_banner", "native_ad_view", "pause_recomm", "preloadcustom",
+            "fab_local", "card_view_ad", "ad_card", "ll_ad_root"
+        )
         XposedBridge.hookAllMethods(
             View::class.java,
             "onAttachedToWindow",
@@ -113,16 +303,7 @@ val MxPlayerBlockAds = patch(
                     if (id <= 0) return
                     val entryName = runCatching { res.getResourceEntryName(id) }.getOrNull() ?: return
                     val lower = entryName.lowercase()
-                    if (lower.contains("ad_container") ||
-                        lower.contains("native_ad") ||
-                        lower.contains("banner_ad") ||
-                        lower.contains("adview") ||
-                        lower.contains("ll_ad") ||
-                        lower.contains("fl_ad") ||
-                        lower.contains("feed_ad") ||
-                        lower.contains("splash_ad") ||
-                        lower.contains("interstitial_ad")
-                    ) {
+                    if (adKeywords.any { lower.contains(it) }) {
                         view.visibility = View.GONE
                         view.layoutParams?.let { lp ->
                             lp.height = 0
@@ -134,13 +315,39 @@ val MxPlayerBlockAds = patch(
             }
         )
     }
+
+    // 10. HTTP Network Ad & Telemetry Blocker
+    runCatching {
+        XposedBridge.hookAllMethods(
+            URL::class.java,
+            "openConnection",
+            object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    val url = (param.thisObject as? URL)?.toString()?.lowercase() ?: return
+                    if (url.contains("evt.mxplay.com") ||
+                        url.contains("googleads") ||
+                        url.contains("doubleclick.net") ||
+                        url.contains("inmobi.com") ||
+                        url.contains("amazon-adsystem.com") ||
+                        url.contains("comscore") ||
+                        url.contains("clevertap") ||
+                        url.contains("appsflyer") ||
+                        url.contains("crashlytics") ||
+                        url.contains("tab_online")
+                    ) {
+                        param.throwable = IOException("Blocked by NexFusion ad filter")
+                    }
+                }
+            }
+        )
+    }
 }
 
 val MxPlayerInstantSplash = patch(
     name = "Instant splash",
     description = "Bypasses splash screen delay, consent dialogs, and heavy telemetry to open the media list immediately.",
 ) {
-    // 1. Suppress UMP consent dialog popups
+    // 1. Suppress UMP consent dialog popups & GDPR telemetry
     runCatching {
         val umpClass = classLoader.loadClass("com.google.android.ump.UserMessagingPlatform")
         XposedBridge.hookAllMethods(
@@ -150,7 +357,23 @@ val MxPlayerInstantSplash = patch(
         )
     }
 
-    // 2. Suppress unread channel queries and heavy splash network tasks
+    runCatching {
+        val gdprLogClass = classLoader.loadClass("com.mxtech.videoplayer.ad.GdprLog")
+        gdprLogClass.declaredMethods.forEach { method ->
+            if (method.returnType == Void.TYPE) {
+                XposedBridge.hookMethod(method, XC_MethodReplacement.DO_NOTHING)
+            }
+        }
+    }
+
+    runCatching {
+        val nationalClass = classLoader.loadClass("com.mxtech.videoplayer.ad.NationalUtil")
+        nationalClass.declaredMethods.filter { it.returnType == Boolean::class.javaPrimitiveType }.forEach { method ->
+            XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(false))
+        }
+    }
+
+    // 2. Suppress unread channel queries, Amazon metrics, and heavy splash network tasks
     runCatching {
         val channelHelperClass = runCatching {
             classLoader.loadClass("com.mxtech.videoplayer.ad.online.mxchannel.utils.MXChannelUnreadHelper")
@@ -197,9 +420,9 @@ val MxPlayerInstantSplash = patch(
 
 val MxPlayerLocalMode = patch(
     name = "Clean local mode",
-    description = "Disables the online streaming bottom navigation bar to restore a clean, offline-first local media player.",
+    description = "Disables the online streaming bottom navigation bar to restore a clean, offline-first local media player, and keeps Me accessible from top toolbar.",
 ) {
-    // Hide the online bottom bar in ActivityMediaList
+    // 1. Hide the online bottom bar in ActivityMediaList
     runCatching {
         XposedBridge.hookAllMethods(
             View::class.java,
@@ -228,11 +451,12 @@ val MxPlayerLocalMode = patch(
         )
     }
 
-    // Hook bottom bar visibility toggles
+    // 2. Hook bottom bar visibility toggles
     runCatching {
         val mediaListClasses = listOf(
             "com.mxtech.videoplayer.ad.ActivityMediaList",
             "com.mxtech.videoplayer.pro.ActivityMediaList",
+            "com.mxtech.videoplayer.ActivityMediaList",
         )
         for (className in mediaListClasses) {
             val clazz = runCatching { classLoader.loadClass(className) }.getOrNull() ?: continue
@@ -254,11 +478,66 @@ val MxPlayerLocalMode = patch(
             }
         }
     }
+
+    // 3. Ensure top action bar Me / Settings icon is visible and wired to MXLocalMePageActivity
+    runCatching {
+        val mediaListClasses = listOf(
+            "com.mxtech.videoplayer.ad.ActivityMediaList",
+            "com.mxtech.videoplayer.pro.ActivityMediaList",
+            "com.mxtech.videoplayer.ActivityMediaList",
+        )
+        for (className in mediaListClasses) {
+            val clazz = runCatching { classLoader.loadClass(className) }.getOrNull() ?: continue
+            XposedBridge.hookAllMethods(
+                clazz,
+                "onPrepareOptionsMenu",
+                object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam) {
+                        val menu = param.args.firstOrNull() as? Menu ?: return
+                        for (i in 0 until menu.size()) {
+                            val item = menu.getItem(i)
+                            val title = item.title?.toString()?.lowercase() ?: ""
+                            if (title.contains("me") || title.contains("account") || title.contains("setting") ||
+                                item.itemId == 0x7f0b0051 /* R.id.account */
+                            ) {
+                                item.isVisible = true
+                                item.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
+                            }
+                        }
+                    }
+                }
+            )
+            XposedBridge.hookAllMethods(
+                clazz,
+                "onOptionsItemSelected",
+                object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        val item = param.args.firstOrNull() as? MenuItem ?: return
+                        val title = item.title?.toString()?.lowercase() ?: ""
+                        if (title.contains("me") || title.contains("account") || title.contains("setting") ||
+                            item.itemId == 0x7f0b0051
+                        ) {
+                            val activity = param.thisObject as? Activity ?: return
+                            val targetClass = runCatching {
+                                classLoader.loadClass("com.mxtech.videoplayer.ad.subscriptions.ui.metab.activity.MXLocalMePageActivity")
+                            }.getOrNull() ?: runCatching {
+                                classLoader.loadClass("com.mxtech.videoplayer.ad.subscriptions.ui.metab.activity.MXMePageActivity")
+                            }.getOrNull()
+                            if (targetClass != null) {
+                                activity.startActivity(Intent(activity, targetClass))
+                                param.result = true
+                            }
+                        }
+                    }
+                }
+            )
+        }
+    }
 }
 
 val MxPlayerCleanLayout = patch(
     name = "Clean layout & sidebar",
-    description = "Removes promotional tiles, cloud recycle bin upsells, and cluttered player sidebar items.",
+    description = "Removes promotional tiles, WhatsApp status scanner, cloud recycle bin upsells, and cluttered player sidebar items.",
 ) {
     // 1. Suppress recycle bin cloud upsell dialog
     runCatching {
@@ -287,6 +566,11 @@ val MxPlayerCleanLayout = patch(
 
     // 2. Hide promotional and unnecessary tiles in Me / Settings tabs
     runCatching {
+        val promoKeywords = setOf(
+            "whatsapp_layout", "ll_add_to_playlist", "transfer_share", "option_private_folder",
+            "recycle_bin_tile", "vip_banner", "gold_banner", "promo_banner", "status_saver",
+            "legal_card", "help_card", "data_privacy"
+        )
         XposedBridge.hookAllMethods(
             View::class.java,
             "onAttachedToWindow",
@@ -298,23 +582,46 @@ val MxPlayerCleanLayout = patch(
                     if (id <= 0) return
                     val entryName = runCatching { res.getResourceEntryName(id) }.getOrNull() ?: return
                     val lower = entryName.lowercase()
-                    if (lower == "whatsapp_layout" ||
-                        lower == "ll_add_to_playlist" ||
-                        lower == "transfer_share" ||
-                        lower == "option_private_folder" ||
-                        lower.contains("recycle_bin_tile") ||
-                        lower.contains("vip_banner") ||
-                        lower.contains("gold_banner") ||
-                        lower.contains("promo_banner")
-                    ) {
+                    if (promoKeywords.any { lower.contains(it) }) {
                         view.visibility = View.GONE
+                        view.layoutParams?.let { lp ->
+                            lp.height = 0
+                            view.layoutParams = lp
+                        }
                     }
                 }
             }
         )
     }
 
-    // 3. Player sidebar clutter removal (Bookmark, Favorite, Playlist, Tutorial, Rate Us)
+    // 3. Disarm LocalMeFragment promo and WhatsApp background scanner coroutine
+    runCatching {
+        val meFragmentClass = runCatching {
+            classLoader.loadClass("com.mxtech.videoplayer.ad.subscriptions.ui.metab.fragment.LocalMeFragment")
+        }.getOrNull()
+        if (meFragmentClass != null) {
+            meFragmentClass.declaredMethods.forEach { method ->
+                if (method.name.contains("openNavigationPromotion", ignoreCase = true)) {
+                    XposedBridge.hookMethod(method, XC_MethodReplacement.DO_NOTHING)
+                } else if (method.parameterTypes.size == 1 && method.parameterTypes[0] == Boolean::class.javaPrimitiveType && method.returnType == Boolean::class.javaPrimitiveType) {
+                    XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(false))
+                }
+            }
+        }
+
+        val whatsappCoroutineClass = runCatching {
+            classLoader.loadClass("com.mxtech.videoplayer.ad.subscriptions.ui.metab.fragment.LocalMeFragment\$initWhatsAppStatus\$1")
+        }.getOrNull()
+        if (whatsappCoroutineClass != null) {
+            whatsappCoroutineClass.declaredMethods.forEach { method ->
+                if (method.name == "invokeSuspend") {
+                    XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(null))
+                }
+            }
+        }
+    }
+
+    // 4. Player sidebar clutter removal (Bookmark, Favorite, Playlist, Tutorial, Rate Us)
     runCatching {
         val menuClasses = listOf(
             "com.mxtech.videoplayer.ad.MenuHelper",
@@ -403,4 +710,3 @@ val MxPlayerProPatches = arrayOf(
     MxPlayerCleanLayout,
     MxPlayerPlaybackTweaks,
 )
-
