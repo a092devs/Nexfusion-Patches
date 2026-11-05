@@ -7,6 +7,28 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.2.5
+
+- `NexFusion` 4.2.5:
+  * YouTube Layout & UI Controls:
+    - Added "Glass navigation bar size" configuration setting with live preview slider controls for capsule height, maximum width, and button spacing (#4424).
+    - Added dedicated "Post buttons" preference submenu under Hide Layout Components, with toggles for layout mode (Default/Enforced), like/dislike buttons, dislike button, comment button, share button, and comments preview (#b4bbd85e6, #b7a1db393).
+    - Wired runtime element filtering for community post buttons to respect user toggles.
+  * YouTube Stability & Bug Fixes:
+    - Fixed Shorts seekbar detachment bug by disabling seekbar detachment flag on playback close/change (#19f0db390).
+    - Upstream fix for Glass navigation bar height calculation when layout updates are disabled (#4426).
+    - Upstream fix for black band behind translucent or glass navigation bar when Hide status bar is active (#9897de9ca).
+    - Upstream fix for channel bar remaining visible when hiding Subscribe button (#74fe9a3bb).
+    - Upstream fix for live stream skipping underlying Short in regular player (#dddbfbde2).
+    - Upstream fix for playlist missing background below thumbnail on new server card layouts (#571a3f9df).
+    - Upstream fix for video button in create button on channel page toolbar (#41cd7ae70).
+    - Upstream fix for series tracking thumbnail reload during video playback (#4420).
+  * Refactoring & Optimization:
+    - Pruned redundant and unused semantic version comparison helpers from `VersionUtil`.
+  * Universal Dynamic Patching & Cross-Compatibility:
+    - Preserved `compatibilitySeries = "3.6"` and open manager versioning for universal cross-compatibility across all manager builds.
+    - Maintained dynamic runtime matching across all 20 supported target applications.
+
 ## 4.2.4
 
 - `NexFusion` 4.2.4:

@@ -14,4 +14,7 @@ val seekbarPatch = patch(
         enableSlideToSeekPatch,
         enableTapToSeekPatch,
     )
+
+    // Prevent Shorts seekbar from detaching when leaving settings or switching Shorts
+    io.github.nexfusion.morphe.youtube.insertLiteralOverride(45421233L, false)
 }

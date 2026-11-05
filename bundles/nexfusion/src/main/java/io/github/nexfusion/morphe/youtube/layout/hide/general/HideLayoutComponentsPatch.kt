@@ -345,6 +345,18 @@ val HideLayoutComponents = patch(
         SwitchPreference("morphe_hide_auto_dubbed_label"),
         SwitchPreference("morphe_hide_channel_buttons", summary = true),
         SwitchPreference("morphe_hide_community_posts"),
+        PreferenceScreenPreference(
+            key = "morphe_post_buttons_screen",
+            sorting = Sorting.UNSORTED,
+            preferences = setOf(
+                ListPreference("morphe_post_buttons_layout"),
+                SwitchPreference("morphe_hide_post_like_dislike_buttons"),
+                SwitchPreference("morphe_hide_post_dislike_button", summary = true),
+                SwitchPreference("morphe_hide_post_comment_button"),
+                SwitchPreference("morphe_hide_post_share_button", summary = true),
+                SwitchPreference("morphe_hide_post_comments_preview", summary = true)
+            )
+        ),
         SwitchPreference("morphe_hide_compact_banner", summary = true),
         if (is_20_26_or_greater) {
             ListPreference("morphe_hide_expandable_card")
@@ -474,6 +486,9 @@ val HideLayoutComponents = patch(
 
     // hide page header buttons
     hookElement(LayoutComponentsFilter::hidePageHeaderButtons)
+
+    // post buttons
+    hookElement(LayoutComponentsFilter::setPostButtons)
 
     // hide comments carousel
     hookElement(CommentsFilter::onCommentsLoaded)

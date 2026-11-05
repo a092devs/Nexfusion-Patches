@@ -129,17 +129,6 @@ data class AppVersion(
 }
 
 /**
- * Compares two version strings according to semantic versioning principles,
- * handling differing segment lengths, leading zeroes, pre-release suffixes, and malformed inputs.
- *
- * @return a negative integer, zero, or a positive integer as [a] is less than, equal to, or greater than [b].
- * If both inputs are invalid, returns 0 as neither has a meaningful version ranking.
- */
-fun compareAppVersions(a: String, b: String): Int {
-    return AppVersion.parse(a).compareTo(AppVersion.parse(b))
-}
-
-/**
  * Checks whether [actualVersion] is equal to or greater than [targetVersion].
  *
  * Fail-safe policy: Returns true if and only if both [actualVersion] and [targetVersion]

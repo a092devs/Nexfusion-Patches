@@ -76,6 +76,13 @@ val NavigationBar = patch(
         NonInteractivePreference(
             key = "morphe_navigation_bar_glass_opacity",
             tag = app.morphe.extension.shared.settings.preference.SeekBarPreference::class.java
+        ),
+        NonInteractivePreference(
+            key = "morphe_navigation_bar_glass_height",
+            titleKey = "morphe_navigation_bar_glass_size_title",
+            summaryKey = "morphe_navigation_bar_glass_size_summary",
+            tag = app.morphe.extension.youtube.settings.preference.GlassNavigationBarPreference::class.java,
+            selectable = true
         )
     )
 
