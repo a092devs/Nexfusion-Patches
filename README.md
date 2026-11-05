@@ -6,7 +6,7 @@
     <a href="https://github.com/a092devs/Nexfusion-Patches/releases"><img src="https://img.shields.io/github/v/release/a092devs/Nexfusion-Patches?style=flat-square&color=0284C7&label=Release" alt="Latest Release" /></a>
     <img src="https://img.shields.io/badge/Format-.nxb%20(Signed%20APK)-6366F1?style=flat-square" alt="Format: .nxb" />
     <img src="https://img.shields.io/badge/LSPosed-API%20101-blue?style=flat-square" alt="LSPosed API 101" />
-    <img src="https://img.shields.io/badge/Targets-20%20Applications-10B981?style=flat-square" alt="Targets: 20 Applications" />
+    <img src="https://img.shields.io/badge/Targets-22%20Applications-10B981?style=flat-square" alt="Targets: 22 Applications" />
     <img src="https://img.shields.io/badge/Icon-Hardware%20Silicon%20Matrix-0284C7?style=flat-square" alt="Hardware Silicon Matrix" />
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-orange?style=flat-square" alt="GPL-3.0" /></a>
   </p>
@@ -105,14 +105,14 @@ A `.nxb` file is a signed APK container loaded directly into process memory by N
 ### Curated Distributions
 
 - **`nexfusion`:** Streaming core patches for YouTube, YouTube Music, and Google Photos cloud storage spoofing.
-- **`nexfusion` (`NexFusion Patches`):** Unified community runtime distribution covering all **20 supported application targets** in a single `.nxb` package.
+- **`nexfusion` (`NexFusion Patches`):** Unified community runtime distribution covering all **22 supported application targets** in a single `.nxb` package.
 
 ---
 
 ### Supported Applications Matrix
 
 <details>
-<summary><b>🎥 Video, Audio & Streaming (5 Targets)</b> — <i>YouTube, YouTube Music, Kick, Twitch, Crunchyroll</i></summary>
+<summary><b>🎥 Video, Audio & Streaming (7 Targets)</b> — <i>YouTube, YouTube Music, Kick, Twitch, Crunchyroll, MX Player, MX Player Pro</i></summary>
 <br>
 
 | Application | Package Identifier | Key Patch Capabilities |
@@ -122,6 +122,8 @@ A `.nxb` file is a signed APK container loaded directly into process memory by N
 | **Kick** | `com.kick.mobile` | Live stream & VOD ad blocking, background audio playback, custom chat emotes (7TV, BTTV, FFZ), telemetry suppression, AMOLED black theme. |
 | **Twitch** | `tv.twitch.android.app` | Stream and display ad blocking, 7TV / BTTV / FFZ third-party chat emotes, background audio playback, telemetry suppression, AMOLED black theme. |
 | **Crunchyroll** | `com.crunchyroll.crunchyroid` | Native Picture-in-Picture mode with contextual Skip Intro and Skip Credits controls; remove titles from Continue Watching feed. Verified targets: 3.126.0, 3.117.0. |
+| **MX Player** | `com.mxtech.videoplayer.ad` | Remove startup splash ads, Google AdMob, InMobi, and banner ad containers; instant splash (bypass UMP consent dialogs and telemetry); clean offline local mode (collapse online streaming bottom navigation bar); clean layout (hide WhatsApp status tile, cloud recycle bin upsells, and promo banners); sidebar clutter cleanup; bypass Smart Enhance intro dialog; suppress 2x SpeedUp HUD overlay. |
+| **MX Player Pro** | `com.mxtech.videoplayer.pro` | Instant splash screen bypass; clean layout & sidebar clutter cleanup; bypass Smart Enhance intro dialog; suppress 2x SpeedUp HUD overlay. |
 
 </details>
 

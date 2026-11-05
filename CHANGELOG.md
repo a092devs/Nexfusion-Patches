@@ -7,6 +7,20 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.2.6
+
+- `NexFusion` 4.2.6:
+  * MX Player & MX Player Pro Support:
+    - Added MX Player (`com.mxtech.videoplayer.ad`) and MX Player Pro (`com.mxtech.videoplayer.pro`) as official patch targets.
+    - Added "Block ads" patch: removes startup splash ads, Google Mobile Ads (AdMob), InMobi, and inline/banner ad views and containers.
+    - Added "Instant splash" patch: bypasses UMP consent dialog popups and splash network delays to fast-track directly into the media list.
+    - Added "Clean local mode" patch: collapses and disables the online streaming bottom navigation bar (`online_bottom_layout`), restoring a clean, offline-first local media player.
+    - Added "Clean layout & sidebar" patch: suppresses cloud recycle bin upsells, removes promotional tiles (WhatsApp status, VIP banners, playlists), and cleans cluttered player sidebar items.
+    - Added "Playback tweaks" patch: bypasses the Smart Enhance intro popup and suppresses the 2x SpeedUp HUD overlay.
+  * Universal Dynamic Patching & Cross-Compatibility:
+    - Preserved `compatibilitySeries = "3.6"` and open manager versioning for universal cross-compatibility across all manager builds.
+    - Maintained dynamic runtime matching across all 22 supported target applications.
+
 ## 4.2.5
 
 - `NexFusion` 4.2.5:

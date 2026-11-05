@@ -18,6 +18,8 @@ import io.github.nexfusion.nexfusion.instagram.InstagramPatches
 import io.github.nexfusion.nexfusion.kick.KickPatches
 import io.github.nexfusion.nexfusion.linkedin.LinkedInPatches
 import io.github.nexfusion.nexfusion.maps.GoogleMapsPatches
+import io.github.nexfusion.nexfusion.mxplayer.MxPlayerPatches
+import io.github.nexfusion.nexfusion.mxplayer.MxPlayerProPatches
 import io.github.nexfusion.nexfusion.protonvpn.ProtonVpnPatches
 import io.github.nexfusion.nexfusion.reddit.RedditPatches
 import io.github.nexfusion.nexfusion.telegram.TelegramPatches
@@ -140,6 +142,18 @@ object NexFusionPatches : PatchBundle {
             packageName = "tv.twitch.android.app",
             patches = TwitchPatches,
             appIconColor = 0x9146FF,
+        ),
+        AppPatchInfo(
+            appName = "MX Player",
+            packageName = "com.mxtech.videoplayer.ad",
+            patches = MxPlayerPatches,
+            appIconColor = 0x0078D7,
+        ),
+        AppPatchInfo(
+            appName = "MX Player Pro",
+            packageName = "com.mxtech.videoplayer.pro",
+            patches = MxPlayerProPatches,
+            appIconColor = 0x0078D7,
         ),
     )
 }
