@@ -4,6 +4,7 @@ import app.morphe.extension.shared.settings.preference.ExternalDownloaderPrefere
 import app.morphe.extension.youtube.patches.DownloadsPatch
 import app.morphe.extension.youtube.videoplayer.ExternalDownloadButton
 import io.github.nexfusion.patches.R
+import io.github.nexfusion.morphe.shared.misc.settings.preference.ListPreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.PreferenceScreenPreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.SwitchPreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.TextPreference
@@ -30,8 +31,8 @@ val Downloads = patch(
             key = "morphe_external_downloader_screen",
             sorting = PreferenceScreenPreference.Sorting.UNSORTED,
             preferences = setOf(
-                SwitchPreference("morphe_external_downloader", summary = true),
-                SwitchPreference("morphe_external_downloader_action_button", summary = true),
+                ListPreference("morphe_download_mode"),
+                SwitchPreference("morphe_external_downloader_overlay_button", summary = true),
                 TextPreference(
                     "morphe_external_downloader_name",
                     tag = ExternalDownloaderPreference::class.java

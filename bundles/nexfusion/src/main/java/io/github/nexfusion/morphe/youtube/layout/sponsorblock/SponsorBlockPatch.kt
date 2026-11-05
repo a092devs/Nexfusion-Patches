@@ -30,6 +30,7 @@ import io.github.nexfusion.morphe.shared.misc.settings.preference.PreferenceCate
 import io.github.nexfusion.morphe.shared.misc.settings.preference.PreferenceScreenPreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.SwitchPreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.TextPreference
+import io.github.nexfusion.morphe.shared.misc.settings.preference.screenInfoPreferenceCategory
 import io.github.nexfusion.morphe.youtube.misc.playercontrols.ControlInitializer
 import io.github.nexfusion.morphe.youtube.misc.playercontrols.LegacyPlayerControls
 import io.github.nexfusion.morphe.youtube.misc.playercontrols.addTopControl
@@ -157,12 +158,12 @@ val SponsorBlock = patch(
             preferences = emptySet(), // Preferences are added by custom class at runtime.
             tag = SponsorBlockStatsPreferenceCategory::class.java
         ),
-        PreferenceCategory(
+        screenInfoPreferenceCategory(
             key = "morphe_sb_about",
-            sorting = PreferenceScreenPreference.Sorting.UNSORTED,
             preferences = setOf(
                 NonInteractivePreference(
                     key = "morphe_sb_about_api",
+                    titleKey = null,
                     tag = SponsorBlockAboutPreference::class.java,
                     selectable = true,
                 )

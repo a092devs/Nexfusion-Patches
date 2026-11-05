@@ -31,6 +31,7 @@ import io.github.nexfusion.morphe.shared.misc.settings.preference.PreferenceScre
 import io.github.nexfusion.morphe.shared.misc.settings.preference.PreferenceScreenPreference.Sorting
 import io.github.nexfusion.morphe.shared.misc.settings.preference.SwitchPreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.TextPreference
+import io.github.nexfusion.morphe.shared.misc.settings.preference.screenInfoPreferenceCategory
 import io.github.nexfusion.morphe.shared.misc.textcomponent.textComponentPatch
 import io.github.nexfusion.morphe.youtube.insertLiteralOverride
 import io.github.nexfusion.morphe.youtube.layout.buttons.navigation.NavigationBar
@@ -221,14 +222,12 @@ val HideLayoutComponents = patch(
                     preferences = emptySet(),
                     tag = KeywordContentStatsPreferenceCategory::class.java
                 ),
-                PreferenceCategory(
+                screenInfoPreferenceCategory(
                     key = "morphe_hide_keyword_content_about_category",
-                    titleKey = "morphe_hide_about_category_title",
-                    sorting = Sorting.UNSORTED,
                     preferences = setOf(
                         NonInteractivePreference(
                             key = "morphe_hide_keyword_content_about",
-                            titleKey = "morphe_hide_keyword_content_screen_title",
+                            titleKey = null,
                             tag = BulletPointPreference::class.java
                         ),
                         NonInteractivePreference(
@@ -290,18 +289,17 @@ val HideLayoutComponents = patch(
                     preferences = emptySet(),
                     tag = AiSListStatsPreferenceCategory::class.java
                 ),
-                PreferenceCategory(
+                screenInfoPreferenceCategory(
                     key = "morphe_hide_aislist_about_category",
-                    titleKey = "morphe_hide_about_category_title",
-                    sorting = Sorting.UNSORTED,
                     preferences = setOf(
                         NonInteractivePreference(
                             key = "morphe_hide_aislist_about",
-                            titleKey = "morphe_hide_aislist_screen_title",
+                            titleKey = null,
                             tag = BulletPointPreference::class.java
                         ),
                         NonInteractivePreference(
                             key = "morphe_hide_aislist_attribution",
+                            titleKey = null,
                             tag = AiSListAttributionPreference::class.java,
                             selectable = true
                         )
@@ -342,7 +340,6 @@ val HideLayoutComponents = patch(
         ),
         SwitchPreference("morphe_hide_album_cards", summary = true),
         SwitchPreference("morphe_hide_artist_cards", summary = true),
-        SwitchPreference("morphe_hide_auto_dubbed_label"),
         SwitchPreference("morphe_hide_channel_buttons", summary = true),
         SwitchPreference("morphe_hide_community_posts"),
         PreferenceScreenPreference(
@@ -385,7 +382,6 @@ val HideLayoutComponents = patch(
         SwitchPreference("morphe_hide_get_premium_button"),
         SwitchPreference("morphe_hide_history_shelf"),
         SwitchPreference("morphe_hide_horizontal_shelves", summary = true),
-        SwitchPreference("morphe_hide_hyped_label"),
         SwitchPreference("morphe_hide_image_shelf", summary = true),
         SwitchPreference("morphe_hide_handle", summary = true),
         SwitchPreference("morphe_hide_help_feedback_menu", summary = true),
@@ -409,7 +405,7 @@ val HideLayoutComponents = patch(
 //            tag = app.morphe.extension.shared.settings.preference.BulletPointSwitchPreference::class.java,
 //        ),
         SwitchPreference("morphe_hide_video_thumbnail"),
-        SwitchPreference("morphe_hide_video_recommendation_labels", summary = true),
+        SwitchPreference("morphe_hide_video_labels", summary = true),
 //        SwitchPreference(
 //            "morphe_hide_view_count",
 //            summary = true,
@@ -431,6 +427,7 @@ val HideLayoutComponents = patch(
                 SwitchPreference("morphe_custom_filter"),
                 TextPreference(
                     "morphe_custom_filter_strings",
+                    titleKey = "morphe_custom_filter_screen_title",
                     inputType = InputType.TEXT_MULTI_LINE
                 ),
             ),

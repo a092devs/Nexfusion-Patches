@@ -4,7 +4,7 @@ import app.morphe.extension.youtube.patches.dearrow.DeArrowPatch
 import app.morphe.extension.youtube.settings.preference.DeArrowAboutPreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.ListPreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.NonInteractivePreference
-import io.github.nexfusion.morphe.shared.misc.settings.preference.noTitleUnsortedPreferenceCategory
+import io.github.nexfusion.morphe.shared.misc.settings.preference.screenInfoPreferenceCategory
 import io.github.nexfusion.morphe.shared.misc.settings.preference.PreferenceCategory
 import io.github.nexfusion.morphe.shared.misc.settings.preference.PreferenceScreenPreference.Sorting
 import io.github.nexfusion.morphe.shared.misc.settings.preference.SwitchPreference
@@ -79,12 +79,16 @@ val deArrowPatch = patch(
                 SwitchPreference("morphe_dearrow_connection_toast", summary = true),
             )
         ),
-        noTitleUnsortedPreferenceCategory(
-            NonInteractivePreference(
-                key = "morphe_dearrow_about",
-                // Custom about preference with link to the DeArrow website.
-                tag = DeArrowAboutPreference::class.java,
-                selectable = true,
+        screenInfoPreferenceCategory(
+            key = "morphe_dearrow_about_category",
+            preferences = setOf(
+                NonInteractivePreference(
+                    key = "morphe_dearrow_about",
+                    titleKey = null,
+                    // Custom about preference with link to the DeArrow website.
+                    tag = DeArrowAboutPreference::class.java,
+                    selectable = true,
+                )
             )
         )
     )
