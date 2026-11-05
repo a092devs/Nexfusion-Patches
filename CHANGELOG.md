@@ -15,6 +15,8 @@ bundles after CI succeeds.
     - Added dedicated "Post buttons" preference submenu under Hide Layout Components, with toggles for layout mode (Default/Enforced), like/dislike buttons, dislike button, comment button, share button, and comments preview (#b4bbd85e6, #b7a1db393).
     - Wired runtime element filtering for community post buttons to respect user toggles.
   * YouTube Stability & Bug Fixes:
+    - Resolved unnamed preference toggles in YouTube Action Buttons, Layout Components, Custom Filter, and Downloads screens.
+    - Disabled new settings indicator dot across settings menus.
     - Fixed Shorts seekbar detachment bug by disabling seekbar detachment flag on playback close/change (#19f0db390).
     - Upstream fix for Glass navigation bar height calculation when layout updates are disabled (#4426).
     - Upstream fix for black band behind translucent or glass navigation bar when Hide status bar is active (#9897de9ca).
