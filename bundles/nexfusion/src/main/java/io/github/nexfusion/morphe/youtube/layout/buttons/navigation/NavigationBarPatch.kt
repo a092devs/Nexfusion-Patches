@@ -33,8 +33,7 @@ import org.luckypray.dexkit.wrap.DexMethod
 
 val NavigationBar = patch(
     name = "Navigation bar",
-    description = "Adds options to hide and change the bottom navigation bar (such as the Shorts button) "
-            + "and the upper navigation toolbar.",
+    description = "Adds options to configure the bottom navigation bar (including floating Glass navigation bar with custom size/opacity, animated tabs, and hiding buttons) and toolbar.",
 ) {
     dependsOn(
         NavigationBarHook,
@@ -112,12 +111,39 @@ val NavigationBar = patch(
         }
     })
 
-    // Hook navigation button created, in order to hide them.
+    // Hook navigation button created, in order to hide them and initialize navigation bar styles.
     hookNavigationButtonCreated.add { button, view ->
         NavigationBarPatch.navigationTabCreated(button, view)
+        val container = (view.parent?.parent as? View) ?: (view.parent as? View) ?: view
+        NavigationBarPatch.setNavigationBarGlass(container)
+        NavigationBarPatch.setNavigationBarOpaque(container)
+        NavigationBarPatch.hideNavigationBar(container)
     }
 
-    // TODO Hide navigation bar
+    // Hook PivotBar measurement and container styling (Glass navigation bar, Opaque, and Hide)
+    runCatching {
+        val pivotBarClass = runCatching {
+            classLoader.loadClass("com.google.android.libraries.youtube.rendering.ui.pivotbar.PivotBar")
+        }.getOrNull()
+        if (pivotBarClass != null) {
+            de.robv.android.xposed.XposedHelpers.findAndHookMethod(
+                pivotBarClass,
+                "onMeasure",
+                Int::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType,
+                object : de.robv.android.xposed.XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        val view = param.thisObject as View
+                        param.args[1] = NavigationBarPatch.getNavigationBarHeightMeasureSpec(view, param.args[1] as Int)
+                        val container = (view.parent as? View) ?: view
+                        NavigationBarPatch.setNavigationBarGlass(container)
+                        NavigationBarPatch.setNavigationBarOpaque(container)
+                        NavigationBarPatch.hideNavigationBar(container)
+                    }
+                }
+            )
+        }
+    }
 
     // The translucent navigation bar comes from three feature flags that not every account
     // gets, so all of them are turned on whenever the window is drawn edge to edge. The bar then
