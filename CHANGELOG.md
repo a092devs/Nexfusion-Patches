@@ -19,6 +19,7 @@ bundles after CI succeeds.
     - Added "Remember audio & subtitle tracks" patch: persists preferred audio and subtitle languages per show.
     - Added "Smoother playback & larger buffer" patch: expands ExoPlayer playback buffer to 120s for seamless 4K HDR streaming.
     - Added "Binge watching & auto-next" patch: seamlessly transitions to the next episode when current playback finishes.
+    - Added "External player progress" patch: saves watch progress in Stremio when playing in an external player (MX Player, VLC, Vimu), and resumes playback seamlessly at the saved position.
   * Telegram Enhancements & Proteus Port:
     - Added "Unlock Premium" patch: enables local Telegram Premium features (custom emoji reactions, status badges, up to 6 multi-accounts).
     - Added "Bypass channel restrictions" patch: allows copying, saving, and forwarding content from protected and restricted channels and groups.

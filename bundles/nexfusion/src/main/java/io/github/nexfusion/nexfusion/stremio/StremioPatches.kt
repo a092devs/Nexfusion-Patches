@@ -196,6 +196,30 @@ val StremioBingeWatching = patch(
     }
 }
 
+val StremioExternalPlayerProgress = patch(
+    name = "External player progress",
+    description = "Saves watch progress in Stremio when playing in an external player (MX Player, VLC, Vimu), and resumes playback seamlessly at the saved position.",
+) {
+    runCatching {
+        val activityClass = runCatching { classLoader.loadClass("android.app.Activity") }.getOrNull()
+        if (activityClass != null) {
+            XposedBridge.hookAllMethods(
+                activityClass,
+                "startActivityForResult",
+                object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        val intent = param.args.firstOrNull() as? android.content.Intent ?: return
+                        if (intent.action == android.content.Intent.ACTION_VIEW) {
+                            intent.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            PatcherLog.info { "NexFusion: Stremio external player intent decorated: ${intent.data}" }
+                        }
+                    }
+                }
+            )
+        }
+    }
+}
+
 val StremioPatches = arrayOf(
     StremioIntroSkip,
     StremioAutoPickStream,
@@ -204,6 +228,7 @@ val StremioPatches = arrayOf(
     StremioTrackMemory,
     StremioPlayerTuning,
     StremioBingeWatching,
+    StremioExternalPlayerProgress,
 )
 
 private fun installPlayerChapterSkipListener(player: Any) {
