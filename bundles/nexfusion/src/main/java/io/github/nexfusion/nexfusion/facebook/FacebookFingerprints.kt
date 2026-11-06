@@ -57,6 +57,26 @@ val feedFunnel = findMethodDirect {
     feedFunnelBody(matches.single()) ?: matches.single()
 }
 
+val feedFunnelMethods = findMethodListDirect {
+    val matches = findMethod {
+        matcher {
+            name = "addNewEdgeToCollection"
+            paramCount = 3
+        }
+    }.distinctBy { it.descriptor }.filter { method ->
+        method.returnTypeName == "boolean" &&
+            method.paramTypeNames.take(FEED_FUNNEL_PARAMS.size) == FEED_FUNNEL_PARAMS
+    }
+    if (matches.isEmpty()) return@findMethodListDirect emptyList()
+    val wrapper = matches.single()
+    val body = feedFunnelBody(wrapper)
+    if (body != null && body.descriptor != wrapper.descriptor) {
+        listOf(wrapper, body)
+    } else {
+        listOf(wrapper)
+    }
+}
+
 /**
  * The static method of the wrapper's own class that is the real funnel, when [funnel] is a 583
  * wrapper: the wrapper delegates through exactly one static same-class call that takes the edge

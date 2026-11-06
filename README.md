@@ -105,14 +105,14 @@ A `.nxb` file is a signed APK container loaded directly into process memory by N
 ### Curated Distributions
 
 - **`nexfusion`:** Streaming core patches for YouTube, YouTube Music, and Google Photos cloud storage spoofing.
-- **`nexfusion` (`NexFusion Patches`):** Unified community runtime distribution covering all **22 supported application targets** in a single `.nxb` package.
+- **`nexfusion` (`NexFusion Patches`):** Unified community runtime distribution covering all **21 supported application targets** in a single `.nxb` package.
 
 ---
 
 ### Supported Applications Matrix
 
 <details>
-<summary><b>🎥 Video, Audio & Streaming (7 Targets)</b> — <i>YouTube, YouTube Music, Kick, Twitch, Crunchyroll, MX Player, MX Player Pro</i></summary>
+<summary><b>🎥 Video, Audio & Streaming (6 Targets)</b> — <i>YouTube, YouTube Music, Kick, Twitch, Crunchyroll, MX Player</i></summary>
 <br>
 
 | Application | Package Identifier | Key Patch Capabilities |
@@ -122,8 +122,7 @@ A `.nxb` file is a signed APK container loaded directly into process memory by N
 | **Kick** | `com.kick.mobile` | Live stream & VOD ad blocking, background audio playback, custom chat emotes (7TV, BTTV, FFZ), telemetry suppression, AMOLED black theme. |
 | **Twitch** | `tv.twitch.android.app` | Stream and display ad blocking, 7TV / BTTV / FFZ third-party chat emotes, background audio playback, telemetry suppression, AMOLED black theme. |
 | **Crunchyroll** | `com.crunchyroll.crunchyroid` | Native Picture-in-Picture mode with contextual Skip Intro and Skip Credits controls; remove titles from Continue Watching feed. Verified targets: 3.126.0, 3.117.0. |
-| **MX Player** | `com.mxtech.videoplayer.ad` | Remove startup splash ads, Google AdMob, InMobi, and banner ad containers; instant splash (bypass UMP consent dialogs and telemetry); clean offline local mode (collapse online streaming bottom navigation bar); clean layout (hide WhatsApp status tile, cloud recycle bin upsells, and promo banners); sidebar clutter cleanup; bypass Smart Enhance intro dialog; suppress 2x SpeedUp HUD overlay. |
-| **MX Player Pro** | `com.mxtech.videoplayer.pro` | Instant splash screen bypass; clean layout & sidebar clutter cleanup; bypass Smart Enhance intro dialog; suppress 2x SpeedUp HUD overlay. |
+| **MX Player** | `com.mxtech.videoplayer.ad` | Remove startup splash ads, Monetize-v2 ad engine, Google AdMob, InMobi, and banner ad containers; instant splash (bypass UMP consent dialogs and telemetry); clean offline local mode (collapse online streaming bottom navigation bar); clean layout (hide WhatsApp status tile, cloud recycle bin upsells, and promo banners); sidebar clutter cleanup; bypass Smart Enhance intro dialog; suppress 2x SpeedUp HUD overlay. |
 
 </details>
 

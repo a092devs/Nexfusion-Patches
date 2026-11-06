@@ -175,21 +175,36 @@ val HideSponsoredPosts = patch(
     categoryGetter.isAccessible = true
 
     var announced = false
-    ::feedFunnel.hookMethod {
-        before { param ->
-            if (!announced) {
-                announced = true
-                PatcherLog.info { "NexFusion: Facebook sponsored posts filter installed on ${param.method.declaringClass.name}" }
-            }
-            val edge = param.args.firstOrNull { edgeClass.isInstance(it) } ?: return@before
+    val hookFunnel: (XC_MethodHook.MethodHookParam) -> Unit = { param ->
+        if (!announced) {
+            announced = true
+            PatcherLog.info { "NexFusion: Facebook sponsored posts filter installed on ${param.method.declaringClass.name}" }
+        }
+        val edge = param.args.firstOrNull { edgeClass.isInstance(it) }
+        if (edge != null) {
             val categoryName = runCatching {
                 categoryGetter.invoke(edge)?.toString()
-            }.getOrNull() ?: return@before
-            if (categoryName == "SPONSORED" || categoryName == "PROMOTION" || categoryName.contains("META_AI") || categoryName.contains("GEN_AI") || categoryName.contains("GENAI")) {
+            }.getOrNull()
+            if (categoryName != null && (
+                categoryName.contains("SPONSORED") ||
+                categoryName.contains("PROMOTION") ||
+                categoryName.contains("INJECTED") ||
+                categoryName.contains("SHOWCASE") ||
+                categoryName.contains("META_AI") ||
+                categoryName.contains("GEN_AI") ||
+                categoryName.contains("GENAI")
+            )) {
                 // A refused edge is an outcome the feed already handles: it logs "Edge not added
                 // to FUC" and carries on.
                 param.result = false
             }
+        }
+    }
+
+    ::feedFunnel.hookMethod { before(hookFunnel) }
+    runCatching {
+        ::feedFunnelMethods.dexMethodList.forEach { dex ->
+            dex.hookMethod { before(hookFunnel) }
         }
     }
 }
@@ -552,15 +567,22 @@ val HideFeedReels = patch(
     val reelsCategories = setOf("FB_SHORTS", "FB_SHORTS_FALLBACK", "END_OF_FEED_REELS")
     var installed = 0
 
-    ::feedFunnel.hookMethod {
-        before { param ->
-            val edge = param.args.firstOrNull { edgeClass.isInstance(it) } ?: return@before
+    val reelsHook: (XC_MethodHook.MethodHookParam) -> Unit = { param ->
+        val edge = param.args.firstOrNull { edgeClass.isInstance(it) }
+        if (edge != null) {
             val categoryName = runCatching {
                 categoryGetter.invoke(edge)?.toString()
-            }.getOrNull() ?: return@before
+            }.getOrNull()
             if (categoryName in reelsCategories) {
                 param.result = false
             }
+        }
+    }
+
+    ::feedFunnel.hookMethod { before(reelsHook) }
+    runCatching {
+        ::feedFunnelMethods.dexMethodList.forEach { dex ->
+            dex.hookMethod { before(reelsHook) }
         }
     }
     installed++

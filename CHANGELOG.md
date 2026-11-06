@@ -10,16 +10,23 @@ bundles after CI succeeds.
 ## 4.2.6
 
 - `NexFusion` 4.2.6:
-  * MX Player & MX Player Pro Support:
-    - Added MX Player (`com.mxtech.videoplayer.ad`) and MX Player Pro (`com.mxtech.videoplayer.pro`) as official patch targets.
-    - Added "Block ads" patch: removes startup splash ads, Google Mobile Ads (AdMob), InMobi, and inline/banner ad views and containers.
+  * MX Player Support & Dynamic Bytecode Fingerprints:
+    - Added MX Player (`com.mxtech.videoplayer.ad`) as an official patch target.
+    - Added dynamic DexKit fingerprinting to resolve obfuscated R8 ad and configuration classes across release builds (`bw7`, `hgl`, `mq`, `pwh`, `ki1`, `en9`, `ozk`, `v2e`).
+    - Added "Block ads" patch: forces GlobalConfig pure-local mode and disables online OTT feature gates; disarms WelcomeAdFeatureFlag inverted disable flags; suppresses Monetize-v2 ad engine, Google AdMob, InMobi, and inline/banner ad views and containers.
     - Added "Instant splash" patch: bypasses UMP consent dialog popups and splash network delays to fast-track directly into the media list.
     - Added "Clean local mode" patch: collapses and disables the online streaming bottom navigation bar (`online_bottom_layout`), restoring a clean, offline-first local media player.
     - Added "Clean layout & sidebar" patch: suppresses cloud recycle bin upsells, removes promotional tiles (WhatsApp status, VIP banners, playlists), and cleans cluttered player sidebar items.
     - Added "Playback tweaks" patch: bypasses the Smart Enhance intro popup and suppresses the 2x SpeedUp HUD overlay.
+  * Instagram Performance & Chat Responsiveness Fix:
+    - Resolved soft keyboard animation delays and severe chat thread frame drops by eliminating unthrottled `OnPreDrawListener` loops across activities, dialogs, and fragments.
+    - Replaced heavy LithoView reflection and resource name lookups with throttled layout scans, O(1) integer ID checks, and direct thread view skips.
+  * Facebook Update Compatibility:
+    - Expanded GraphQL category matching in `HideSponsoredPosts` to catch high-value promotions, injected stories, showcase ads, and friendly feed promotions on Facebook 586+.
+    - Hooked both the feed funnel entry point and static delegator methods to ensure complete ad suppression across single and batch feed additions.
   * Universal Dynamic Patching & Cross-Compatibility:
     - Preserved `compatibilitySeries = "3.6"` and open manager versioning for universal cross-compatibility across all manager builds.
-    - Maintained dynamic runtime matching across all 22 supported target applications.
+    - Maintained dynamic runtime matching across all 21 supported target applications.
 
 ## 4.2.5
 

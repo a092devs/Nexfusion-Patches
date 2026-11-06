@@ -14,6 +14,8 @@ import de.robv.android.xposed.XposedHelpers
 import io.github.nexfusion.PatcherLog
 import io.github.nexfusion.patch
 import java.io.IOException
+import java.lang.reflect.InvocationHandler
+import java.lang.reflect.Proxy
 import java.net.URL
 
 val MxPlayerBlockAds = patch(
@@ -62,17 +64,16 @@ val MxPlayerBlockAds = patch(
 
     // 2. GlobalConfig pure local phone mode & feature gates
     runCatching {
-        val globalConfigCandidates = listOf(
+        val gcClass = runCatching { ::mxGlobalConfig.clazz }.getOrNull() ?: listOf(
+            "bw7",
             "com.mxtech.videoplayer.ad.GlobalConfig",
             "com.mxtech.videoplayer.GlobalConfig",
             "com.mxtech.videoplayer.ad.config.GlobalConfig",
             "com.mxtech.videoplayer.ad.common.GlobalConfig",
             "com.mxtech.videoplayer.ad.utils.GlobalConfig",
             "com.mxtech.videoplayer.utils.GlobalConfig",
-        )
-        val gcClass = globalConfigCandidates.firstNotNullOfOrNull {
-            runCatching { classLoader.loadClass(it) }.getOrNull()
-        }
+        ).firstNotNullOfOrNull { runCatching { classLoader.loadClass(it) }.getOrNull() }
+
         if (gcClass != null) {
             gcClass.declaredMethods.filter { it.returnType == Boolean::class.javaPrimitiveType }.forEach { method ->
                 when (method.name) {
@@ -88,27 +89,91 @@ val MxPlayerBlockAds = patch(
                     }
                 }
             }
+            PatcherLog.info { "NexFusion: MX Player GlobalConfig hooked on ${gcClass.name}" }
         }
     }
 
-    // 3. Monetize-v2 Ad Engine suppression (AdInitializer, SharedStateManager, BannerManager, etc.)
+    // 3. WelcomeAdFeatureFlag inverted disable flags
     runCatching {
-        val monetizeClasses = listOf(
-            "com.mxplay.monetize.v2.shared.SharedStateManager",
-            "com.mxplay.monetize.v2.adinitializer.AdInitializer",
-            "com.mxplay.monetize.v2.admanager.AdManagerV2",
-            "com.mxplay.monetize.v2.loader.BannerManager",
-            "com.mxplay.monetize.v2.interstitial.InterstitialV2",
-            "com.mxplay.monetize.v2.rewarded.RewardedAdPlacement",
-            "com.mxplay.monetize.v2.nativead.PanelNative",
-            "com.mxplay.monetize.v2.nativead.TrayNative",
-            "com.mxplay.monetize.v2.videoroll.VideoRollManager",
-            "com.mxplay.monetize.v2.loader.OpenAds",
+        val welcomeFlagClass = runCatching { ::mxWelcomeAdFeatureFlag.clazz }.getOrNull() ?: listOf(
+            "hgl",
+            "com.mxtech.videoplayer.ad.online.ad.welcome.WelcomeAdFeatureFlag",
+        ).firstNotNullOfOrNull { runCatching { classLoader.loadClass(it) }.getOrNull() }
+
+        if (welcomeFlagClass != null) {
+            welcomeFlagClass.declaredMethods.filter {
+                it.parameterTypes.isEmpty() && it.returnType == Boolean::class.javaPrimitiveType
+            }.forEach { method ->
+                // Both b() and a() return inverted disable flag (true = Welcome Ad DISABLED)
+                XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(true))
+            }
+            PatcherLog.info { "NexFusion: MX Player WelcomeAdFeatureFlag hooked on ${welcomeFlagClass.name}" }
+        }
+    }
+
+    // 4. Monetize-v2 Ad Engine suppression (BannerManager, InterstitialV2, VideoRollManager, etc.)
+    runCatching {
+        // Safe hook for AdInitializer (mq) to return empty list and false
+        runCatching { ::mxAdInitializer.clazz }.getOrNull() ?: listOf("mq", "lq", "com.mxplay.monetize.v2.adinitializer.AdInitializer")
+            .firstNotNullOfOrNull { runCatching { classLoader.loadClass(it) }.getOrNull() }
+            ?.let { adInitClass ->
+                adInitClass.declaredMethods.forEach { method ->
+                    if (method.name == "<init>" || method.name == "<clinit>") return@forEach
+                    val ret = method.returnType
+                    if (ret == Boolean::class.javaPrimitiveType) {
+                        XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(false))
+                    } else if (java.util.List::class.java.isAssignableFrom(ret) || java.util.Collection::class.java.isAssignableFrom(ret)) {
+                        XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(java.util.Collections.emptyList<Any>()))
+                    }
+                }
+            }
+
+        val candidateList = mutableListOf<Class<*>>()
+
+        // BannerManager
+        listOf("ki1", "com.mxplay.monetize.v2.loader.BannerManager").firstNotNullOfOrNull {
+            runCatching { classLoader.loadClass(it) }.getOrNull()
+        }?.let { candidateList.add(it) }
+
+        // InterstitialV2
+        runCatching { ::mxInterstitial.clazz }.getOrNull()?.let { candidateList.add(it) }
+            ?: listOf("en9", "an9", "bn9", "cn9", "dn9", "com.mxplay.monetize.v2.interstitial.InterstitialV2").firstNotNullOfOrNull {
+                runCatching { classLoader.loadClass(it) }.getOrNull()
+            }?.let { candidateList.add(it) }
+
+        // RewardedAdPlacement
+        listOf("qzg", "com.mxplay.monetize.v2.rewarded.RewardedAdPlacement").firstNotNullOfOrNull {
+            runCatching { classLoader.loadClass(it) }.getOrNull()
+        }?.let { candidateList.add(it) }
+
+        // PanelNative
+        listOf("kme", "hme", "ime", "jme", "com.mxplay.monetize.v2.nativead.PanelNative").firstNotNullOfOrNull {
+            runCatching { classLoader.loadClass(it) }.getOrNull()
+        }?.let { candidateList.add(it) }
+
+        // TrayNative
+        listOf("n2k", "com.mxplay.monetize.v2.nativead.TrayNative").firstNotNullOfOrNull {
+            runCatching { classLoader.loadClass(it) }.getOrNull()
+        }?.let { candidateList.add(it) }
+
+        // VideoRollManager
+        runCatching { ::mxVideoRollManager.clazz }.getOrNull()?.let { candidateList.add(it) }
+            ?: listOf("ozk", "com.mxplay.monetize.v2.videoroll.VideoRollManager").firstNotNullOfOrNull {
+                runCatching { classLoader.loadClass(it) }.getOrNull()
+            }?.let { candidateList.add(it) }
+
+        // OpenAds
+        listOf("v2e", "com.mxplay.monetize.v2.loader.OpenAds").firstNotNullOfOrNull {
+            runCatching { classLoader.loadClass(it) }.getOrNull()
+        }?.let { candidateList.add(it) }
+
+        // AppOpenAdManager & LocalOnlyExitAdTest
+        listOf(
             "com.mxtech.videoplayer.ad.online.ad.appopen.AppOpenAdManager",
             "com.mxtech.videoplayer.ad.online.abtest.LocalOnlyExitAdTest",
-        )
-        for (className in monetizeClasses) {
-            val clazz = runCatching { classLoader.loadClass(className) }.getOrNull() ?: continue
+        ).mapNotNull { runCatching { classLoader.loadClass(it) }.getOrNull() }.forEach { candidateList.add(it) }
+
+        for (clazz in candidateList.distinct()) {
             clazz.declaredMethods.forEach { method ->
                 if (method.name == "<init>" || method.name == "<clinit>") return@forEach
                 val returnType = method.returnType
@@ -120,19 +185,65 @@ val MxPlayerBlockAds = patch(
                         method.name.startsWith("preload") ||
                         method.name.startsWith("init") ||
                         method.name == "a" || method.name == "b" || method.name == "c" ||
-                        method.name == "e" || method.name == "p" || method.name == "P" || method.name == "O" ||
+                        method.name == "e" || method.name == "g" || method.name == "f" ||
+                        method.name == "p" || method.name == "P" || method.name == "O" ||
                         method.parameterTypes.isEmpty()
                     ) {
                         XposedBridge.hookMethod(method, XC_MethodReplacement.DO_NOTHING)
                     }
-                } else if (!returnType.isPrimitive && (method.name.startsWith("load") || method.name.startsWith("get") || method.name == "a")) {
-                    XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(null))
+                } else if (!returnType.isPrimitive) {
+                    if (java.util.List::class.java.isAssignableFrom(returnType) ||
+                        java.util.Collection::class.java.isAssignableFrom(returnType)
+                    ) {
+                        XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(java.util.Collections.emptyList<Any>()))
+                    } else if (java.util.Set::class.java.isAssignableFrom(returnType)) {
+                        XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(java.util.Collections.emptySet<Any>()))
+                    } else if (java.util.Map::class.java.isAssignableFrom(returnType)) {
+                        XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(java.util.Collections.emptyMap<Any, Any>()))
+                    } else if (returnType == java.lang.String::class.java) {
+                        XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(""))
+                    } else if (returnType.isArray) {
+                        val compType = returnType.componentType ?: Any::class.java
+                        XposedBridge.hookMethod(
+                            method,
+                            XC_MethodReplacement.returnConstant(java.lang.reflect.Array.newInstance(compType, 0))
+                        )
+                    } else if (method.name.startsWith("load") || method.name.startsWith("get") || method.name == "a") {
+                        XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(null))
+                    }
                 }
             }
         }
     }
 
-    // 4. Welcome Screen Ad & AppOpen Ad suppression in ActivityWelcomeMX
+    // 4b. Guard AdManager (jr) against "instance not set" NullPointerException
+    runCatching {
+        val jrClass = listOf("jr", "com.mxtech.videoplayer.ad.AdManager").firstNotNullOfOrNull {
+            runCatching { classLoader.loadClass(it) }.getOrNull()
+        }
+        if (jrClass != null) {
+            jrClass.declaredMethods.filter {
+                it.parameterTypes.isEmpty() && !it.returnType.isPrimitive && it.returnType != Void.TYPE
+            }.forEach { method ->
+                val returnType = method.returnType
+                XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam) {
+                        if (param.hasThrowable()) {
+                            if (returnType.isInterface) {
+                                param.result = createNoOpProxy(returnType, classLoader)
+                            } else {
+                                param.result = null
+                            }
+                        } else if (param.result == null && returnType.isInterface) {
+                            param.result = createNoOpProxy(returnType, classLoader)
+                        }
+                    }
+                })
+            }
+        }
+    }
+
+    // 5. Welcome Screen Ad & AppOpen Ad suppression in ActivityWelcomeMX
     runCatching {
         val welcomeActivityClass = runCatching {
             classLoader.loadClass("com.mxtech.videoplayer.ad.ActivityWelcomeMX")
@@ -143,22 +254,25 @@ val MxPlayerBlockAds = patch(
                 "onCreate",
                 object : XC_MethodHook() {
                     override fun beforeHookedMethod(param: MethodHookParam) {
-                        // Disarm boolean ad flags (q0, etc.) on the welcome activity instance
+                        // Disarm boolean ad flags (q0, u0, v0, w0, m0, n0, o0) on the welcome activity instance
                         welcomeActivityClass.declaredFields.filter { it.type == Boolean::class.javaPrimitiveType }.forEach { field ->
                             runCatching {
                                 field.isAccessible = true
-                                if (field.name == "q0") {
-                                    field.setBoolean(param.thisObject, false)
-                                }
+                                field.setBoolean(param.thisObject, false)
                             }
                         }
                     }
                 }
             )
+            welcomeActivityClass.declaredMethods.filter {
+                it.name == "s7" && it.returnType == Boolean::class.javaPrimitiveType
+            }.forEach { method ->
+                XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(false))
+            }
         }
     }
 
-    // 5. Video Player screen ad hooks (ActivityScreen)
+    // 6. Video Player screen ad hooks (ActivityScreen)
     runCatching {
         val screenClasses = listOf(
             "com.mxtech.videoplayer.ad.ActivityScreen",
@@ -189,7 +303,7 @@ val MxPlayerBlockAds = patch(
         }
     }
 
-    // 6. Folder list native ad rows & promo shortcut strip (LocalTilesManager & AdMediaListFragment)
+    // 7. Folder list native ad rows & promo shortcut strip (LocalTilesManager & AdMediaListFragment)
     runCatching {
         val tilesClass = runCatching {
             classLoader.loadClass("com.mxtech.videoplayer.ad.local.tiles.LocalTilesManager")
@@ -229,7 +343,7 @@ val MxPlayerBlockAds = patch(
         }
     }
 
-    // 7. Suppress AdMob (Google Mobile Ads) views & loaders
+    // 8. Suppress AdMob (Google Mobile Ads) views & loaders
     runCatching {
         val adViewClasses = listOf(
             "com.google.android.gms.ads.AdView",
@@ -258,7 +372,7 @@ val MxPlayerBlockAds = patch(
         }
     }
 
-    // 8. Suppress Interstitial and AdLoader calls from third-party networks
+    // 9. Suppress Interstitial and AdLoader calls from third-party networks
     runCatching {
         val adClasses = listOf(
             "com.google.android.gms.ads.interstitial.InterstitialAd",
@@ -284,7 +398,7 @@ val MxPlayerBlockAds = patch(
         }
     }
 
-    // 9. Collapse ad container view layouts dynamically
+    // 10. Collapse ad container view layouts dynamically
     runCatching {
         val adKeywords = setOf(
             "ad_container", "native_ad", "banner_ad", "adview", "ll_ad", "fl_ad", "feed_ad",
@@ -316,7 +430,7 @@ val MxPlayerBlockAds = patch(
         )
     }
 
-    // 10. HTTP Network Ad & Telemetry Blocker
+    // 11. HTTP Network Ad & Telemetry Blocker
     runCatching {
         XposedBridge.hookAllMethods(
             URL::class.java,
@@ -389,7 +503,7 @@ val MxPlayerInstantSplash = patch(
     runCatching {
         val welcomeActivityClasses = listOf(
             "com.mxtech.videoplayer.ad.ActivityWelcomeMX",
-            "com.mxtech.videoplayer.pro.ActivityWelcomeMX",
+            "com.mxtech.videoplayer.ActivityWelcomeMX",
         )
         for (className in welcomeActivityClasses) {
             val clazz = runCatching { classLoader.loadClass(className) }.getOrNull() ?: continue
@@ -400,11 +514,9 @@ val MxPlayerInstantSplash = patch(
                     override fun afterHookedMethod(param: MethodHookParam) {
                         val activity = param.thisObject as? Activity ?: return
                         val targetClass = runCatching {
-                            if (className.contains(".pro.")) {
-                                classLoader.loadClass("com.mxtech.videoplayer.pro.ActivityMediaList")
-                            } else {
-                                classLoader.loadClass("com.mxtech.videoplayer.ad.ActivityMediaList")
-                            }
+                            classLoader.loadClass("com.mxtech.videoplayer.ad.ActivityMediaList")
+                        }.getOrNull() ?: runCatching {
+                            classLoader.loadClass("com.mxtech.videoplayer.ActivityMediaList")
                         }.getOrNull()
                         if (targetClass != null) {
                             val intent = Intent(activity, targetClass)
@@ -455,7 +567,6 @@ val MxPlayerLocalMode = patch(
     runCatching {
         val mediaListClasses = listOf(
             "com.mxtech.videoplayer.ad.ActivityMediaList",
-            "com.mxtech.videoplayer.pro.ActivityMediaList",
             "com.mxtech.videoplayer.ActivityMediaList",
         )
         for (className in mediaListClasses) {
@@ -483,7 +594,6 @@ val MxPlayerLocalMode = patch(
     runCatching {
         val mediaListClasses = listOf(
             "com.mxtech.videoplayer.ad.ActivityMediaList",
-            "com.mxtech.videoplayer.pro.ActivityMediaList",
             "com.mxtech.videoplayer.ActivityMediaList",
         )
         for (className in mediaListClasses) {
@@ -625,7 +735,7 @@ val MxPlayerCleanLayout = patch(
     runCatching {
         val menuClasses = listOf(
             "com.mxtech.videoplayer.ad.MenuHelper",
-            "com.mxtech.videoplayer.pro.MenuHelper",
+            "com.mxtech.videoplayer.MenuHelper",
         )
         for (className in menuClasses) {
             val clazz = runCatching { classLoader.loadClass(className) }.getOrNull() ?: continue
@@ -705,8 +815,25 @@ val MxPlayerPatches = arrayOf(
     MxPlayerPlaybackTweaks,
 )
 
-val MxPlayerProPatches = arrayOf(
-    MxPlayerInstantSplash,
-    MxPlayerCleanLayout,
-    MxPlayerPlaybackTweaks,
-)
+private fun createNoOpProxy(interfaceClass: Class<*>, classLoader: ClassLoader): Any {
+    val invocationHandler = InvocationHandler { _, method, _ ->
+        val ret = method.returnType
+        when {
+            ret == Boolean::class.javaPrimitiveType || ret == java.lang.Boolean::class.java -> false
+            ret == Int::class.javaPrimitiveType || ret == java.lang.Integer::class.java -> 0
+            ret == Long::class.javaPrimitiveType || ret == java.lang.Long::class.java -> 0L
+            ret == Float::class.javaPrimitiveType || ret == java.lang.Float::class.java -> 0f
+            ret == Double::class.javaPrimitiveType || ret == java.lang.Double::class.java -> 0.0
+            ret == Void.TYPE -> null
+            ret == String::class.java -> ""
+            java.util.List::class.java.isAssignableFrom(ret) || java.util.Collection::class.java.isAssignableFrom(ret) -> java.util.Collections.emptyList<Any>()
+            java.util.Set::class.java.isAssignableFrom(ret) -> java.util.Collections.emptySet<Any>()
+            java.util.Map::class.java.isAssignableFrom(ret) -> java.util.Collections.emptyMap<Any, Any>()
+            ret.isArray -> java.lang.reflect.Array.newInstance(ret.componentType ?: Any::class.java, 0)
+            ret.isInterface -> createNoOpProxy(ret, classLoader)
+            else -> null
+        }
+    }
+    return Proxy.newProxyInstance(classLoader, arrayOf(interfaceClass), invocationHandler)
+}
+

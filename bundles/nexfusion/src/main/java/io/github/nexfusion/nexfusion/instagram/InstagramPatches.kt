@@ -652,7 +652,7 @@ val DontSendReelWatchHistory = patch(
     PatcherLog.info { "NexFusion Instagram: reel watch history Tigon filter enabled" }
 }
 
-private val metaAiHiderSessions = Collections.synchronizedMap(WeakHashMap<View, ViewTreeObserver.OnPreDrawListener>())
+private val metaAiHiderSessions = Collections.synchronizedMap(WeakHashMap<View, ViewTreeObserver.OnGlobalLayoutListener>())
 
 private val META_AI_VIEW_IDS = listOf(
     "meta_ai",
@@ -741,43 +741,21 @@ private fun installMetaAiViewHiderOnDecor(decorView: View) {
         if (id != 0) id else null
     }.toSet()
 
-    fun hideMetaAiViews(root: View, budget: IntArray = intArrayOf(5000)): Boolean {
+    fun hideMetaAiViews(root: View, budget: IntArray = intArrayOf(500)): Boolean {
         if (budget[0]-- <= 0) return false
         var changed = false
         if (root !is ViewStub) {
             val id = root.id
-            val resName = if (id != View.NO_ID) {
-                runCatching { context.resources.getResourceEntryName(id) }.getOrNull()?.lowercase(Locale.ROOT)
-            } else null
             val contentDesc = root.contentDescription
-            val viewText = (root as? TextView)?.text
-            val tag = root.tag?.toString()
             val clsName = root.javaClass.simpleName
 
-            if (clsName.contains("ComponentHost") || clsName.contains("LithoView")) {
-                val textContent = runCatching {
-                    root.javaClass.getMethod("getTextContent").invoke(root)
-                }.getOrNull()
-                if (textContent != null && isMetaAiText(textContent.toString())) {
-                    root.visibility = View.GONE
-                    changed = true
-                }
-            }
-
             val shouldHide = (targetIds.isNotEmpty() && id != View.NO_ID && id in targetIds) ||
-                (resName != null && (resName.contains("meta_ai") || resName.contains("ask_meta_ai") || resName.contains("create_with_ai") || resName.contains("biz_ai_agent") || resName.contains("gen_ai"))) ||
-                isMetaAiText(contentDesc) ||
-                isMetaAiText(viewText) ||
-                isMetaAiText(tag) ||
+                (contentDesc != null && isMetaAiText(contentDesc)) ||
                 (clsName.contains("MetaAi", ignoreCase = true) || clsName.contains("AskMetaAi", ignoreCase = true))
 
             if (shouldHide && root.visibility != View.GONE) {
                 val parent = root.parent as? ViewGroup
-                val parentResName = if (parent != null && parent.id != View.NO_ID) {
-                    runCatching { context.resources.getResourceEntryName(parent.id) }.getOrNull()?.lowercase(Locale.ROOT)
-                } else null
-                val isPillContainer = parent != null && parent.childCount in 1..5 &&
-                    (parent.isClickable || parentResName?.contains("pill") == true || parentResName?.contains("chip") == true || parentResName?.contains("button") == true || parentResName?.contains("container") == true || parentResName?.contains("prompt") == true)
+                val isPillContainer = parent != null && parent.childCount in 1..5 && parent.isClickable
                 if (isPillContainer) {
                     parent!!.visibility = View.GONE
                 } else {
@@ -787,6 +765,13 @@ private fun installMetaAiViewHiderOnDecor(decorView: View) {
             }
         }
         if (root is ViewGroup && root.visibility != View.GONE) {
+            // Never recurse into chat bubbles, direct message threads, or recycler views
+            val cls = root.javaClass.name
+            if (cls.contains("Message") || cls.contains("Chat") || cls.contains("Thread") ||
+                cls.contains("LithoView") || cls.contains("ComponentHost")
+            ) {
+                return changed
+            }
             for (i in 0 until root.childCount) {
                 changed = hideMetaAiViews(root.getChildAt(i), budget) || changed
             }
@@ -794,13 +779,18 @@ private fun installMetaAiViewHiderOnDecor(decorView: View) {
         return changed
     }
 
-    val preDrawListener = ViewTreeObserver.OnPreDrawListener {
-        hideMetaAiViews(decorView)
-        true
+    var lastScanTime = 0L
+    val layoutListener = ViewTreeObserver.OnGlobalLayoutListener {
+        val now = android.os.SystemClock.uptimeMillis()
+        if (now - lastScanTime > 2000L) {
+            lastScanTime = now
+            hideMetaAiViews(decorView)
+        }
     }
 
-    metaAiHiderSessions[decorView] = preDrawListener
-    decorView.viewTreeObserver.addOnPreDrawListener(preDrawListener)
+    metaAiHiderSessions[decorView] = layoutListener
+    decorView.viewTreeObserver.addOnGlobalLayoutListener(layoutListener)
+    decorView.post { hideMetaAiViews(decorView) }
 }
 
 /**
@@ -904,39 +894,6 @@ val HideMetaAi = patch(
         }
         PatcherLog.info { "NexFusion Instagram: Hide Meta AI activity view hider installed" }
     }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: Hide Meta AI view hider skipped" } }
-
-    // 4. View hider in Dialog.show (reels comments, reels more sheets, bottom sheets)
-    runCatching {
-        val dialogClass = classLoader.loadClass("android.app.Dialog")
-        for (method in dialogClass.declaredMethods) {
-            if (method.name == "show" && method.parameterTypes.isEmpty()) {
-                XposedBridge.hookMethod(method, object : XC_MethodHook() {
-                    override fun afterHookedMethod(param: MethodHookParam) {
-                        val dialog = param.thisObject as? Dialog ?: return
-                        val decor = dialog.window?.decorView ?: return
-                        installMetaAiViewHiderOnDecor(decor)
-                    }
-                })
-            }
-        }
-        PatcherLog.info { "NexFusion Instagram: Hide Meta AI dialog view hider installed" }
-    }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: Hide Meta AI dialog view hider skipped" } }
-
-    // 5. View hider in Fragment.onViewCreated (Reels clips viewer, direct inbox fragments)
-    runCatching {
-        val fragmentClass = classLoader.loadClass("androidx.fragment.app.Fragment")
-        for (method in fragmentClass.declaredMethods) {
-            if (method.name == "onViewCreated" && method.parameterTypes.size == 2 && method.parameterTypes[0] == View::class.java) {
-                XposedBridge.hookMethod(method, object : XC_MethodHook() {
-                    override fun afterHookedMethod(param: MethodHookParam) {
-                        val view = param.args.getOrNull(0) as? View ?: return
-                        installMetaAiViewHiderOnDecor(view)
-                    }
-                })
-            }
-        }
-        PatcherLog.info { "NexFusion Instagram: Hide Meta AI fragment view hider installed" }
-    }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: Hide Meta AI fragment view hider skipped" } }
 }
 
 val TurnOffHdrBoosts = patch(
