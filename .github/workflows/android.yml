@@ -73,12 +73,13 @@ jobs:
               run: |
                 mkdir -p beta-dist
                 cp bundles/*/build/outputs/bundle/*.nxb beta-dist/
+                VERSION=$(grep -m1 -oP '^##\s+\K[0-9]+\.[0-9]+\.[0-9]+$' CHANGELOG.md || echo "beta")
                 gh release delete beta --cleanup-tag --yes || true
                 gh release create beta beta-dist/* \
                   --prerelease \
                   --target "${{ github.sha }}" \
-                  --title "Nexfusion Patches Beta" \
-                  --notes "Beta test bundle with Facebook download fixes and Instagram Reels Meta AI removal. Standalone .nxb bundle attached below."
+                  --title "Nexfusion Patches Beta (v${VERSION})" \
+                  --notes-file CHANGELOG.md
               env:
                 GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
