@@ -7,9 +7,9 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
-## 4.2.6
+## 4.2.7
 
-- `NexFusion` 4.2.6:
+- `NexFusion` 4.2.7:
   * Stremio Support & Playback Enhancements:
     - Added Stremio (`com.stremio.one`) as an official patch target.
     - Added "Intro & credits skip" patch: automatically or contextually skips intros, recaps, and credits using embedded chapter marks and video metadata.
