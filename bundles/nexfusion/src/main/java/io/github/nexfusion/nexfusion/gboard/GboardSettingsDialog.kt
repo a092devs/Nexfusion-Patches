@@ -7,8 +7,10 @@ import android.content.SharedPreferences
 import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.graphics.Canvas
+import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
@@ -185,10 +187,10 @@ object GboardSettingsDialog {
         }
         toolbar.addView(titleView, titleParams)
 
-        // Restart button (↻) - 48dp x 48dp touch target, centered 24dp icon glyph
+        // Restart / Reset button (Material autorenew) - 48dp x 48dp touch target, centered glyph
         // Positioned symmetrically with back button and aligned for all screen sizes & cutouts
         val restartBtn = ImageView(context).apply {
-            setImageDrawable(RestartIconDrawable(primaryCol))
+            setImageDrawable(ResetIconDrawable(primaryCol))
             val pad = dp(context, 12f)
             setPadding(pad, pad, pad, pad)
             background = RippleDrawable(ColorStateList.valueOf(0x33888888), null, null)
@@ -571,80 +573,81 @@ object GboardSettingsDialog {
         override fun getIntrinsicHeight(): Int = 72
     }
 
-    // Restart Icon Drawable (↻) - clockwise circular refresh arrow, scales proportionally across all screen sizes
-    class RestartIconDrawable(private val color: Int) : Drawable() {
+    // Material 3 Autorenew / Reset Icon (rotationally symmetric dual arrows)
+    open class ResetIconDrawable(private val color: Int) : Drawable() {
         private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = this@RestartIconDrawable.color
-            style = Paint.Style.STROKE
-            strokeCap = Paint.Cap.ROUND
-            strokeJoin = Paint.Join.ROUND
-        }
-        private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = this@RestartIconDrawable.color
+            color = this@ResetIconDrawable.color
             style = Paint.Style.FILL
         }
 
-        override fun draw(canvas: Canvas) {
-            val b = bounds
-            val cx = b.exactCenterX()
-            val cy = b.exactCenterY()
+        private val path = Path()
+        private val matrix = Matrix()
+
+        // Base 24x24 vector path for Material autorenew / sync / reset
+        private val baseResetPath = Path().apply {
+            // Top half: arrow pointing right + outer arc + inner arc
+            moveTo(12f, 6f)
+            lineTo(12f, 9f)
+            lineTo(16f, 5f)
+            lineTo(12f, 1f)
+            lineTo(12f, 4f)
+            cubicTo(7.58f, 4f, 4f, 7.58f, 4f, 12f)
+            cubicTo(4f, 13.57f, 4.46f, 15.03f, 5.24f, 16.26f)
+            lineTo(6.7f, 14.8f)
+            cubicTo(6.25f, 13.97f, 6f, 13.01f, 6f, 12f)
+            cubicTo(6f, 8.69f, 8.69f, 6f, 12f, 6f)
+            close()
+
+            // Bottom half: mirrored 180° rotation
+            moveTo(18.76f, 7.74f)
+            lineTo(17.3f, 9.2f)
+            cubicTo(17.74f, 10.04f, 18f, 10.99f, 18f, 12f)
+            cubicTo(18f, 15.31f, 15.31f, 18f, 12f, 18f)
+            lineTo(12f, 15f)
+            lineTo(8f, 19f)
+            lineTo(12f, 23f)
+            lineTo(12f, 20f)
+            cubicTo(16.42f, 20f, 20f, 16.42f, 20f, 12f)
+            cubicTo(20f, 10.43f, 19.54f, 8.97f, 18.76f, 7.74f)
+            close()
+        }
+
+        override fun onBoundsChange(bounds: Rect) {
+            super.onBoundsChange(bounds)
+            updatePath(bounds)
+        }
+
+        private fun updatePath(b: Rect) {
             val size = min(b.width(), b.height()).toFloat()
             if (size <= 0f) return
+            val scale = (size * 0.72f) / 24f
+            val cx = b.exactCenterX()
+            val cy = b.exactCenterY()
+            matrix.reset()
+            matrix.postScale(scale, scale)
+            matrix.postTranslate(cx - 12f * scale, cy - 12f * scale)
+            path.reset()
+            baseResetPath.transform(matrix, path)
+        }
 
-            // Proportional stroke and radius scaling across all screen sizes and densities
-            val strokeW = (size * 0.085f).coerceAtLeast(1.5f)
-            paint.strokeWidth = strokeW
-
-            val r = size * 0.33f
-
-            // Clockwise arc starting from top-right (~285°) sweeping ~275° clockwise to ~200° (bottom-left)
-            val startAngle = 285f
-            val sweepAngle = 275f
-            val endAngle = (startAngle + sweepAngle) % 360f
-
-            val rect = RectF(cx - r, cy - r, cx + r, cy + r)
-            canvas.drawArc(rect, startAngle, sweepAngle, false, paint)
-
-            // Arrow head cleanly attached to end of arc (at endAngle)
-            val endRad = Math.toRadians(endAngle.toDouble())
-            val ex = cx + r * cos(endRad).toFloat()
-            val ey = cy + r * sin(endRad).toFloat()
-
-            // Direction tangent to arc at end point (clockwise movement)
-            val tanAngle = endAngle + 90f
-            val tanRad = Math.toRadians(tanAngle.toDouble())
-            val dx = cos(tanRad).toFloat()
-            val dy = sin(tanRad).toFloat()
-
-            val arrowLen = size * 0.15f
-            val arrowHalfW = size * 0.11f
-
-            val tipX = ex + dx * arrowLen
-            val tipY = ey + dy * arrowLen
-
-            val nx = -dy
-            val ny = dx
-
-            val arrowPath = Path().apply {
-                moveTo(tipX, tipY)
-                lineTo(ex + nx * arrowHalfW, ey + ny * arrowHalfW)
-                lineTo(ex - nx * arrowHalfW, ey - ny * arrowHalfW)
-                close()
-            }
-            canvas.drawPath(arrowPath, fillPaint)
+        override fun draw(canvas: Canvas) {
+            if (path.isEmpty) updatePath(bounds)
+            canvas.drawPath(path, paint)
         }
 
         override fun setAlpha(alpha: Int) {
             paint.alpha = alpha
-            fillPaint.alpha = alpha
         }
+
         override fun setColorFilter(colorFilter: android.graphics.ColorFilter?) {
             paint.colorFilter = colorFilter
-            fillPaint.colorFilter = colorFilter
         }
+
         override fun getOpacity(): Int = android.graphics.PixelFormat.TRANSLUCENT
         override fun getIntrinsicWidth(): Int = 72
         override fun getIntrinsicHeight(): Int = 72
     }
+
+    class RestartIconDrawable(color: Int) : ResetIconDrawable(color)
 }
 
