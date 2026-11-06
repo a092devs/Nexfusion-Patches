@@ -59,6 +59,52 @@ val KeepBluetoothAudioClear = patch(
     }
 }
 
+val DiscordBackgroundAudio = patch(
+    name = "Background audio playback",
+    description = "Keeps voice messages and audio playing when Discord is sent to the background or the screen is turned off.",
+) {
+    runCatching {
+        val audioManagerCls = classLoader.loadClass("com.discord.chat.presentation.message.view.voicemessages.AudioPlayerManager")
+        for (m in audioManagerCls.declaredMethods) {
+            if (m.name == "pauseCurrentPlayer" && m.parameterTypes.contentEquals(arrayOf(java.lang.Boolean.TYPE))) {
+                de.robv.android.xposed.XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        val isBackgroundPause = param.args.firstOrNull() as? Boolean ?: false
+                        if (isBackgroundPause) {
+                            param.result = null // prevent pausing when going to background
+                        }
+                    }
+                })
+            }
+        }
+    }
+}
+
+val DiscordPasskeyHint = patch(
+    name = "Passkey error hint",
+    description = "Explains why security keys and passkeys cannot be validated in modified Discord and recommends authenticator apps or SMS.",
+) {
+    runCatching {
+        val securityCls = classLoader.loadClass("com.discord.security_key.SecurityKeyManagerModule")
+        for (m in securityCls.declaredMethods) {
+            if (m.name == "reject" && m.parameterTypes.size == 3) {
+                de.robv.android.xposed.XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        val message = param.args.getOrNull(1) as? String
+                        val cause = param.args.getOrNull(2) as? Throwable
+                        val fullMessage = message ?: cause?.message ?: ""
+                        if (fullMessage.contains("RP ID cannot be validated", ignoreCase = true)) {
+                            param.args[1] = "Passkeys and security keys only work in Discord signed by Discord, " +
+                                "so they cannot work in patched Discord. Tap 'Verify with something else' to use an authenticator app, " +
+                                "SMS or a backup code."
+                        }
+                    }
+                })
+            }
+        }
+    }
+}
+
 val DiscordPatches = arrayOf(
     DisableCrashReporting,
     DisableTelemetry,
@@ -66,6 +112,8 @@ val DiscordPatches = arrayOf(
     DisableAdvertisingIdentifiers,
     UsePhoneFont,
     KeepBluetoothAudioClear,
+    DiscordBackgroundAudio,
+    DiscordPasskeyHint,
 )
 
 private fun IHook.installPrivacyStubs(targets: List<PrivacyTarget>) {

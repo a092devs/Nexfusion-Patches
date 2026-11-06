@@ -257,6 +257,9 @@ val GboardAiWritingTools = patch(
         "enable_device_intelligence" to FlagOverride.forceTrue(),
         "enable_access_point_keyboard" to FlagOverride.forceTrue(),
         "enable_nga_lab_modeless_smartedit" to FlagOverride.forceTrue(),
+        "enable_on_device_proofread" to FlagOverride.forceTrue(),
+        "writing_tools_enable_hybrid" to FlagOverride.forceTrue(),
+        "nga_lab_modeless_smartedit_regex_version" to FlagOverride.forceString("v3"),
 
         // Proofread & Fix It flags
         "config_proofread" to FlagOverride.forceTrue(),

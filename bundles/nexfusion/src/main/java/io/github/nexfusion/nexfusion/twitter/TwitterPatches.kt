@@ -118,6 +118,69 @@ val TwitterDisableImmersivePlayer = patch(
     neutralizeTwitterFlags("explore_relaunch_enable_immersive_player_across_twitter")
 }
 
+val TwitterSanitizeShareLinks = patch(
+    name = "Sanitize share links",
+    description = "Removes tracking query parameters (such as ?s=... and &t=...) when sharing tweets or copying links.",
+) {
+    runCatching {
+        val clipboardManagerCls = classLoader.loadClass("android.content.ClipboardManager")
+        for (m in clipboardManagerCls.declaredMethods) {
+            if (m.name == "setPrimaryClip") {
+                XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        val clip = param.args.firstOrNull() as? android.content.ClipData ?: return
+                        if (clip.itemCount > 0) {
+                            val text = clip.getItemAt(0)?.text?.toString() ?: return
+                            if (text.contains("twitter.com") || text.contains("x.com")) {
+                                val clean = text.replace(Regex("[?&](s|t|ref_src|ref_url|mx)=[a-zA-Z0-9_-]+"), "")
+                                    .replace("?&", "?")
+                                    .trimEnd('?', '&')
+                                if (clean != text) {
+                                    param.args[0] = android.content.ClipData.newPlainText(clip.description.label, clean)
+                                }
+                            }
+                        }
+                    }
+                })
+            }
+        }
+    }
+    runCatching {
+        val intentCls = android.content.Intent::class.java
+        for (m in intentCls.declaredMethods) {
+            if (m.name == "putExtra" && m.parameterTypes.getOrNull(0) == String::class.java && m.parameterTypes.getOrNull(1) == String::class.java) {
+                XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        val key = param.args[0] as? String ?: return
+                        if (key == android.content.Intent.EXTRA_TEXT) {
+                            val text = param.args[1] as? String ?: return
+                            if (text.contains("twitter.com") || text.contains("x.com")) {
+                                val clean = text.replace(Regex("[?&](s|t|ref_src|ref_url|mx)=[a-zA-Z0-9_-]+"), "")
+                                    .replace("?&", "?")
+                                    .trimEnd('?', '&')
+                                param.args[1] = clean
+                            }
+                        }
+                    }
+                })
+            }
+        }
+    }
+}
+
+val TwitterDisableAutoRefresh = patch(
+    name = "Disable timeline auto-refresh",
+    description = "Stops the home timeline from refreshing and jumping to the top automatically.",
+    use = false,
+) {
+    neutralizeTwitterFlags(
+        "timeline_auto_refresh_enabled",
+        "home_timeline_auto_refresh_policy_enabled",
+        "android_timeline_auto_refresh_enabled",
+        "timeline_auto_refresh_interval",
+    )
+}
+
 val TwitterPatches = arrayOf(
     TwitterRemoveAds,
     TwitterUnlockVideoDownloads,
@@ -131,6 +194,8 @@ val TwitterPatches = arrayOf(
     TwitterRemoveViewCount,
     TwitterHideTimelineBookmarks,
     TwitterDisableImmersivePlayer,
+    TwitterSanitizeShareLinks,
+    TwitterDisableAutoRefresh,
 )
 
 // ---- Remove Ads ---------------------------------------------------------------------------------

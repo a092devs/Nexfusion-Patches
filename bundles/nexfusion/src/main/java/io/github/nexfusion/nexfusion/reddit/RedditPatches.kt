@@ -5,6 +5,8 @@ import android.graphics.Color
 import android.os.Build
 import android.view.Window
 import android.view.View
+import android.view.ViewGroup
+import android.widget.TextView
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XC_MethodHook.MethodHookParam
 import de.robv.android.xposed.XC_MethodReplacement
@@ -292,10 +294,81 @@ val OpenLinksExternally = patch(
     }
 }
 
+val RedditUnlockPremium = patch(
+    name = "Unlock Premium",
+    description = "Enables local Reddit Premium UI perks (custom app icons, premium styling, avatar styling). Server-side perks cannot be unlocked.",
+) {
+    runCatching {
+        val accountClass = classLoader.loadClass("com.reddit.domain.model.Account")
+        for (m in accountClass.declaredMethods) {
+            val name = m.name.lowercase()
+            if (m.returnType == java.lang.Boolean.TYPE || m.returnType == java.lang.Boolean::class.java) {
+                if (name == "isgold" || name == "haspremium" || name == "ispremiumsubscriber" ||
+                    name == "haspremiumavatartreatment" || name.contains("premium")
+                ) {
+                    XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
+                }
+            }
+        }
+    }
+}
+
+val RedditBlockAutoModComments = patch(
+    name = "Block AutoMod comments",
+    description = "Hides stickied and automated comments from u/AutoModerator at the top of comment threads.",
+    use = false,
+) {
+    runCatching {
+        val adapterClass = runCatching { classLoader.loadClass("androidx.recyclerview.widget.RecyclerView\$Adapter") }.getOrNull()
+        if (adapterClass != null) {
+            XposedBridge.hookAllMethods(
+                adapterClass,
+                "onBindViewHolder",
+                object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam) {
+                        val holder = param.args.firstOrNull() ?: return
+                        val itemView = runCatching {
+                            XposedHelpers.getObjectField(holder, "itemView") as? View
+                        }.getOrNull() ?: return
+
+                        val holderStr = holder.toString().lowercase()
+                        val text = itemView.findCommentText()
+                        if (text.contains("AutoModerator", ignoreCase = true) && (holderStr.contains("comment") || text.contains("I am a bot", ignoreCase = true))) {
+                            itemView.visibility = View.GONE
+                            itemView.layoutParams?.let { lp ->
+                                lp.height = 0
+                                lp.width = 0
+                                itemView.layoutParams = lp
+                            }
+                        }
+                    }
+                }
+            )
+        }
+    }
+}
+
+private fun View.findCommentText(): String {
+    val sb = StringBuilder()
+    fun walk(v: View) {
+        if (v is TextView) {
+            sb.append(v.text).append(" ")
+        } else if (v is ViewGroup) {
+            for (i in 0 until v.childCount) {
+                walk(v.getChildAt(i))
+            }
+        }
+    }
+    walk(this)
+    return sb.toString()
+}
+
 val RedditPatches = arrayOf(
     DisableScreenshotBanner,
     OpenLinksDirectly,
     OpenLinksExternally,
+    RedditUnlockPremium,
+    RedditBlockAutoModComments,
     RedgifsAudio,
     RedgifsHd,
     DisableAutoRefresh,

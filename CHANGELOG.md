@@ -10,6 +10,32 @@ bundles after CI succeeds.
 ## 4.2.6
 
 - `NexFusion` 4.2.6:
+  * Stremio Support & Playback Enhancements:
+    - Added Stremio (`com.stremio.one`) as an official patch target.
+    - Added "Intro & credits skip" patch: automatically or contextually skips intros, recaps, and credits using embedded chapter marks and video metadata.
+    - Added "Auto-pick best stream" patch: automatically selects and plays the highest-quality stream without requiring manual selection.
+    - Added "Hide episode spoilers" patch: hides episode thumbnails, previews, and synopses for unwatched episodes.
+    - Added "Avoid SDH subtitles" patch: prefers clean dialogue subtitle tracks over hearing-impaired [SDH] tracks.
+    - Added "Remember audio & subtitle tracks" patch: persists preferred audio and subtitle languages per show.
+    - Added "Smoother playback & larger buffer" patch: expands ExoPlayer playback buffer to 120s for seamless 4K HDR streaming.
+    - Added "Binge watching & auto-next" patch: seamlessly transitions to the next episode when current playback finishes.
+  * Telegram Enhancements & Proteus Port:
+    - Added "Unlock Premium" patch: enables local Telegram Premium features (custom emoji reactions, status badges, up to 6 multi-accounts).
+    - Added "Bypass channel restrictions" patch: allows copying, saving, and forwarding content from protected and restricted channels and groups.
+    - Added "Ghost mode (Hide typing status)" patch: stops sending typing and audio recording status when composing messages.
+    - Added "Anti-disappearing media" patch: prevents expiring timed photos and voice messages from self-destructing.
+    - Added "Anti-screenshot notifications" patch: suppresses screenshot alert notifications in secret chats.
+  * Reddit Enhancements & Proteus Port:
+    - Added "Unlock Premium" patch: enables local Reddit Premium UI perks (custom app icons, premium styling, avatar styling).
+    - Added "Block AutoMod comments" patch: hides stickied and automated comments from u/AutoModerator at the top of comment threads.
+  * Discord Enhancements & Venus Port:
+    - Added "Background audio playback" patch: keeps voice messages and media playing when Discord is sent to background or screen turns off.
+    - Added "Passkey error hint" patch: clarifies passkey verification limitations on patched builds.
+  * LinkedIn Enhancements & Loki Port:
+    - Added "Anonymous profile viewing" patch: visits user profiles without appearing in "Who viewed your profile".
+  * X (Twitter) Enhancements & Piko Port:
+    - Added "Sanitize share links" patch: strips tracking query parameters (?s=..., &t=...) from copied and shared tweet links.
+    - Added "Disable timeline auto-refresh" patch: stops the home timeline from refreshing and jumping to the top automatically.
   * MX Player Support & Dynamic Bytecode Fingerprints:
     - Added MX Player (`com.mxtech.videoplayer.ad`) as an official patch target.
     - Added dynamic DexKit fingerprinting to resolve obfuscated R8 ad and configuration classes across release builds (`bw7`, `hgl`, `mq`, `pwh`, `ki1`, `en9`, `ozk`, `v2e`).
@@ -24,9 +50,10 @@ bundles after CI succeeds.
   * Facebook Update Compatibility:
     - Expanded GraphQL category matching in `HideSponsoredPosts` to catch high-value promotions, injected stories, showcase ads, and friendly feed promotions on Facebook 586+.
     - Hooked both the feed funnel entry point and static delegator methods to ensure complete ad suppression across single and batch feed additions.
+    - Added comment ad pill suppression to eliminate floating CTA buttons on comments.
   * Universal Dynamic Patching & Cross-Compatibility:
     - Preserved `compatibilitySeries = "3.6"` and open manager versioning for universal cross-compatibility across all manager builds.
-    - Maintained dynamic runtime matching across all 21 supported target applications.
+    - Maintained dynamic runtime matching across all 22 supported target applications.
 
 ## 4.2.5
 

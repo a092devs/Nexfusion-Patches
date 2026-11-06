@@ -98,11 +98,43 @@ val BlockTracking = patch(
     }
 }
 
+val AnonymousProfileViewing = patch(
+    name = "Anonymous profile viewing",
+    description = "Visits user profiles without appearing in 'Who viewed your profile'.",
+    use = false,
+) {
+    runCatching {
+        val trackingCls = classLoader.loadClass("com.linkedin.android.profile.components.tracking.ProfileTrackingFeatureImpl")
+        for (m in trackingCls.declaredMethods) {
+            if (m.name.contains("sendCustomProfileViewEvent")) {
+                XposedBridge.hookMethod(m, XC_MethodReplacement.DO_NOTHING)
+            }
+        }
+    }
+
+    runCatching {
+        val trackerCls = classLoader.loadClass("com.linkedin.android.litrackinglib.metric.Tracker")
+        for (m in trackerCls.declaredMethods) {
+            if (m.name == "send") {
+                XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        val event = param.args.firstOrNull()?.toString() ?: ""
+                        if (event.contains("ProfileViewEvent") || event.contains("profile_view")) {
+                            param.result = null
+                        }
+                    }
+                })
+            }
+        }
+    }
+}
+
 val LinkedInPatches = arrayOf(
     DownloadMedia,
     SanitizeShareLinks,
     OpenLinksDirectly,
     BlockTracking,
+    AnonymousProfileViewing,
     HideSponsoredMessages,
     GhostNoTypingIndicator,
     GhostNoReadReceipts,

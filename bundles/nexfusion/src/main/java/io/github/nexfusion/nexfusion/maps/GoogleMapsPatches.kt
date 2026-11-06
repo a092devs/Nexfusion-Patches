@@ -102,6 +102,22 @@ val MapsHideAds = patch(
             }
         }
     }
+
+    // 5. Promoted pin request cancellation
+    runCatching {
+        val pinRequestClasses = listOf(
+            "com.google.android.apps.gmm.shared.ad.PromotedPinAdsRequest",
+            "com.google.android.apps.gmm.search.ads.PromotedPinAdsRequest",
+        )
+        for (className in pinRequestClasses) {
+            val clazz = runCatching { classLoader.loadClass(className) }.getOrNull() ?: continue
+            clazz.declaredMethods.forEach { method ->
+                if (method.returnType == java.lang.Void.TYPE) {
+                    XposedBridge.hookMethod(method, XC_MethodReplacement.DO_NOTHING)
+                }
+            }
+        }
+    }
 }
 
 val MapsHighRefreshRate = patch(

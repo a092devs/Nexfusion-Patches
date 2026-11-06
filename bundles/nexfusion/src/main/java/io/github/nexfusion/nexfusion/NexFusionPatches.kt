@@ -21,6 +21,7 @@ import io.github.nexfusion.nexfusion.maps.GoogleMapsPatches
 import io.github.nexfusion.nexfusion.mxplayer.MxPlayerPatches
 import io.github.nexfusion.nexfusion.protonvpn.ProtonVpnPatches
 import io.github.nexfusion.nexfusion.reddit.RedditPatches
+import io.github.nexfusion.nexfusion.stremio.StremioPatches
 import io.github.nexfusion.nexfusion.telegram.TelegramPatches
 import io.github.nexfusion.nexfusion.twitch.TwitchPatches
 import io.github.nexfusion.nexfusion.twitter.TwitterPatches
@@ -147,6 +148,12 @@ object NexFusionPatches : PatchBundle {
             packageName = "com.mxtech.videoplayer.ad",
             patches = MxPlayerPatches,
             appIconColor = 0x0078D7,
+        ),
+        AppPatchInfo(
+            appName = "Stremio",
+            packageName = "com.stremio.one",
+            patches = StremioPatches,
+            appIconColor = 0x5B67F1,
         ),
     )
 }

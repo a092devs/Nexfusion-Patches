@@ -207,6 +207,23 @@ val HideSponsoredPosts = patch(
             dex.hookMethod { before(hookFunnel) }
         }
     }
+
+    // Suppress floating CTA ad pills on feed comments (permalink & flyout ads)
+    runCatching {
+        val pillPluginNames = listOf(
+            "com.facebook.feedback.comments.plugins.indicatorpill.permalinkadsfloatingcta.PermalinkAdsFloatingCtaPlugin",
+            "com.facebook.feedback.comments.plugins.indicatorpill.flyoutadsfloatingcta.FlyoutAdsFloatingCtaPlugin",
+            "com.facebook.feedback.comments.plugins.indicatorpill.reelsadsfloatingcta.ReelsAdsFloatingCtaPlugin"
+        )
+        for (pluginName in pillPluginNames) {
+            val pluginClass = runCatching { classLoader.loadClass(pluginName) }.getOrNull() ?: continue
+            for (method in pluginClass.declaredMethods) {
+                if (method.returnType == java.lang.Boolean.TYPE || method.returnType == java.lang.Boolean::class.java) {
+                    XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(false))
+                }
+            }
+        }
+    }
 }
 
 val HideSponsoredReels = patch(

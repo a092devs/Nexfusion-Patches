@@ -566,8 +566,105 @@ val TelegramAmoledBlack = patch(
     }
 }
 
+val TelegramUnlockPremium = patch(
+    name = "Unlock Premium",
+    description = "Enables local Telegram Premium features (custom emoji reactions, status badges, increased account limit up to 6, and stories features).",
+) {
+    runCatching {
+        val userConfigCls = classLoader.loadClass("org.telegram.messenger.UserConfig")
+        userConfigCls.declaredMethods.filter { it.name == "isPremium" }.forEach { m ->
+            XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
+        }
+        userConfigCls.declaredMethods.filter { it.name == "hasPremiumOnAccounts" }.forEach { m ->
+            XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
+        }
+        userConfigCls.declaredMethods.filter { it.name == "getMaxAccountCount" }.forEach { m ->
+            XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(6))
+        }
+    }
+    runCatching {
+        val messagesControllerCls = classLoader.loadClass("org.telegram.messenger.MessagesController")
+        messagesControllerCls.declaredMethods.filter { it.name == "isPremiumUser" }.forEach { m ->
+            XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
+        }
+    }
+    runCatching {
+        val storiesControllerCls = classLoader.loadClass("org.telegram.ui.Stories.StoriesController")
+        storiesControllerCls.declaredMethods.filter { it.name == "isPremium" }.forEach { m ->
+            XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
+        }
+    }
+}
+
+val TelegramBypassRestrictions = patch(
+    name = "Bypass channel restrictions",
+    description = "Allows copying, saving, and forwarding content from protected and restricted channels and groups.",
+) {
+    runCatching {
+        val messagesControllerCls = classLoader.loadClass("org.telegram.messenger.MessagesController")
+        messagesControllerCls.declaredMethods.filter { it.name == "getRestrictionReason" }.forEach { m ->
+            XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(null))
+        }
+    }
+    runCatching {
+        val messageObjectCls = classLoader.loadClass("org.telegram.messenger.MessageObject")
+        messageObjectCls.declaredMethods.filter {
+            it.name == "isCopyProtectionEnabled" || it.name == "needDrawBluredPreview"
+        }.forEach { m ->
+            XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(false))
+        }
+        messageObjectCls.declaredMethods.filter { it.name == "canForward" || it.name == "canShare" }.forEach { m ->
+            XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
+        }
+    }
+}
+
+val TelegramGhostTyping = patch(
+    name = "Ghost mode (Hide typing status)",
+    description = "Stops sending 'typing...' and audio recording status when composing messages.",
+    use = false,
+) {
+    runCatching {
+        val controllerCls = classLoader.loadClass("org.telegram.messenger.MessagesController")
+        controllerCls.declaredMethods.filter { it.name == "sendTyping" }.forEach { m ->
+            XposedBridge.hookMethod(m, XC_MethodReplacement.DO_NOTHING)
+        }
+    }
+}
+
+val TelegramAntiDisappearingMedia = patch(
+    name = "Anti-disappearing media",
+    description = "Prevents expiring timed photos and voice messages from self-destructing.",
+    use = false,
+) {
+    runCatching {
+        val messageObjectCls = classLoader.loadClass("org.telegram.messenger.MessageObject")
+        messageObjectCls.declaredMethods.filter { it.name == "isExpiredVoiceMessage" || it.name == "isExpiredMedia" }.forEach { m ->
+            XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(false))
+        }
+    }
+}
+
+val TelegramAntiScreenshotAlert = patch(
+    name = "Anti-screenshot notifications",
+    description = "Prevents Telegram from sending screenshot alert notifications in secret chats.",
+    use = false,
+) {
+    runCatching {
+        val secretChatHelperCls = classLoader.loadClass("org.telegram.messenger.SecretChatHelper")
+        secretChatHelperCls.declaredMethods.filter { it.name.contains("sendScreenshotMessage", ignoreCase = true) }.forEach { m ->
+            XposedBridge.hookMethod(m, XC_MethodReplacement.DO_NOTHING)
+        }
+    }
+}
+
 val TelegramPatches = arrayOf(
     TelegramHideAds,
+    TelegramUnlockPremium,
+    TelegramBypassRestrictions,
+    TelegramGhostTyping,
+    TelegramAntiDisappearingMedia,
+    TelegramAntiScreenshotAlert,
     TelegramHideStories,
     TelegramHideSponsoredProxy,
     TelegramKeepDeletedMessages,
