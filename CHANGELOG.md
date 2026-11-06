@@ -7,6 +7,15 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.2.8
+
+- `NexFusion` 4.2.8:
+  * Gboard Advanced Settings Polish:
+    - Replaced the asymmetric restart button icon with the official Material 3 `autorenew` / `sync` glyph featuring 180° rotationally symmetric dual arrows for balanced alignment.
+    - Standardized toolbar padding, touch targets (48dp), and keylines (16dp from screen edges) across all screen densities and orientations.
+    - Integrated dynamic window insets (`WindowInsets.Type.statusBars` and `WindowInsets.Type.displayCutout`) for edge-to-edge support across devices with punch holes, notches, tablets, and curved corners.
+    - Enhanced process restart execution to reliably terminate and relaunch Gboard via main looper dispatch.
+
 ## 4.2.7
 
 - `NexFusion` 4.2.7:
