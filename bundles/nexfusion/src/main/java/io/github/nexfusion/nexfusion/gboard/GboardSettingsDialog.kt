@@ -7,28 +7,34 @@ import android.content.SharedPreferences
 import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.RectF
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.os.Process
 import android.preference.PreferenceManager
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
-import android.widget.FrameLayout
+import android.view.WindowInsets
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
+import kotlin.math.cos
 import kotlin.math.min
+import kotlin.math.sin
+import kotlin.system.exitProcess
 
 /**
  * PixelBoard-style "Advanced settings" screen matching the native Material 3 Gboard settings UI.
@@ -70,6 +76,20 @@ object GboardSettingsDialog {
         if (window != null) {
             window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
             window.setBackgroundDrawable(ColorDrawable(if (isDark) 0xFF141218.toInt() else 0xFFFEF7FF.toInt()))
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                window.setDecorFitsSystemWindows(false)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val decorView = window.decorView
+                var flags = decorView.systemUiVisibility
+                if (!isDark) {
+                    flags = flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        flags = flags or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+                    }
+                }
+                decorView.systemUiVisibility = flags
+            }
         }
 
         val root = buildContentView(activity, dialog, isDark)
@@ -123,27 +143,33 @@ object GboardSettingsDialog {
             if (resourceId > 0) context.resources.getDimensionPixelSize(resourceId) else dp(context, 28f)
         }.getOrDefault(dp(context, 28f))
 
-        // Toolbar
+        // Toolbar: standard Material 3 top app bar (56dp/64dp content height)
+        // Uses symmetric horizontal padding (4dp) and dynamic insets to align with Material guidelines across all screen sizes
         val toolbar = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(context, 8f), statusBarHeight + dp(context, 8f), dp(context, 16f), dp(context, 12f))
+            setPadding(dp(context, 4f), statusBarHeight + dp(context, 4f), dp(context, 4f), dp(context, 4f))
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
+            minimumHeight = statusBarHeight + dp(context, 56f)
         }
 
-        // Back button (←)
+        // Back button (←) - 48dp x 48dp touch target, centered 24dp icon glyph
         val backBtn = ImageView(context).apply {
             setImageDrawable(BackArrowDrawable(onSurface))
-            setPadding(dp(context, 12f), dp(context, 12f), dp(context, 12f), dp(context, 12f))
+            val pad = dp(context, 12f)
+            setPadding(pad, pad, pad, pad)
             background = RippleDrawable(ColorStateList.valueOf(0x33888888), null, null)
             isClickable = true
             isFocusable = true
+            contentDescription = "Navigate up"
             setOnClickListener { dialog.dismiss() }
         }
-        toolbar.addView(backBtn, LinearLayout.LayoutParams(dp(context, 48f), dp(context, 48f)))
+        toolbar.addView(backBtn, LinearLayout.LayoutParams(dp(context, 48f), dp(context, 48f)).apply {
+            gravity = Gravity.CENTER_VERTICAL
+        })
 
         // Title: Advanced settings
         val titleView = TextView(context).apply {
@@ -151,28 +177,40 @@ object GboardSettingsDialog {
             textSize = 20f
             setTextColor(onSurface)
             typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
-            setPadding(dp(context, 12f), 0, 0, 0)
+            setPadding(dp(context, 12f), 0, dp(context, 8f), 0)
+            gravity = Gravity.CENTER_VERTICAL
         }
-        val titleParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        val titleParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+            gravity = Gravity.CENTER_VERTICAL
+        }
         toolbar.addView(titleView, titleParams)
 
-        // Restart button (↻)
+        // Restart button (↻) - 48dp x 48dp touch target, centered 24dp icon glyph
+        // Positioned symmetrically with back button and aligned for all screen sizes & cutouts
         val restartBtn = ImageView(context).apply {
             setImageDrawable(RestartIconDrawable(primaryCol))
-            setPadding(dp(context, 12f), dp(context, 12f), dp(context, 12f), dp(context, 12f))
+            val pad = dp(context, 12f)
+            setPadding(pad, pad, pad, pad)
             background = RippleDrawable(ColorStateList.valueOf(0x33888888), null, null)
             isClickable = true
             isFocusable = true
             contentDescription = "Restart Gboard"
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                tooltipText = "Restart Gboard"
+            }
             setOnClickListener {
                 Toast.makeText(context, "Restarting Gboard...", Toast.LENGTH_SHORT).show()
                 dialog.dismiss()
-                postDelayed({
-                    android.os.Process.killProcess(android.os.Process.myPid())
-                }, 200)
+                Handler(Looper.getMainLooper()).postDelayed({
+                    runCatching { activity.finishAffinity() }
+                    Process.killProcess(Process.myPid())
+                    exitProcess(0)
+                }, 150)
             }
         }
-        toolbar.addView(restartBtn, LinearLayout.LayoutParams(dp(context, 48f), dp(context, 48f)))
+        toolbar.addView(restartBtn, LinearLayout.LayoutParams(dp(context, 48f), dp(context, 48f)).apply {
+            gravity = Gravity.CENTER_VERTICAL
+        })
         rootLayout.addView(toolbar)
 
         // Scrollable content
@@ -183,6 +221,43 @@ object GboardSettingsDialog {
                 1f
             )
             isFillViewport = true
+            clipToPadding = false
+        }
+
+        // Dynamically handle window insets for all screen sizes, display cutouts, notches,
+        // foldables, tablets, and edge-to-edge system bars.
+        rootLayout.setOnApplyWindowInsetsListener { _, insets ->
+            val topInset: Int
+            val leftInset: Int
+            val rightInset: Int
+            val bottomInset: Int
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val safeInsets = insets.getInsets(WindowInsets.Type.statusBars() or WindowInsets.Type.displayCutout())
+                val navInsets = insets.getInsets(WindowInsets.Type.navigationBars())
+                topInset = safeInsets.top
+                leftInset = safeInsets.left
+                rightInset = safeInsets.right
+                bottomInset = navInsets.bottom
+            } else {
+                @Suppress("DEPRECATION")
+                topInset = insets.systemWindowInsetTop
+                @Suppress("DEPRECATION")
+                leftInset = insets.systemWindowInsetLeft
+                @Suppress("DEPRECATION")
+                rightInset = insets.systemWindowInsetRight
+                @Suppress("DEPRECATION")
+                bottomInset = insets.systemWindowInsetBottom
+            }
+
+            toolbar.setPadding(
+                dp(context, 4f) + leftInset,
+                topInset + dp(context, 4f),
+                dp(context, 4f) + rightInset,
+                dp(context, 4f)
+            )
+            toolbar.minimumHeight = topInset + dp(context, 56f)
+            scrollView.setPadding(leftInset, 0, rightInset, bottomInset)
+            insets
         }
 
         val scrollContent = LinearLayout(context).apply {
@@ -204,7 +279,14 @@ object GboardSettingsDialog {
         }
         scrollContent.addView(sectionTitle)
 
-        // Card container for switches
+        // Card container for switches: responsive horizontal margins on wide screens (tablets/foldables)
+        val screenWidthDp = context.resources.configuration.screenWidthDp
+        val cardMarginH = if (screenWidthDp > 600) {
+            dp(context, ((screenWidthDp - 600) / 2f + 16f).coerceAtLeast(16f))
+        } else {
+            dp(context, 16f)
+        }
+
         val card = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             background = GradientDrawable().apply {
@@ -216,8 +298,8 @@ object GboardSettingsDialog {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply {
-                leftMargin = dp(context, 16f)
-                rightMargin = dp(context, 16f)
+                leftMargin = cardMarginH
+                rightMargin = cardMarginH
                 topMargin = dp(context, 4f)
                 bottomMargin = dp(context, 16f)
             }
@@ -459,11 +541,10 @@ object GboardSettingsDialog {
         override fun getIntrinsicHeight(): Int = 72
     }
 
-    // Back Arrow Drawable (←)
+    // Back Arrow Drawable (←) - scales proportionally across all screen sizes and densities
     class BackArrowDrawable(private val color: Int) : Drawable() {
         private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = this@BackArrowDrawable.color
-            strokeWidth = 5f
             style = Paint.Style.STROKE
             strokeCap = Paint.Cap.ROUND
             strokeJoin = Paint.Join.ROUND
@@ -473,7 +554,11 @@ object GboardSettingsDialog {
             val b = bounds
             val cx = b.exactCenterX()
             val cy = b.exactCenterY()
-            val span = min(b.width(), b.height()) * 0.32f
+            val size = min(b.width(), b.height()).toFloat()
+            if (size <= 0f) return
+
+            paint.strokeWidth = (size * 0.085f).coerceAtLeast(1.5f)
+            val span = size * 0.32f
             canvas.drawLine(cx - span, cy, cx + span, cy, paint)
             canvas.drawLine(cx - span, cy, cx - span * 0.3f, cy - span * 0.7f, paint)
             canvas.drawLine(cx - span, cy, cx - span * 0.3f, cy + span * 0.7f, paint)
@@ -482,15 +567,17 @@ object GboardSettingsDialog {
         override fun setAlpha(alpha: Int) { paint.alpha = alpha }
         override fun setColorFilter(colorFilter: android.graphics.ColorFilter?) { paint.colorFilter = colorFilter }
         override fun getOpacity(): Int = android.graphics.PixelFormat.TRANSLUCENT
+        override fun getIntrinsicWidth(): Int = 72
+        override fun getIntrinsicHeight(): Int = 72
     }
 
-    // Restart Icon Drawable (↻) - clockwise circular refresh arrow
+    // Restart Icon Drawable (↻) - clockwise circular refresh arrow, scales proportionally across all screen sizes
     class RestartIconDrawable(private val color: Int) : Drawable() {
         private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = this@RestartIconDrawable.color
-            strokeWidth = 6f
             style = Paint.Style.STROKE
             strokeCap = Paint.Cap.ROUND
+            strokeJoin = Paint.Join.ROUND
         }
         private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = this@RestartIconDrawable.color
@@ -501,35 +588,47 @@ object GboardSettingsDialog {
             val b = bounds
             val cx = b.exactCenterX()
             val cy = b.exactCenterY()
-            val r = min(b.width(), b.height()) * 0.40f
+            val size = min(b.width(), b.height()).toFloat()
+            if (size <= 0f) return
 
-            // Draw a clockwise circular arrow: arc goes from top (~270°/top) around clockwise
-            // to bottom-left (~225°), sweeping about 240°
-            val rect = android.graphics.RectF(cx - r, cy - r, cx + r, cy + r)
-            canvas.drawArc(rect, 270f, 240f, false, paint)
+            // Proportional stroke and radius scaling across all screen sizes and densities
+            val strokeW = (size * 0.085f).coerceAtLeast(1.5f)
+            paint.strokeWidth = strokeW
 
-            // Arrow head at end of arc (~225° = bottom-left), pointing down-left continuing flow
-            val endAngle = 225f
-            val angleRad = Math.toRadians(endAngle.toDouble())
-            val endX = cx + r * Math.cos(angleRad).toFloat()
-            val endY = cy + r * Math.sin(angleRad).toFloat()
+            val r = size * 0.33f
 
-            // Direction tangent to arc at end point (clockwise flow = down-left at 225°)
-            val dirAngle = endAngle + 90f // tangent direction
-            val dx = Math.cos(Math.toRadians(dirAngle.toDouble())).toFloat()
-            val dy = Math.sin(Math.toRadians(dirAngle.toDouble())).toFloat()
-            val arrowLen = 9f
-            val tipX = endX + dx * arrowLen
-            val tipY = endY + dy * arrowLen
-            // Arrow head base (perpendicular to direction)
-            val baseW = 6f
-            val px = -dy * baseW
-            val py = dx * baseW
+            // Clockwise arc starting from top-right (~285°) sweeping ~275° clockwise to ~200° (bottom-left)
+            val startAngle = 285f
+            val sweepAngle = 275f
+            val endAngle = (startAngle + sweepAngle) % 360f
+
+            val rect = RectF(cx - r, cy - r, cx + r, cy + r)
+            canvas.drawArc(rect, startAngle, sweepAngle, false, paint)
+
+            // Arrow head cleanly attached to end of arc (at endAngle)
+            val endRad = Math.toRadians(endAngle.toDouble())
+            val ex = cx + r * cos(endRad).toFloat()
+            val ey = cy + r * sin(endRad).toFloat()
+
+            // Direction tangent to arc at end point (clockwise movement)
+            val tanAngle = endAngle + 90f
+            val tanRad = Math.toRadians(tanAngle.toDouble())
+            val dx = cos(tanRad).toFloat()
+            val dy = sin(tanRad).toFloat()
+
+            val arrowLen = size * 0.15f
+            val arrowHalfW = size * 0.11f
+
+            val tipX = ex + dx * arrowLen
+            val tipY = ey + dy * arrowLen
+
+            val nx = -dy
+            val ny = dx
 
             val arrowPath = Path().apply {
                 moveTo(tipX, tipY)
-                lineTo(endX + px, endY + py)
-                lineTo(endX - px, endY - py)
+                lineTo(ex + nx * arrowHalfW, ey + ny * arrowHalfW)
+                lineTo(ex - nx * arrowHalfW, ey - ny * arrowHalfW)
                 close()
             }
             canvas.drawPath(arrowPath, fillPaint)
@@ -544,6 +643,8 @@ object GboardSettingsDialog {
             fillPaint.colorFilter = colorFilter
         }
         override fun getOpacity(): Int = android.graphics.PixelFormat.TRANSLUCENT
+        override fun getIntrinsicWidth(): Int = 72
+        override fun getIntrinsicHeight(): Int = 72
     }
 }
 
