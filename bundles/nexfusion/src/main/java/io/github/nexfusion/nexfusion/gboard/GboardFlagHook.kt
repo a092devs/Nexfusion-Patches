@@ -92,13 +92,15 @@ fun PatchExecutor.enableGboardPreferences(
             val editor = latinPrefs.edit()
             var modified = false
             booleans.forEach { (k, v) ->
-                if (!latinPrefs.contains(k)) {
+                val existing = runCatching { latinPrefs.all[k] }.getOrNull()
+                if (existing == null || existing !is Boolean) {
                     editor.putBoolean(k, v)
                     modified = true
                 }
             }
             strings.forEach { (k, v) ->
-                if (!latinPrefs.contains(k)) {
+                val existing = runCatching { latinPrefs.all[k] }.getOrNull()
+                if (existing == null || existing !is String) {
                     editor.putString(k, v)
                     modified = true
                 }
@@ -110,13 +112,15 @@ fun PatchExecutor.enableGboardPreferences(
             val editor = defaultPrefs.edit()
             var modified = false
             booleans.forEach { (k, v) ->
-                if (!defaultPrefs.contains(k)) {
+                val existing = runCatching { defaultPrefs.all[k] }.getOrNull()
+                if (existing == null || existing !is Boolean) {
                     editor.putBoolean(k, v)
                     modified = true
                 }
             }
             strings.forEach { (k, v) ->
-                if (!defaultPrefs.contains(k)) {
+                val existing = runCatching { defaultPrefs.all[k] }.getOrNull()
+                if (existing == null || existing !is String) {
                     editor.putString(k, v)
                     modified = true
                 }
@@ -147,13 +151,16 @@ fun PatchExecutor.enableGboardPreferences(
                 Boolean::class.javaPrimitiveType,
                 object : XC_MethodHook() {
                     override fun beforeHookedMethod(param: MethodHookParam) {
-                        val sp = param.thisObject as? android.content.SharedPreferences
                         val key = param.args[0] as? String ?: return
+                        val override = dynamicBooleanPrefOverrides[key]
+                        if (override != null) {
+                            param.result = override
+                            return
+                        }
+                        val sp = param.thisObject as? android.content.SharedPreferences
                         if (sp != null && sp.contains(key)) {
                             return
                         }
-                        val override = dynamicBooleanPrefOverrides[key] ?: return
-                        param.result = override
                     }
                 }
             )
@@ -164,13 +171,16 @@ fun PatchExecutor.enableGboardPreferences(
                 String::class.java,
                 object : XC_MethodHook() {
                     override fun beforeHookedMethod(param: MethodHookParam) {
-                        val sp = param.thisObject as? android.content.SharedPreferences
                         val key = param.args[0] as? String ?: return
+                        val override = dynamicStringPrefOverrides[key]
+                        if (override != null) {
+                            param.result = override
+                            return
+                        }
+                        val sp = param.thisObject as? android.content.SharedPreferences
                         if (sp != null && sp.contains(key)) {
                             return
                         }
-                        val override = dynamicStringPrefOverrides[key] ?: return
-                        param.result = override
                     }
                 }
             )
@@ -225,7 +235,6 @@ fun PatchExecutor.enableGboardWritingToolsPreference() {
             "pref_key_writing_tools_screen_context_opt_in_v1" to true,
             "pref_key_writing_tools_enable_pi_override" to true,
             "pref_key_stop_dictation_after_sending_writing_tools_v2_prompts" to false,
-            "jarvis_consent_history" to true,
             "enable_jarvis" to true,
             "jarvis_enabled" to true,
         ),
