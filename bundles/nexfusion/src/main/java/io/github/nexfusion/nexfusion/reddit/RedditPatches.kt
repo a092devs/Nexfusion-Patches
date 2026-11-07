@@ -363,8 +363,46 @@ private fun View.findCommentText(): String {
     return sb.toString()
 }
 
+val HighQualityAvatars = patch(
+    name = "High quality avatars",
+    description = "Shows user avatars in full resolution instead of the downscaled preview.",
+) {
+    val requestBuilderClass = runCatching {
+        Class.forName("com.bumptech.glide.RequestBuilder", false, classLoader)
+    }.getOrNull()
+
+    if (requestBuilderClass != null) {
+        val targetMethods = requestBuilderClass.declaredMethods.filter {
+            (it.name == "loadGeneric" || it.name == "load") && it.parameterCount == 1
+        }
+        for (m in targetMethods) {
+            runCatching {
+                XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        val model = param.args[0] as? String ?: return
+                        val queryIndex = model.indexOf('?')
+                        if (queryIndex < 0 || model.contains("blur=")) return
+
+                        val snooPreviewPrefix = "https://preview.redd.it/snoovatar/avatars/"
+                        val snooOriginalPrefix = "https://i.redd.it/snoovatar/avatars/"
+                        val profilePrefix = "https://styles.redditmedia.com/"
+                        val profilePath = "/styles/profileIcon_"
+
+                        if (model.startsWith(snooPreviewPrefix)) {
+                            param.args[0] = snooOriginalPrefix + model.substring(snooPreviewPrefix.length, queryIndex)
+                        } else if (model.startsWith(profilePrefix) && model.lastIndexOf(profilePath, queryIndex) >= 0) {
+                            param.args[0] = model.substring(0, queryIndex)
+                        }
+                    }
+                })
+            }
+        }
+    }
+}
+
 val RedditPatches = arrayOf(
     DisableScreenshotBanner,
+    HighQualityAvatars,
     OpenLinksDirectly,
     OpenLinksExternally,
     RedditUnlockPremium,

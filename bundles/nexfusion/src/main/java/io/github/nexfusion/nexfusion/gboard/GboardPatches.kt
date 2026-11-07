@@ -542,6 +542,69 @@ val GboardQuickAndMagicEmoji = patch(
     )
 }
 
+val GboardKeypressHaptics = patch(
+    name = "Keypress vibration intensity control",
+    description = "Enables hardware VibrationEffect vibration strength and intensity slider on Android 11+.",
+) {
+    gboardFlagOverrides(
+        "vibration_effect_min_sdk" to FlagOverride.forceLong(30L),
+        "vibration_strength_supported" to FlagOverride.forceTrue(),
+        "enable_vibration_strength_slider" to FlagOverride.forceTrue(),
+        "enable_haptic_feedback_level" to FlagOverride.forceTrue(),
+    )
+}
+
+val GboardSplitKeyboard = patch(
+    name = "Split keyboard on all devices",
+    description = "Enables split keyboard layout mode across phones, foldables, and tablets.",
+    use = false,
+) {
+    gboardFlagOverrides(
+        "enable_split_keyboard_on_foldable" to FlagOverride.forceTrue(),
+        "split_keyboard_support_all_devices" to FlagOverride.forceTrue(),
+        "enable_split_keyboard_in_landscape" to FlagOverride.forceTrue(),
+        "force_split_keyboard" to FlagOverride.forceTrue(),
+    )
+}
+
+val GboardTerminalPasteAndSelectAll = patch(
+    name = "Terminal paste & auto select-all",
+    description = "Fixes paste shortcuts in raw terminal input fields (Termux) and automatically selects all text before copy/cut when nothing is selected.",
+) {
+    GboardEditingHook.install(classLoader)
+}
+
+val GboardSpacebarLogo = patch(
+    name = "G Logo on Spacebar",
+    description = "Renders the Google G logo icon on the spacebar with clean keycap centering.",
+    use = false,
+) {
+    GboardSpacebarLogoHook.install(classLoader)
+}
+
+val GboardDeveloperOptions = patch(
+    name = "Developer options & internal flags",
+    description = "Unlocks Gboard's internal developer options and experimental feature flag menus in settings.",
+    use = false,
+) {
+    gboardFlagOverrides(
+        "enable_dev_options" to FlagOverride.forceTrue(),
+        "show_debug_menu" to FlagOverride.forceTrue(),
+        "enable_feature_flags_menu" to FlagOverride.forceTrue(),
+    )
+}
+
+val GboardBackupRestore = patch(
+    name = "Backup & Restore settings",
+    description = "Enables Gboard personal dictionary, preferences, and custom theme backup and restore options.",
+    use = false,
+) {
+    gboardFlagOverrides(
+        "enable_backup_restore" to FlagOverride.forceTrue(),
+        "enable_gboard_backup" to FlagOverride.forceTrue(),
+    )
+}
+
 val GboardPatches = arrayOf(
     GboardSettingsMenu,
     GboardRamblerVoiceTyping,
@@ -555,6 +618,12 @@ val GboardPatches = arrayOf(
     GboardGoogleSansTypography,
     GboardUndoControls,
     GboardQuickAndMagicEmoji,
+    GboardKeypressHaptics,
+    GboardSplitKeyboard,
+    GboardTerminalPasteAndSelectAll,
+    GboardSpacebarLogo,
+    GboardDeveloperOptions,
+    GboardBackupRestore,
     GboardCursorTrackpad,
     GboardQuickInsert,
     GboardEmojiSize,

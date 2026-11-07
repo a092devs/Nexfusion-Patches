@@ -7,6 +7,27 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.2.11
+
+- `NexFusion` 4.2.11:
+  * Gboard Enhancements & Ported Patches (v4.2.0 / v4.3.0-dev.1):
+    - Added "Keypress vibration intensity control": unlocks hardware `VibrationEffect` vibration strength slider on Android 11+ (API 30+).
+    - Added "Terminal paste & auto select-all": fixes paste shortcuts in raw terminal input fields (e.g. Termux) via direct InputConnection commits, and automatically selects all text before copy/cut when no selection is present.
+    - Added "G Logo on Spacebar": renders the Google G logo icon on the spacebar with clean keycap centering.
+    - Added "Split keyboard on all devices": unlocks split keyboard layout mode across standard phones, foldables, and tablets.
+    - Added "Developer options & internal flags": enables Gboard's internal developer options and experimental feature flag menus in settings.
+    - Added "Backup & Restore settings": enables personal dictionary, preferences, and custom theme backup and restore options.
+    - Enhanced Rambler Voice Typing: ensures pending session reset callbacks execute on speech conclusion, eliminating lingering colored light bar artifacts and immediately restoring standard suggestion predictions.
+  * Reddit Upstream Sync:
+    - Added "High quality avatars": loads Snoovatars and user profile icons in uncompressed full resolution instead of downscaled previews.
+  * YouTube Music Upstream Sync:
+    - Extended version compatibility checks up to 9.45.51.
+  * Upstream YouTube Sync:
+    - Fixed chapter skip double-tap: two-finger double-tap seeks instead of skipping chapters on accounts where server config turns chapter skip off.
+    - Fixed Return YouTube Dislike (RYD): restored feed thumbnail like count on multi-video container rows (such as the *Videos* and *Live* channel tabs).
+    - Video Codec Fallback: default to VP9 codec for devices lacking AV1 hardware decoding.
+    - Seekbar Preferences: removed redundant group title headers in custom seekbar settings.
+
 ## 4.2.10
 
 - `NexFusion` 4.2.10:

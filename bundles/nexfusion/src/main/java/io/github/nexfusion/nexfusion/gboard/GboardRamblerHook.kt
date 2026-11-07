@@ -52,6 +52,7 @@ object GboardRamblerHook {
         hookClipboardDataHandler(classLoader)
         hookSpellCheckerChips(classLoader)
         suppressPromoBanners(classLoader)
+        hookRamblerResetCleanup(classLoader)
     }
 
     private fun hookVoiceSettingsSelectors(classLoader: ClassLoader) {
@@ -320,6 +321,36 @@ object GboardRamblerHook {
                         XposedBridge.hookMethod(m, object : XC_MethodHook() {
                             override fun beforeHookedMethod(param: MethodHookParam) {
                                 param.result = null
+                            }
+                        })
+                    }
+                }
+            }
+        }
+    }
+
+    private fun hookRamblerResetCleanup(classLoader: ClassLoader) {
+        // Gboard 18.5+: flb.i(boolean) or fkl.d() - when dictation session stops, ensure pending
+        // callbacks execute and clean up lingering light bars and restore suggestion strip
+        val resetClasses = listOf("flb", "fkl", "fkm")
+        for (className in resetClasses) {
+            val clazz = runCatching { classLoader.loadClass(className) }.getOrNull() ?: continue
+            for (m in clazz.declaredMethods) {
+                if (m.name == "d" || (m.name == "i" && m.parameterTypes.size == 1 && m.parameterTypes[0] == Boolean::class.javaPrimitiveType)) {
+                    runCatching {
+                        XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                            override fun afterHookedMethod(param: MethodHookParam) {
+                                val receiver = param.thisObject ?: return
+                                runCatching {
+                                    for (field in receiver.javaClass.declaredFields) {
+                                        if (Runnable::class.java.isAssignableFrom(field.type)) {
+                                            field.isAccessible = true
+                                            val r = field.get(receiver) as? Runnable
+                                            r?.run()
+                                            field.set(receiver, null)
+                                        }
+                                    }
+                                }
                             }
                         })
                     }

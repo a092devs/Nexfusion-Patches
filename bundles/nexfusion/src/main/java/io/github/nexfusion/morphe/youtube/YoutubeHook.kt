@@ -16,6 +16,8 @@ import io.github.nexfusion.morphe.youtube.ad.HideAds
 import io.github.nexfusion.morphe.youtube.interaction.channelsearch.ChannelSearch
 import io.github.nexfusion.morphe.youtube.interaction.copyvideolink.CopyVideoLinkButtonPatch
 import io.github.nexfusion.morphe.youtube.interaction.downloads.Downloads
+import io.github.nexfusion.morphe.youtube.interaction.doubletap.disableChapterSkipDoubleTapPatch
+import io.github.nexfusion.morphe.youtube.interaction.seekbar.customSeekbarThumbPatch
 import io.github.nexfusion.morphe.youtube.interaction.seekbar.seekbarPatch
 import io.github.nexfusion.morphe.youtube.interaction.shorts.SkipLiveShorts
 import io.github.nexfusion.morphe.youtube.interaction.swipecontrols.SwipeControls
@@ -140,6 +142,8 @@ val YouTubePatches = arrayOf(
     NavigationBar,
     SwipeControls,
     seekbarPatch,
+    customSeekbarThumbPatch,
+    disableChapterSkipDoubleTapPatch,
     VideoQuality,
     HideLayoutComponents,
     HideVideoActionButtons,
