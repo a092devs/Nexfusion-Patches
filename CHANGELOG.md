@@ -7,6 +7,18 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.2.10
+
+- `NexFusion` 4.2.10:
+  * Upstream YouTube Sync (v2.2.0-dev.1):
+    - Added "Custom seekbar thumb" setting: customize the seekbar scrubber thumb with custom images, animated GIFs, scale types, and visibility controls.
+    - Fixed seekbar thumbnail preview: resolved visual artifact where the seek preview shows a strip of the previous frame on its left side while scrubbing.
+    - Improved Niconico flying comments: prevent comments from colliding into each other across screen tracks, and fixed chat status messages appearing as comments.
+  * Upstream YouTube Music Sync:
+    - Fixed Downloads page header matching on older YouTube Music versions.
+  * Community Translations:
+    - Synced latest translations from Crowdin across all supported language resources.
+
 ## 4.2.9
 
 - `NexFusion` 4.2.9:
