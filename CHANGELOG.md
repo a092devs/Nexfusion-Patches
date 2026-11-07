@@ -7,6 +7,28 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.2.9
+
+- `NexFusion` 4.2.9:
+  * VLC Android Support:
+    - Added VLC (`org.videolan.vlc`) as an official patch target with runtime hooks and bytecode patches.
+    - Added "AMOLED black theme" patch: repaints dark surfaces (backgrounds, cards, dialogs, headers, and navigation bar) to true black (#000000).
+    - Added "Skip \"What's New\" dialog" patch: suppresses the What's New changelog prompt shown after updates.
+    - Added "Unlock experimental features" patch: enables all experimental feature flags regardless of stored value.
+    - Added "Force audio passthrough" patch: enables digital bitstream audio output to external DACs and receivers.
+    - Added "Force AAudio output" patch: locks audio output to low-latency AAudio, overriding device preference.
+    - Added "Raise network cache" patch: expands network cache buffer to 3000ms to eliminate stutter on network streams.
+    - Added "Disable audio time-stretch" patch: forces time-stretching off for artifact-free playback at 1x speed.
+    - Added "Force ReplayGain" patch: normalizes track loudness using track mode with peak protection.
+    - Added "Verbose libVLC logging" patch: enables verbose (-vvv) libVLC troubleshooting logs.
+  * MX Player Deprecation:
+    - Completely removed MX Player from patch bundle and registry.
+  * Upstream Sync & Merges:
+    - Synced YouTube patches: YouTube 21.45.80 support, Rive splash screen fix, ask flyout menu fixes, glass navigation bar tablet sizing and incognito overlay fixes.
+    - Synced YouTube Music patches: YouTube Music 9.45.51 experimental support, SoundProof AI blocker, Playlist tags, offline fullscreen player, and third-party lyrics improvements.
+    - Synced Reddit patches: Reddit 2026.45.0 experimental support and High quality avatars patch.
+    - Synced morphe-patches-library: updated to v2.1.1.
+
 ## 4.2.8
 
 - `NexFusion` 4.2.8:
