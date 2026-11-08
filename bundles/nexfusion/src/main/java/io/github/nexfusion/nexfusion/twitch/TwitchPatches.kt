@@ -159,10 +159,76 @@ val TwitchAmoledTheme = patch(
     }
 }
 
+val TwitchAutoClaimPoints = patch(
+    name = "Auto-claim channel points",
+    description = "Automatically claims channel points and community bonus chests as soon as they appear in stream chat.",
+    use = true,
+) {
+    runCatching {
+        val presenterClasses = listOf(
+            "tv.twitch.android.feature.points.CommunityPointsClaimPresenter",
+            "tv.twitch.android.feature.channelpoints.ChannelPointsPresenter",
+            "tv.twitch.android.feature.channelpoints.CommunityPointsButtonViewDelegate",
+        )
+        for (className in presenterClasses) {
+            val clazz = runCatching { classLoader.loadClass(className) }.getOrNull() ?: continue
+            clazz.declaredMethods.filter {
+                it.name.contains("onClaimAvailable", ignoreCase = true) ||
+                it.name.contains("showClaimButton", ignoreCase = true) ||
+                it.name.contains("renderClaimButton", ignoreCase = true)
+            }.forEach { method ->
+                XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam) {
+                        val presenter = param.thisObject ?: return
+                        runCatching {
+                            val claimMethod = presenter.javaClass.declaredMethods.firstOrNull {
+                                it.name.contains("claim", ignoreCase = true) && it.parameterCount == 0
+                            }
+                            claimMethod?.isAccessible = true
+                            claimMethod?.invoke(presenter)
+                            PatcherLog.info { "NexFusion: Twitch auto-claimed channel points bonus" }
+                        }
+                    }
+                })
+            }
+        }
+    }
+}
+
+val TwitchShowDeletedMessages = patch(
+    name = "Show deleted chat messages",
+    description = "Preserves deleted and timed-out messages in stream chat instead of removing them.",
+    use = false,
+) {
+    runCatching {
+        val chatClasses = listOf(
+            "tv.twitch.android.shared.chat.ChatMessage",
+            "tv.twitch.android.models.chat.ChatMessageModel",
+            "tv.twitch.android.shared.chat.adapter.item.ChatMessageItem",
+        )
+        for (className in chatClasses) {
+            val clazz = runCatching { classLoader.loadClass(className) }.getOrNull() ?: continue
+            clazz.declaredMethods.filter {
+                it.name == "isDeleted" || it.name == "getIsDeleted" || it.name == "isRemoved"
+            }.forEach { method ->
+                if (method.returnType == java.lang.Boolean.TYPE) {
+                    XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                        override fun beforeHookedMethod(param: MethodHookParam) {
+                            param.result = false
+                        }
+                    })
+                }
+            }
+        }
+    }
+}
+
 val TwitchPatches = arrayOf(
     TwitchBlockAds,
     TwitchThirdPartyEmotes,
     TwitchBackgroundAudio,
+    TwitchAutoClaimPoints,
+    TwitchShowDeletedMessages,
     TwitchDisableAnalytics,
     TwitchAmoledTheme,
 )

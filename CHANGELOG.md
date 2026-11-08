@@ -10,6 +10,11 @@ bundles after CI succeeds.
 ## 4.2.11
 
 - `NexFusion` 4.2.11:
+  * Twitch Enhancements:
+    - Added "Auto-claim channel points": automatically claims channel points and community bonus chests as soon as they appear in live chat.
+    - Added "Show deleted chat messages": preserves deleted and timed-out chat messages in stream chat.
+  * Google Photos Updates:
+    - Extended Pixel feature spoofing with future-proof system feature masks (covering 2026 and 2027 Android platform releases).
   * Proton VPN Enhancements:
     - Added "Show free server locations": allows free tier users to browse, search, and directly connect to free server locations/countries (Netherlands, United States, Japan, Romania, Poland) instead of random assignment.
     - Added "Unlock connection preferences": unlocks default protocol selection (WireGuard, OpenVPN UDP, OpenVPN TCP, Stealth) and profile settings on free plans.

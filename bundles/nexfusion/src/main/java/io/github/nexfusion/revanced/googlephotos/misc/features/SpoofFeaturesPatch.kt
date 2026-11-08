@@ -46,7 +46,10 @@ val SpoofFeaturesPatch = patch(
         "com.google.android.feature.PIXEL_2024_EXPERIENCE",
         "com.google.android.feature.PIXEL_2025_MIDYEAR_EXPERIENCE",
         "com.google.android.feature.PIXEL_2025_EXPERIENCE",
+        "com.google.android.feature.PIXEL_2026_MIDYEAR_EXPERIENCE",
         "com.google.android.feature.PIXEL_2026_EXPERIENCE",
+        "com.google.android.feature.PIXEL_2027_MIDYEAR_EXPERIENCE",
+        "com.google.android.feature.PIXEL_2027_EXPERIENCE",
     )
 
     val hook = object : XC_MethodHook() {
