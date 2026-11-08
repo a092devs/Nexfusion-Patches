@@ -4,8 +4,8 @@ on:
     workflow_dispatch:
         inputs:
             tag:
-                description: 'Release version (e.g. 1.0.0)'
-                required: true
+                description: 'Release version (e.g. 4.2.11 or leave empty for auto 4.2.11-<commitHash> pre-release)'
+                required: false
                 type: string
     push:
         tags:
@@ -50,8 +50,14 @@ jobs:
                   REF_NAME: ${{ github.ref_name }}
                   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               run: |
+                  bundle_version="$(sed -nE 's/.*versionName = "([^"]+)".*/\1/p' bundles/nexfusion/build.gradle.kts | head -n1)"
                   if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
-                    tag="$INPUT_TAG"
+                    if [[ -n "$INPUT_TAG" ]]; then
+                      tag="$INPUT_TAG"
+                    else
+                      short_sha="$(git rev-parse --short=7 HEAD)"
+                      tag="${bundle_version}-${short_sha}"
+                    fi
                   else
                     tag="$REF_NAME"
                   fi
@@ -68,7 +74,6 @@ jobs:
                   fi
 
                   # Prevent conflicting version assignments: verify tag matches NexFusion versionName
-                  bundle_version="$(sed -nE 's/.*versionName = "([^"]+)".*/\1/p' bundles/nexfusion/build.gradle.kts | head -n1)"
                   if [[ -n "$bundle_version" && "$tag" != "$bundle_version"* ]]; then
                     echo "::error::Conflicting version assignment: release tag $tag does not match NexFusion bundle versionName $bundle_version"
                     exit 1
@@ -124,16 +129,19 @@ jobs:
               run: |
                   set -euo pipefail
 
-                  # Prefer the curated section for this tag from CHANGELOG.md and fall back to the
-                  # generated commit notes when the changelog has no section for the tag yet.
+                  # Extract base tag without pre-release suffix (e.g. 4.2.11 from 4.2.11-247b959)
+                  base_tag="${TAG%%-*}"
+
+                  # Prefer the curated section for this tag or base version from CHANGELOG.md,
+                  # extracting ONLY that section and omitting older releases.
                   section=""
                   if [[ -f CHANGELOG.md ]]; then
-                    section="$(awk -v tag="$TAG" '
+                    section="$(awk -v tag="$TAG" -v base="$base_tag" '
                       /^## / {
                         if (found) exit
                         rest = substr($0, 4)
                         sub(/[ \t].*$/, "", rest)
-                        if (rest == tag) found = 1
+                        if (rest == tag || rest == base) found = 1
                         next
                       }
                       found { print }

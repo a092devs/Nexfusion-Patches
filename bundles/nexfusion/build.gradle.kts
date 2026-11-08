@@ -26,6 +26,17 @@ android {
         versionName = "4.2.11"
         buildConfigField("String", "PATCH_VERSION", "\"$patchVersion\"")
     }
+    packaging {
+        resources {
+            excludes += listOf(
+                "META-INF/**",
+                "kotlin/**",
+                "**.bin",
+                "**/*.proto",
+                "**/*.textproto",
+            )
+        }
+    }
     sourceSets {
         named("main") {
             val srcDirs = arrayOf(
