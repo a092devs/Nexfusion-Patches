@@ -92,6 +92,14 @@ val seekbarFingerprint = fingerprint {
     strings("timed_markers_width")
 }
 
+val seekbarOnDrawFingerprint = findMethodDirect {
+    seekbarFingerprint().declaredClass!!.findMethod {
+        matcher {
+            name = "onDraw"
+        }
+    }.single()
+}
+
 internal object SeekbarFingerprint : Fingerprint(
     returnType = "V",
     filters = listOf(

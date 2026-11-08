@@ -33,6 +33,7 @@ android {
                 "../../morphe-patches/extensions/shared-youtube/library/src/main/java",
                 "../../morphe-patches/extensions/youtube/src/main/java",
                 "../../morphe-patches/extensions/music/src/main/java",
+                "../../morphe-patches/extensions/reddit/src/main/java",
                 "../../morphe-patches-library/extension-library/src/main/java",
             )
             java.directories += srcDirs

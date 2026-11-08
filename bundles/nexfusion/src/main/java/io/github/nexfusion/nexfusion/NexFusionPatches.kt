@@ -107,7 +107,7 @@ object NexFusionPatches : PatchBundle {
             patches = ProtonVpnPatches,
             appIconColor = 0x6D4AFF,
         ),
-        AppPatchInfo(
+        morpheApp(
             appName = "Reddit",
             packageName = "com.reddit.frontpage",
             patches = RedditPatches,

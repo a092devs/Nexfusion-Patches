@@ -51,10 +51,58 @@ val SettingsHook = patch(
 
     PreferenceScreen.GENERAL.addPreferences(
         SwitchPreference("morphe_settings_search_history"),
-//        SwitchPreference("morphe_show_menu_icons")
+        SwitchPreference("morphe_music_hide_get_premium_label"),
+        SwitchPreference("morphe_music_hide_music_premium_promotions"),
+        SwitchPreference("morphe_music_force_portrait_orientation"),
+        SwitchPreference("morphe_music_hide_cast_button"),
+        SwitchPreference("morphe_music_hide_filter_bar"),
+        SwitchPreference("morphe_music_hide_history_button"),
+        SwitchPreference("morphe_music_hide_search_button"),
+        SwitchPreference("morphe_music_hide_notification_button"),
+    )
+
+    PreferenceScreen.PLAYER.addPreferences(
+        SwitchPreference("morphe_music_exclusive_audio_playback"),
+        SwitchPreference("morphe_music_background_playback"),
+        SwitchPreference("morphe_crossfade"),
+        SwitchPreference("morphe_force_original_audio"),
+        SwitchPreference("morphe_disable_drc_audio"),
+        SwitchPreference("morphe_remember_repeat_state"),
+        SwitchPreference("morphe_remember_shuffle_state"),
+        SwitchPreference("morphe_playlist_track_tap"),
+        SwitchPreference("morphe_remove_viewer_discretion_dialog"),
+        SwitchPreference("morphe_disable_dislike_redirection"),
+    )
+
+    PreferenceScreen.FEED.addPreferences(
+        SwitchPreference("morphe_music_hide_explore_shelf"),
+        SwitchPreference("morphe_music_hide_grid_shelves"),
+        SwitchPreference("morphe_music_hide_horizontal_shelves"),
+        SwitchPreference("morphe_music_hide_list_shelves"),
+        SwitchPreference("morphe_music_hide_new_from_shelf"),
+        SwitchPreference("morphe_music_hide_playlist_shelves"),
+        SwitchPreference("morphe_music_hide_speed_dial_shelf"),
+    )
+
+    PreferenceScreen.LYRICS.addPreferences(
+        SwitchPreference("morphe_music_lyrics"),
+    )
+
+    PreferenceScreen.SCROBBLING.addPreferences(
+        SwitchPreference("morphe_music_scrobbling"),
+    )
+
+    PreferenceScreen.RETURN_YOUTUBE_DISLIKE.addPreferences(
+        SwitchPreference("morphe_ryd_enabled"),
+    )
+
+    PreferenceScreen.SPONSORBLOCK.addPreferences(
+        SwitchPreference("morphe_sb_enabled"),
     )
 
     PreferenceScreen.MISC.addPreferences(
+        SwitchPreference("morphe_soundproof"),
+        SwitchPreference("morphe_music_jam_enabled"),
         TextPreference(
             key = null,
             titleKey = "morphe_pref_import_export_title",
@@ -102,6 +150,13 @@ object PreferenceScreen : BasePreferenceScreen() {
         iconBold = "@drawable/morphe_settings_screen_01_ads_bold",
         layout = "@layout/morphe_preference_with_icon"
     )
+    val FEED = Screen(
+        key = "morphe_settings_music_screen_2_feed",
+        summaryKey = null,
+        icon = "@drawable/morphe_settings_screen_03_feed",
+        iconBold = "@drawable/morphe_settings_screen_03_feed_bold",
+        layout = "@layout/morphe_preference_with_icon"
+    )
     val GENERAL = Screen(
         key = "morphe_settings_music_screen_3_general",
         summaryKey = null,
@@ -115,6 +170,34 @@ object PreferenceScreen : BasePreferenceScreen() {
         icon = "@drawable/morphe_settings_screen_05_player",
         iconBold = "@drawable/morphe_settings_screen_05_player_bold",
         layout = "@layout/morphe_preference_with_icon"
+    )
+    val LYRICS = Screen(
+        key = "morphe_settings_music_screen_5_lyrics",
+        summaryKey = null,
+        icon = "@drawable/morphe_settings_screen_14_lyrics",
+        iconBold = "@drawable/morphe_settings_screen_14_lyrics_bold",
+        layout = "@layout/morphe_preference_with_icon",
+    )
+    val SCROBBLING = Screen(
+        key = "morphe_settings_music_screen_6_scrobbling",
+        summaryKey = null,
+        icon = "@drawable/morphe_settings_screen_13_scrobbling",
+        iconBold = "@drawable/morphe_settings_screen_13_scrobbling_bold",
+        layout = "@layout/morphe_preference_with_icon",
+    )
+    val RETURN_YOUTUBE_DISLIKE = Screen(
+        key = "morphe_settings_music_screen_7_return_youtube_dislike",
+        summaryKey = null,
+        icon = "@drawable/morphe_settings_screen_09_return_youtube_dislike",
+        iconBold = "@drawable/morphe_settings_screen_09_return_youtube_dislike_bold",
+        layout = "@layout/morphe_preference_with_icon",
+    )
+    val SPONSORBLOCK = Screen(
+        key = "morphe_settings_music_screen_8_sponsorblock",
+        summaryKey = null,
+        icon = "@drawable/morphe_settings_screen_10_sponsorblock",
+        iconBold = "@drawable/morphe_settings_screen_10_sponsorblock_bold",
+        layout = "@layout/morphe_preference_with_icon",
     )
     val MISC = Screen(
         key = "morphe_settings_music_screen_9_misc",

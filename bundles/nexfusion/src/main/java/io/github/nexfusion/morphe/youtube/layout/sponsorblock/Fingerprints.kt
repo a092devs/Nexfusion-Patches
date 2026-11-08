@@ -11,6 +11,7 @@ import io.github.nexfusion.morphe.findMethodDirect
 import io.github.nexfusion.morphe.opcode
 import io.github.nexfusion.morphe.resourceMappings
 import io.github.nexfusion.morphe.youtube.shared.seekbarFingerprint
+import io.github.nexfusion.morphe.youtube.shared.seekbarOnDrawFingerprint
 
 internal object AppendTimeFingerprint : Fingerprint(
     accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.FINAL),
@@ -43,13 +44,6 @@ val SponsorBarRect = findFieldDirect {
     }.single().usingFields.last { it.field.typeName == "android.graphics.Rect" }.field
 }
 
-val seekbarOnDrawFingerprint = findMethodDirect {
-    seekbarFingerprint().declaredClass!!.findMethod {
-        matcher {
-            name = "onDraw"
-        }
-    }.single()
-}
 
 val inset_overlay_view_layout get() = resourceMappings["id", "inset_overlay_view_layout"]
 

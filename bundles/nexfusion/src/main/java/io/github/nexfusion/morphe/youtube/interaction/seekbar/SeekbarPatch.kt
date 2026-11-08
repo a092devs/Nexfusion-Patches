@@ -8,6 +8,9 @@ val seekbarPatch = patch(
     description = "Adds options to disable precise seeking when swiping up on the seekbar, " +
             "slide to seek instead of playing at 2x speed when pressing and holding, " +
             "custom seekbar thumb styling, " +
+            "custom seekbar colors, " +
+            "thumbnail preview, " +
+            "hiding the seekbar, " +
             "and tapping the player seekbar to seek."
 ) {
     dependsOn(
@@ -15,6 +18,9 @@ val seekbarPatch = patch(
         enableSlideToSeekPatch,
         enableTapToSeekPatch,
         customSeekbarThumbPatch,
+        hideSeekbarPatch,
+        seekbarColorPatch,
+        seekbarThumbnailPreviewPatch,
     )
 
     // Prevent Shorts seekbar from detaching when leaving settings or switching Shorts

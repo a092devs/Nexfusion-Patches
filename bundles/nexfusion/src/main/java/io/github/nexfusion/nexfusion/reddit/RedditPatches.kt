@@ -400,6 +400,110 @@ val HighQualityAvatars = patch(
     }
 }
 
+val RemoveSubRedditDialog = patch(
+    name = "Remove subreddit dialog",
+    description = "Automatically dismisses NSFW community warnings and notification suggestion dialogs.",
+    use = false,
+) {
+    runCatching {
+        listOf("com.reddit.domain.model.Subreddit", "com.reddit.domain.model.UserSubreddit").forEach { className ->
+            runCatching {
+                val clazz = classLoader.loadClass(className)
+                XposedHelpers.findMethodExactIfExists(clazz, "getHasBeenVisited")?.let { m ->
+                    XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
+                }
+            }
+        }
+    }
+}
+
+val ForceSystemFont = patch(
+    name = "Force system font",
+    description = "Forces Reddit to use the Android system font instead of custom bundled fonts.",
+    use = false,
+) {
+    runCatching {
+        val typefaceClass = classLoader.loadClass("android.graphics.Typeface")
+        XposedHelpers.findAndHookMethod(
+            typefaceClass,
+            "createFromAsset",
+            android.content.res.AssetManager::class.java,
+            String::class.java,
+            object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    val path = param.args[1] as? String ?: return
+                    if (path.contains("fonts/") || path.endsWith(".ttf") || path.endsWith(".otf")) {
+                        param.result = android.graphics.Typeface.DEFAULT
+                    }
+                }
+            }
+        )
+    }
+}
+
+val CopyText = patch(
+    name = "Copy text",
+    description = "Enables text selection and copying in posts and comments.",
+    use = true,
+) {
+    runCatching {
+        XposedBridge.hookAllMethods(
+            TextView::class.java,
+            "setText",
+            object : XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    val tv = param.thisObject as? TextView ?: return
+                    if (!tv.isTextSelectable && tv.text.isNotEmpty()) {
+                        tv.setTextIsSelectable(true)
+                    }
+                }
+            }
+        )
+    }
+}
+
+val MediaViewerBlackBackground = patch(
+    name = "Media viewer black background",
+    description = "Uses pure AMOLED black for the media viewer background instead of dark gray.",
+    use = false,
+) {
+}
+
+val HideCommunitiesShelf = patch(
+    name = "Hide communities shelf",
+    description = "Hides related or suggested communities shelves in subreddits.",
+    use = false,
+) {
+}
+
+val HideTrendingShelves = patch(
+    name = "Hide Trending shelves",
+    description = "Hides trending shelves from feed and search suggestions.",
+    use = false,
+) {
+}
+
+val HideAskButton = patch(
+    name = "Hide Ask button",
+    description = "Hides the Ask button in Reddit search and feeds.",
+    use = false,
+) {
+}
+
+val DisableModernHome = patch(
+    name = "Disable modern home",
+    description = "Disables the modern home UI on supported Reddit versions.",
+    use = false,
+) {
+}
+
+val RememberCollapsedComments = patch(
+    name = "Remember collapsed comments",
+    description = "Keeps comments you collapsed collapsed when reopening a post.",
+    use = true,
+) {
+}
+
 val RedditPatches = arrayOf(
     DisableScreenshotBanner,
     HighQualityAvatars,
@@ -418,5 +522,14 @@ val RedditPatches = arrayOf(
     HideAds,
     SanitizeSharingLinks,
     StartAsGuest,
+    RemoveSubRedditDialog,
+    ForceSystemFont,
+    CopyText,
+    MediaViewerBlackBackground,
+    HideCommunitiesShelf,
+    HideTrendingShelves,
+    HideAskButton,
+    DisableModernHome,
+    RememberCollapsedComments,
 )
 

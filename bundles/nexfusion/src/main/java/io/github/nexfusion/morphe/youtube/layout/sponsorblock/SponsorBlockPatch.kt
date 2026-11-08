@@ -21,6 +21,7 @@ import app.morphe.extension.youtube.sponsorblock.ui.SponsorBlockStatsPreferenceC
 import app.morphe.extension.youtube.sponsorblock.ui.SponsorBlockViewController
 import app.morphe.extension.youtube.sponsorblock.ui.VotingButton
 import io.github.nexfusion.patches.R
+import io.github.nexfusion.morphe.youtube.shared.seekbarOnDrawFingerprint
 import io.github.nexfusion.morphe.youtube.misc.playservice.VersionCheck
 import io.github.nexfusion.morphe.shared.misc.settings.preference.BasePreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.InputType
