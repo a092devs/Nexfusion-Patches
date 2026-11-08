@@ -108,45 +108,6 @@ protobuf {
     }
 }
 
-/**
- * Generates `MorpheTargets` from the app versions the Morphe patches in the submodule are tested with
- * (the `targets` of their `Compatibility` constants), so the recommended versions follow the submodule.
- */
-abstract class GenerateMorpheTargetsTask : DefaultTask() {
-    @get:InputFiles
-    @get:PathSensitive(PathSensitivity.RELATIVE)
-    abstract val constants: ConfigurableFileCollection
-
-    @get:OutputDirectory
-    abstract val outputDirectory: DirectoryProperty
-
-    @TaskAction
-    fun generate() {
-        val appNames = listOf("YOUTUBE", "MUSIC", "REDDIT")
-        val fields = appNames.joinToString("\n") { name ->
-            "    public static final List<AppTarget> $name = Collections.emptyList();"
-        }
-        val dir = outputDirectory.get().asFile.resolve("io/github/nexfusion/patches").apply { mkdirs() }
-        dir.resolve("MorpheTargets.java").writeText(
-            """
-            |package io.github.nexfusion.patches;
-            |
-            |import io.github.nexfusion.AppTarget;
-            |import java.util.Collections;
-            |import java.util.List;
-            |
-            |/** Universal dynamic patch architecture: patches hook dynamically without hardcoded version gating. */
-            |public final class MorpheTargets {
-            |$fields
-            |
-            |    private MorpheTargets() {
-            |    }
-            |}
-            |""".trimMargin()
-        )
-    }
-}
-
 abstract class GenerateStringsTask @Inject constructor() : DefaultTask() {
     @get:InputDirectory
     @get:Optional
@@ -274,14 +235,6 @@ abstract class CopyResourcesTask @Inject constructor() : DefaultTask() {
 androidComponents {
     onVariants { variant ->
         val variantName = variant.name.uppercaseFirstChar()
-        val targetsTask = project.tasks.register<GenerateMorpheTargetsTask>("generateMorpheTargets$variantName") {
-            constants.from(
-                listOf("youtube", "music", "reddit").map {
-                    project.file("../../morphe-patches/patches/src/main/kotlin/app/morphe/patches/$it/shared/Constants.kt")
-                }
-            )
-        }
-        variant.sources.java?.addGeneratedSourceDirectory(targetsTask, GenerateMorpheTargetsTask::outputDirectory)
         val strFile = project.file("../../morphe-patches/patches/src/main/resources/addresources")
         val strTask = project.tasks.register<GenerateStringsTask>("generateStrings$variantName") {
             if (strFile.exists()) {
