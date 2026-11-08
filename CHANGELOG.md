@@ -31,6 +31,7 @@ bundles after CI succeeds.
     - Added "Remember collapsed comments": preserves collapsed comment states across sessions.
     - Added "High quality avatars": loads Snoovatars and user profile icons in uncompressed full resolution instead of downscaled previews.
   * YouTube Full Seekbar Customization & Upstream Sync:
+    - Fixed "Reset color" failure and exception handling in seekbar color picker preferences.
     - Implemented dynamic runtime hooks for seekbar primary/accent colors, linear gradient shaders, and TimeBar scrubber thumb rendering.
     - Ported full suite of seekbar customization toggles matching official dev branch.
     - Cleaned up settings hierarchy so Morphe displays directly in Settings root.
