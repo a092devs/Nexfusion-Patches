@@ -30,3 +30,4 @@ compat-binaries/
 *.apk
 
 # Nexfusion build metadata
+*.nxb
