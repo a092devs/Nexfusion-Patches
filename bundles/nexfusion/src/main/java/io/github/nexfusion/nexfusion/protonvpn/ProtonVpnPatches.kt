@@ -8,11 +8,14 @@ import io.github.nexfusion.patch
 
 // Ported from hxreborn/morphe-patches (GPL-3.0), hoo-dles/morphe-patches (GPL-3.0),
 // and Paresh-Maheshwari/paresh-patches (GPL-3.0):
-// - Remove server change delay on free plans (AppConfigResponse)
+// - Remove server change delay and cooldowns on free plans (AppConfigResponse)
 // - Unlock advanced client settings: NetShield ad/malware blocking, split tunneling,
 //   custom DNS, and LAN connections (LocalUserSettings & VpnUser)
+// - Show free server locations: browse, search, and connect directly to free server locations
+// - Unlock connection preferences: default protocol choices (WireGuard, OpenVPN, Stealth) and profiles
 // - Hide upgrade promotions: onboarding dialogs, upsell banners, and plan upgrade cards
 // - Disable telemetry, analytics, and observability data collection
+// - Disable in-app update checks
 
 val ProtonVpnDisableTelemetry = patch(
     name = "Disable telemetry",
@@ -82,18 +85,114 @@ val ProtonVpnDisableTelemetry = patch(
 
 val ProtonVpnServerChangeDelay = patch(
     name = "Remove server change delay",
-    description = "Removes the wait period between server changes on free plans.",
+    description = "Removes the wait period and cooldown between server changes on free plans.",
 ) {
     runCatching {
         val configClass = classLoader.loadClass("com.protonvpn.android.appconfig.AppConfigResponse")
         configClass.declaredMethods.filter {
-            it.name == "getChangeServerLongDelayInSeconds" || it.name == "getChangeServerShortDelayInSeconds"
+            it.name.contains("ChangeServer", ignoreCase = true) ||
+            it.name.contains("ServerDelay", ignoreCase = true)
         }.forEach { method ->
-            XposedBridge.hookMethod(method, object : XC_MethodHook() {
-                override fun beforeHookedMethod(param: MethodHookParam) {
-                    param.result = 0
+            if (method.returnType == java.lang.Integer.TYPE || method.returnType == java.lang.Long.TYPE) {
+                XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        param.result = 0
+                    }
+                })
+            } else if (method.returnType == java.lang.Boolean.TYPE) {
+                if (method.name.contains("Promo", ignoreCase = true) || method.name.contains("Upsell", ignoreCase = true)) {
+                    XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                        override fun beforeHookedMethod(param: MethodHookParam) {
+                            param.result = false
+                        }
+                    })
+                } else if (method.name.contains("Available", ignoreCase = true) || method.name.contains("Enabled", ignoreCase = true)) {
+                    XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                        override fun beforeHookedMethod(param: MethodHookParam) {
+                            param.result = true
+                        }
+                    })
                 }
-            })
+            }
+        }
+    }
+}
+
+val ProtonVpnShowFreeServerLocations = patch(
+    name = "Show free server locations",
+    description = "Allows users on free tier plans to browse, search, and connect directly to free server locations/countries instead of random assignment.",
+) {
+    // Enable direct country selection and server browsing
+    runCatching {
+        val configClass = classLoader.loadClass("com.protonvpn.android.appconfig.AppConfigResponse")
+        configClass.declaredMethods.filter {
+            it.name.contains("ChangeServer", ignoreCase = true) ||
+            it.name.contains("ServerSelect", ignoreCase = true) ||
+            it.name.contains("FreeUser", ignoreCase = true)
+        }.forEach { method ->
+            if (method.returnType == java.lang.Boolean.TYPE) {
+                if (method.name.contains("Promo", ignoreCase = true) || method.name.contains("Upsell", ignoreCase = true)) {
+                    XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                        override fun beforeHookedMethod(param: MethodHookParam) {
+                            param.result = false
+                        }
+                    })
+                } else {
+                    XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                        override fun beforeHookedMethod(param: MethodHookParam) {
+                            param.result = true
+                        }
+                    })
+                }
+            }
+        }
+    }
+
+    // Unblock free location selection across country item view states
+    runCatching {
+        val countryItemClasses = listOf(
+            "com.protonvpn.android.servers.CountryItemViewState",
+            "com.protonvpn.android.servers.CountryItem",
+            "com.protonvpn.android.ui.home.countries.CountryItem",
+        )
+        for (className in countryItemClasses) {
+            val clazz = runCatching { classLoader.loadClass(className) }.getOrNull() ?: continue
+            clazz.declaredMethods.filter {
+                it.name == "isLocked" || it.name == "getIsLocked" || it.name == "isPlusOnly"
+            }.forEach { method ->
+                XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        param.result = false
+                    }
+                })
+            }
+        }
+    }
+}
+
+val ProtonVpnUnlockConnectionPreferences = patch(
+    name = "Unlock connection preferences",
+    description = "Unlocks default connection protocol (WireGuard, OpenVPN, Stealth) and profile settings on free plans.",
+) {
+    runCatching {
+        val settingsClasses = listOf(
+            "com.protonvpn.android.settings.ConnectionSettingsViewState",
+            "com.protonvpn.android.settings.ProtocolSettingsViewState",
+        )
+        for (className in settingsClasses) {
+            val clazz = runCatching { classLoader.loadClass(className) }.getOrNull() ?: continue
+            clazz.declaredMethods.filter {
+                it.name.contains("Protocol", ignoreCase = true) &&
+                (it.name.contains("Enabled", ignoreCase = true) || it.name.contains("Available", ignoreCase = true))
+            }.forEach { method ->
+                if (method.returnType == java.lang.Boolean.TYPE) {
+                    XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                        override fun beforeHookedMethod(param: MethodHookParam) {
+                            param.result = true
+                        }
+                    })
+                }
+            }
         }
     }
 }
@@ -195,10 +294,52 @@ val ProtonVpnPremiumUi = patch(
     }
 }
 
+val ProtonVpnDisableUpdateChecks = patch(
+    name = "Disable in-app update checks",
+    description = "Suppresses in-app update prompts and version checks.",
+    use = false,
+) {
+    // 1. Hook Play Core AppUpdateManager
+    runCatching {
+        val appUpdateManagerClass = classLoader.loadClass("com.google.android.play.core.appupdate.AppUpdateManager")
+        XposedBridge.hookAllMethods(appUpdateManagerClass, "getAppUpdateInfo", object : XC_MethodHook() {
+            override fun beforeHookedMethod(param: MethodHookParam) {
+                val tasksClass = runCatching { classLoader.loadClass("com.google.android.gms.tasks.Tasks") }.getOrNull()
+                if (tasksClass != null) {
+                    val forResult = tasksClass.getMethod("forResult", Any::class.java)
+                    param.result = forResult.invoke(null, null)
+                }
+            }
+        })
+    }
+
+    // 2. Suppress Proton update usecases
+    runCatching {
+        val updateClasses = listOf(
+            "me.proton.core.update.domain.usecase.CheckAppUpdate",
+            "com.protonvpn.android.update.domain.usecase.CheckAppUpdate",
+            "com.protonvpn.android.update.AppUpdateManager",
+        )
+        for (className in updateClasses) {
+            val clazz = runCatching { classLoader.loadClass(className) }.getOrNull() ?: continue
+            clazz.declaredMethods.filter { it.name == "invoke" || it.name.startsWith("check") }.forEach { method ->
+                XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        param.result = null
+                    }
+                })
+            }
+        }
+    }
+}
+
 val ProtonVpnPatches = arrayOf(
     ProtonVpnDisableTelemetry,
     ProtonVpnServerChangeDelay,
     ProtonVpnUnlockSettings,
+    ProtonVpnShowFreeServerLocations,
+    ProtonVpnUnlockConnectionPreferences,
     ProtonVpnHidePromotions,
     ProtonVpnPremiumUi,
+    ProtonVpnDisableUpdateChecks,
 )

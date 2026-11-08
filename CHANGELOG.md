@@ -10,6 +10,26 @@ bundles after CI succeeds.
 ## 4.2.11
 
 - `NexFusion` 4.2.11:
+  * Proton VPN Enhancements:
+    - Added "Show free server locations": allows free tier users to browse, search, and directly connect to free server locations/countries (Netherlands, United States, Japan, Romania, Poland) instead of random assignment.
+    - Added "Unlock connection preferences": unlocks default protocol selection (WireGuard, OpenVPN UDP, OpenVPN TCP, Stealth) and profile settings on free plans.
+    - Added "Disable in-app update checks": suppresses in-app update prompts and version checks.
+    - Enhanced "Remove server change delay": eliminates server switch cooldowns and enables client-side server switching features.
+  * Reddit Enhancements:
+    - Added "Media viewer black background": renders pure AMOLED black in full-bleed media viewer.
+    - Added "Hide communities shelf": hides suggested and related community recommendations in subreddits.
+    - Added "Hide Trending shelves": hides trending carousels from search and feeds.
+    - Added "Hide Ask button": removes the Ask button from the search bar.
+    - Added "Disable modern home": disables modern home revamp on supported versions.
+    - Added "Remember collapsed comments": preserves collapsed comment states across sessions.
+    - Added "High quality avatars": loads Snoovatars and user profile icons in uncompressed full resolution instead of downscaled previews.
+  * YouTube Full Seekbar Customization & Upstream Sync:
+    - Implemented dynamic runtime hooks for seekbar primary/accent colors, linear gradient shaders, and TimeBar scrubber thumb rendering.
+    - Ported full suite of seekbar customization toggles matching official dev branch.
+    - Cleaned up settings hierarchy so Morphe displays directly in Settings root.
+    - Fixed chapter skip double-tap: two-finger double-tap seeks instead of skipping chapters on accounts where server config turns chapter skip off.
+    - Fixed Return YouTube Dislike (RYD): restored feed thumbnail like count on multi-video container rows (such as the *Videos* and *Live* channel tabs).
+    - Video Codec Fallback: default to VP9 codec for devices lacking AV1 hardware decoding.
   * Gboard Enhancements & Ported Patches (v4.2.0 / v4.3.0-dev.1):
     - Added "Keypress vibration intensity control": unlocks hardware `VibrationEffect` vibration strength slider on Android 11+ (API 30+).
     - Added "Terminal paste & auto select-all": fixes paste shortcuts in raw terminal input fields (e.g. Termux) via direct InputConnection commits, and automatically selects all text before copy/cut when no selection is present.
@@ -18,15 +38,8 @@ bundles after CI succeeds.
     - Added "Developer options & internal flags": enables Gboard's internal developer options and experimental feature flag menus in settings.
     - Added "Backup & Restore settings": enables personal dictionary, preferences, and custom theme backup and restore options.
     - Enhanced Rambler Voice Typing: ensures pending session reset callbacks execute on speech conclusion, eliminating lingering colored light bar artifacts and immediately restoring standard suggestion predictions.
-  * Reddit Upstream Sync:
-    - Added "High quality avatars": loads Snoovatars and user profile icons in uncompressed full resolution instead of downscaled previews.
   * YouTube Music Upstream Sync:
     - Extended version compatibility checks up to 9.45.51.
-  * Upstream YouTube Sync:
-    - Fixed chapter skip double-tap: two-finger double-tap seeks instead of skipping chapters on accounts where server config turns chapter skip off.
-    - Fixed Return YouTube Dislike (RYD): restored feed thumbnail like count on multi-video container rows (such as the *Videos* and *Live* channel tabs).
-    - Video Codec Fallback: default to VP9 codec for devices lacking AV1 hardware decoding.
-    - Seekbar Preferences: removed redundant group title headers in custom seekbar settings.
 
 ## 4.2.10
 

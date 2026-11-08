@@ -467,6 +467,19 @@ val MediaViewerBlackBackground = patch(
     description = "Uses pure AMOLED black for the media viewer background instead of dark gray.",
     use = false,
 ) {
+    runCatching {
+        val fbpActivity = runCatching { classLoader.loadClass("com.reddit.fullbleedplayer.common.FbpActivity") }.getOrNull()
+        if (fbpActivity != null) {
+            XposedBridge.hookAllMethods(fbpActivity, "onPostCreate", object : XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    val activity = param.thisObject as? Activity ?: return
+                    activity.window?.decorView?.setBackgroundColor(Color.BLACK)
+                    activity.window?.navigationBarColor = Color.BLACK
+                    activity.window?.statusBarColor = Color.BLACK
+                }
+            })
+        }
+    }
 }
 
 val HideCommunitiesShelf = patch(
@@ -474,6 +487,24 @@ val HideCommunitiesShelf = patch(
     description = "Hides related or suggested communities shelves in subreddits.",
     use = false,
 ) {
+    runCatching {
+        val adapterClass = runCatching { classLoader.loadClass("androidx.recyclerview.widget.RecyclerView\$Adapter") }.getOrNull()
+        if (adapterClass != null) {
+            XposedBridge.hookAllMethods(adapterClass, "onBindViewHolder", object : XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    val holder = param.args.firstOrNull() ?: return
+                    val itemView = runCatching {
+                        XposedHelpers.getObjectField(holder, "itemView") as? View
+                    }.getOrNull() ?: return
+                    val holderStr = holder.javaClass.simpleName.lowercase()
+                    if (holderStr.contains("communityrecommendation") || holderStr.contains("suggestedcommunity")) {
+                        itemView.visibility = View.GONE
+                        itemView.layoutParams?.height = 0
+                    }
+                }
+            })
+        }
+    }
 }
 
 val HideTrendingShelves = patch(
@@ -481,6 +512,24 @@ val HideTrendingShelves = patch(
     description = "Hides trending shelves from feed and search suggestions.",
     use = false,
 ) {
+    runCatching {
+        val adapterClass = runCatching { classLoader.loadClass("androidx.recyclerview.widget.RecyclerView\$Adapter") }.getOrNull()
+        if (adapterClass != null) {
+            XposedBridge.hookAllMethods(adapterClass, "onBindViewHolder", object : XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    val holder = param.args.firstOrNull() ?: return
+                    val itemView = runCatching {
+                        XposedHelpers.getObjectField(holder, "itemView") as? View
+                    }.getOrNull() ?: return
+                    val holderStr = holder.javaClass.simpleName.lowercase()
+                    if (holderStr.contains("trending") || holderStr.contains("popularcarousel")) {
+                        itemView.visibility = View.GONE
+                        itemView.layoutParams?.height = 0
+                    }
+                }
+            })
+        }
+    }
 }
 
 val HideAskButton = patch(
@@ -488,6 +537,22 @@ val HideAskButton = patch(
     description = "Hides the Ask button in Reddit search and feeds.",
     use = false,
 ) {
+    runCatching {
+        val experimentClass = runCatching { classLoader.loadClass("com.reddit.config.ExperimentGate") }.getOrNull()
+            ?: runCatching { classLoader.loadClass("com.reddit.experiments.ExperimentGate") }.getOrNull()
+        if (experimentClass != null) {
+            experimentClass.declaredMethods.filter { it.returnType == java.lang.Boolean.TYPE }.forEach { method ->
+                XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        val experimentName = param.args.firstOrNull()?.toString() ?: return
+                        if (experimentName.contains("search_bar_ask") || experimentName.contains("ask_button")) {
+                            param.result = false
+                        }
+                    }
+                })
+            }
+        }
+    }
 }
 
 val DisableModernHome = patch(
@@ -495,6 +560,22 @@ val DisableModernHome = patch(
     description = "Disables the modern home UI on supported Reddit versions.",
     use = false,
 ) {
+    runCatching {
+        val experimentClass = runCatching { classLoader.loadClass("com.reddit.config.ExperimentGate") }.getOrNull()
+            ?: runCatching { classLoader.loadClass("com.reddit.experiments.ExperimentGate") }.getOrNull()
+        if (experimentClass != null) {
+            experimentClass.declaredMethods.filter { it.returnType == java.lang.Boolean.TYPE }.forEach { method ->
+                XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        val experimentName = param.args.firstOrNull()?.toString() ?: return
+                        if (experimentName.contains("modern_home") || experimentName.contains("home_revamp")) {
+                            param.result = false
+                        }
+                    }
+                })
+            }
+        }
+    }
 }
 
 val RememberCollapsedComments = patch(
@@ -502,6 +583,24 @@ val RememberCollapsedComments = patch(
     description = "Keeps comments you collapsed collapsed when reopening a post.",
     use = true,
 ) {
+    runCatching {
+        val commentClass = runCatching { classLoader.loadClass("com.reddit.domain.model.Comment") }.getOrNull()
+        if (commentClass != null) {
+            XposedBridge.hookAllMethods(commentClass, "getCollapsed", object : XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    val original = param.result as? Boolean ?: return
+                    if (original) return
+                    val comment = param.thisObject ?: return
+                    val id = runCatching { XposedHelpers.callMethod(comment, "getKindWithId") as? String }.getOrNull() ?: return
+                    val prefs = android.app.AndroidAppHelper.currentApplication()
+                        ?.getSharedPreferences("morphe_collapsed_comments", android.content.Context.MODE_PRIVATE)
+                    if (prefs != null && prefs.contains(id)) {
+                        param.result = true
+                    }
+                }
+            })
+        }
+    }
 }
 
 val RedditPatches = arrayOf(
