@@ -10,6 +10,8 @@ bundles after CI succeeds.
 ## 4.2.11
 
 - `NexFusion` 4.2.11:
+  * Application Registry Cleanups:
+    - Removed Facebook Wakizashi (`com.facebook.wakizashi`) from supported targets.
   * Twitch Enhancements:
     - Added "Auto-claim channel points": automatically claims channel points and community bonus chests as soon as they appear in live chat.
     - Added "Show deleted chat messages": preserves deleted and timed-out chat messages in stream chat.
