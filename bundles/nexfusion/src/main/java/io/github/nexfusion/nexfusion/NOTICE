@@ -30,22 +30,23 @@ ReactFontManager.getTypeface with the manager's patch toggle in place of Venus's
 Not ported: patch-time additions, the `assets/index.android.bundle` (Hermes bytecode) edits, and
 the mid-session restart dispatch.
 ================================================================================
-heyymichii/michii-patches
-https://github.com/heyymichii/michii-patches
+XBadFellaX/BadFella-Patches
+https://github.com/XBadFellaX/BadFella-Patches
 License: GPL-3.0
-Ported material: "Sanitize share links" (LinkCleaner.java, ShareLinkPatch.java),
-"Open links directly" (OpenLinksDirectlyPatch.java, unwrapSafetyPage only) and "Block tracking"
-(MetricQueue fingerprint) for LinkedIn; "Hide sponsored messages" and ghost mode
-(MessagingPatch.java: the entityData.contentMetadata.hasConversationAdContentValue and
-MessageItemKt.isSpInMail conversation filter, the sendTypingIndicator stub and the
-messagelist-only updateConversationReadStatus guard); "Disable double-tap like"
-(DoubleTapPatch.java); and "Hide feed ads" (HideAdsPatch.java's
-collectionTemplate.copyWithNewElements sponsoredTracking filter plus the SDUI feed-full-update
-rules of SduiComponentFilter.java: viewTracking metadata sponsoredData and the
-urn:li:sponsoredContentV2: payload marker). Not ported: the background lnkd.in short-link
-resolver, DownloadMedia/SduiMediaDownload, the in-app settings screen, and the other
-SduiComponentFilter rules (suggested, celebrations, jobs, reposts, videos, focus mode, premium
-upsells).
+Ported material: LinkedIn patches — "Keep feed on reopen" (KeepFeedPatch.kt, FlagshipSharedPreferences.getAppLastBackgroundTimeStamp hook);
+"Customize navigation bar" and "Hide bottom tabs" (CustomizeNavigationPatch.kt, NavigationBar.java, HomeNavTabsManager.getHomeNavTabs and SlimBottomBar hooks);
+"Swipe between feeds" and "Swipe tabs" (SwipeFeedsPatch.kt, SwipeTabs.java, FeedSwipe.java);
+"Copy text" (CopyTextPatch.kt, TextSelectionOverlay.java, AndroidComposeView.dispatchTouchEvent and accessibility semantics tree node lookup);
+"Tap to hide in viewers" (ViewerTapToHidePatch.kt, ViewerChrome.java);
+"Save document as PDF" (DownloadMediaPatch.kt, DocumentPdf.java, DocumentSingleViewData hook, multi-slice rendering and original PDF extraction);
+"Post menu items" (PostMenuPatch.kt, PostMenu.java, feed-control-menu SDUI rewrite and action dispatcher);
+"Feed filters" (HideFeedContentPatches.kt, SduiComponentFilter.java: AI views, games, recommended posts, suggested posts, promoted jobs, premium upsells, see translation, and new posts pill);
+"Sanitize share links" (LinkCleaner.java, ShareLinkPatch.java);
+"Open links directly" (OpenLinksDirectlyPatch.java);
+"Block tracking" and enhanced "Anonymous profile viewing" (AnonymousProfileViewingPatch.kt, BlockTrackingPatch.kt, Tracker.send, Tracker.sendViaLiTracker, MetricQueue.sendViaTfe, and ProfileTrackingFeatureImpl.sendCustomProfileViewEvent);
+"Hide sponsored messages" and ghost mode (MessagingPatch.java);
+"Disable double-tap like" (DoubleTapPatch.java);
+and AMOLED Pitch Black / Material You dynamic theme (MaterialYouPatch.kt, MaterialYou.java).
 ================================================================================
 ak800i/mixplorer-patches-for-morphe
 https://github.com/ak800i/mixplorer-patches-for-morphe

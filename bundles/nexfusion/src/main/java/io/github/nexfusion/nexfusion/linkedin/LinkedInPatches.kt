@@ -124,6 +124,33 @@ val AnonymousProfileViewing = patch(
                         }
                     }
                 })
+            } else if (m.name == "sendViaLiTracker") {
+                XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        val eventName = param.args.firstOrNull()?.toString() ?: ""
+                        val event = param.args.getOrNull(1)?.toString() ?: ""
+                        if (eventName.contains("ProfileView") || event.contains("profile")) {
+                            param.result = null
+                        }
+                    }
+                })
+            }
+        }
+    }
+
+    runCatching {
+        val queueCls = classLoader.loadClass("com.linkedin.android.litrackinglib.network.MetricQueue")
+        for (m in queueCls.declaredMethods) {
+            if (m.name == "sendViaTfe") {
+                XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        val eventName = param.args.firstOrNull()?.toString() ?: ""
+                        val event = param.args.getOrNull(2)?.toString() ?: ""
+                        if (eventName.contains("ProfileView") || event.contains("profile")) {
+                            param.result = null
+                        }
+                    }
+                })
             }
         }
     }
@@ -131,6 +158,7 @@ val AnonymousProfileViewing = patch(
 
 val LinkedInPatches = arrayOf(
     DownloadMedia,
+    DocumentPdfDownload,
     SanitizeShareLinks,
     OpenLinksDirectly,
     BlockTracking,
@@ -144,7 +172,17 @@ val LinkedInPatches = arrayOf(
     HidePromotedJobs,
     HidePremiumUpsells,
     FeedFilters,
+    ExpandPosts,
+    PostMenuItems,
+    KeepFeed,
+    CustomizeNavigationBar,
+    HideTabLabels,
+    HideTabBadges,
+    SwipeFeeds,
+    CopyText,
+    ViewerTapToHide,
     MaterialYouTheme,
+    PitchBlackTheme,
 )
 
 /** Hooks [descriptor] with a before callback, skipping targets this LinkedIn version does not have. */

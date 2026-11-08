@@ -192,12 +192,52 @@ val HidePremiumUpsells = patch(
     }
 }
 
+val ExpandPosts = patch(
+    name = "Expand posts",
+    description = "Shows posts fully expanded by default without having to tap '...see more'.",
+) {
+    registerSduiTransformer { component, viewName, payload ->
+        if (viewName == "feed-commentary" && payload != null) {
+            expandCommentary(component, payload)
+        } else null
+    }
+}
+
 val FeedFilters = patch(
     name = "Feed filters",
-    description = "Filters celebrations, job cards, reposts, videos, reaction counts, and the new posts pill.",
+    description = "Filters celebrations, job cards, reposts, videos, reaction counts, AI coach prompts, puzzle games, recommendations, and new posts pills.",
     use = false,
 ) {
     hookSduiTransformer { component -> isFeedFilteredComponent(component) }
+}
+
+val PitchBlackTheme = patch(
+    name = "Pitch black theme",
+    description = "Replaces the dark mode gray backgrounds with pure AMOLED pitch black (#000000).",
+    use = false,
+) {
+    val colors = LinkedInPitchBlackColors()
+
+    PorterDuffColorFilter::class.java.getConstructor(Int::class.javaPrimitiveType, PorterDuff.Mode::class.java).hookMethod {
+        before { it.args[0] = colors.map(it.args[0] as Int) }
+    }
+    ColorStateList::class.java.getMethod("getColorForState", IntArray::class.java, Int::class.javaPrimitiveType).hookMethod {
+        after { param ->
+            param.result = colors.map(param.result as Int)
+        }
+    }
+    Color::class.java.getMethod("parseColor", String::class.java).hookMethod {
+        after { it.result = colors.map(it.result as Int) }
+    }
+    Paint::class.java.getMethod("setColor", Int::class.javaPrimitiveType).hookMethod {
+        before { it.args[0] = colors.map(it.args[0] as Int) }
+    }
+    Resources::class.java.getMethod("getColor", Int::class.javaPrimitiveType, Resources.Theme::class.java).hookMethod {
+        after { it.result = colors.map(it.result as Int) }
+    }
+    TypedArray::class.java.getMethod("getColor", Int::class.javaPrimitiveType, Int::class.javaPrimitiveType).hookMethod {
+        after { it.result = colors.map(it.result as Int) }
+    }
 }
 
 val MaterialYouTheme = patch(
@@ -231,8 +271,28 @@ val MaterialYouTheme = patch(
     }
 }
 
+private val sduiPredicates = mutableListOf<(Any) -> Boolean>()
+private val sduiTransformers = mutableListOf<(Any, String, ByteArray?) -> Any?>()
+private var sduiTransformerHookInstalled = false
+
 /** Hooks SDUI ComponentTransformer.doTransform to filter components matching [predicate]. */
 private fun IHook.hookSduiTransformer(predicate: (Any) -> Boolean) {
+    synchronized(sduiPredicates) {
+        sduiPredicates.add(predicate)
+    }
+    ensureSduiTransformerHook()
+}
+
+private fun IHook.registerSduiTransformer(transformer: (Any, String, ByteArray?) -> Any?) {
+    synchronized(sduiTransformers) {
+        sduiTransformers.add(transformer)
+    }
+    ensureSduiTransformerHook()
+}
+
+private fun IHook.ensureSduiTransformerHook() {
+    if (sduiTransformerHookInstalled) return
+    sduiTransformerHookInstalled = true
     try {
         val transformer = classLoader.loadClass("com.linkedin.sdui.transformer.impl.ComponentTransformer")
         val targets = transformer.declaredMethods.filter {
@@ -243,7 +303,40 @@ private fun IHook.hookSduiTransformer(predicate: (Any) -> Boolean) {
         val hook = object : XC_MethodHook() {
             override fun beforeHookedMethod(param: MethodHookParam) {
                 val component = param.args.getOrNull(0) ?: return
-                if (predicate(component)) param.result = null
+                val predicates = synchronized(sduiPredicates) { sduiPredicates.toList() }
+                for (p in predicates) {
+                    if (p(component)) {
+                        param.result = null
+                        return
+                    }
+                }
+
+                val viewTracking = if (callOrNull(component, "hasViewTracking") == true) {
+                    callOrNull(component, "getViewTracking")
+                } else null
+                val viewName = callOrNull(viewTracking, "getViewName") as? String ?: ""
+                val payload = callOrNull(component, "toByteArray") as? ByteArray
+
+                if (payload != null) {
+                    if (viewName == "feed-full-update") {
+                        PostMenuCache.remember(payload)
+                    } else if (viewName == "feed-control-menu-page") {
+                        val injected = PostMenuInjector.inject(component, payload)
+                        if (injected !== component) {
+                            param.args[0] = injected
+                        }
+                    }
+                }
+
+                val transformers = synchronized(sduiTransformers) { sduiTransformers.toList() }
+                for (t in transformers) {
+                    val currentComp = param.args.getOrNull(0) ?: component
+                    val currentPayload = callOrNull(currentComp, "toByteArray") as? ByteArray
+                    val transformed = t(currentComp, viewName, currentPayload)
+                    if (transformed != null) {
+                        param.args[0] = transformed
+                    }
+                }
             }
         }
         targets.forEach { XposedBridge.hookMethod(it, hook) }
@@ -337,6 +430,8 @@ private val FILTERED_SDUI_VIEWS = setOf(
     "feed-repost-count",
     "comment-reaction-count",
     "feed-new-update-pill",
+    "feed-new-updates-pill",
+    "feed-pill-container",
     "feed-see-translation",
 )
 
@@ -349,12 +444,15 @@ private fun isFeedFilteredComponent(component: Any): Boolean {
         }
         val viewName = callOrNull(viewTracking, "getViewName") as? String ?: ""
         if (viewName in FILTERED_SDUI_VIEWS) return true
+        if (isAiView(viewName) || isGameView(viewName) || isRecommendedForYou(viewName)) return true
         if (viewName == "feed-full-update") {
             val payload = callOrNull(component, "toByteArray") as? ByteArray ?: return false
             if (containsAscii(payload, "feed-celebrations-update-detail") ||
                 containsAscii(payload, "feed-job-card-entity") ||
                 containsAscii(payload, "feed-original-share-description") ||
-                containsAscii(payload, "large-single-video-view")
+                containsAscii(payload, "large-single-video-view") ||
+                containsAscii(payload, "feed-games-") ||
+                containsAscii(payload, "feed-coach")
             ) {
                 return true
             }
@@ -362,6 +460,48 @@ private fun isFeedFilteredComponent(component: Any): Boolean {
         false
     } catch (_: Throwable) {
         false
+    }
+}
+
+private fun isAiView(viewName: String): Boolean =
+    viewName.startsWith("feed-coach") || viewName.startsWith("feed-ai-") ||
+        viewName.contains("-ai-") || viewName.endsWith("-ai") || viewName.contains("coach-prompt")
+
+private fun isGameView(viewName: String): Boolean =
+    viewName.startsWith("feed-games-") || viewName.startsWith("game-") ||
+        viewName.contains("crossclimb") || viewName.contains("tango") ||
+        viewName.contains("queens") || viewName.contains("pinpoint") ||
+        viewName.contains("puzzle")
+
+private fun isRecommendedForYou(viewName: String): Boolean =
+    viewName.startsWith("feed-recommended-for-you") || viewName.startsWith("feed-interest-recommendation")
+
+private fun expandCommentary(component: Any, payload: ByteArray): Any? {
+    return runCatching {
+        val expand = ProtoEditor.nested(payload, 35, 2, 12, 2) ?: return null
+        val fields = ProtoEditor.parse(payload) ?: return null
+        val trigger = ProtoField(25, 2, ProtoEditor.write(listOf(
+            ProtoField(1, 2, expand),
+            ProtoEditor.messageField(13)
+        )))
+        val updated = fields.toMutableList().apply { add(trigger) }
+        val newBytes = ProtoEditor.write(updated)
+        val parseFrom = component.javaClass.getMethod("parseFrom", ByteArray::class.java)
+        parseFrom.invoke(null, newBytes)
+    }.getOrNull()
+}
+
+private class LinkedInPitchBlackColors {
+    fun map(color: Int): Int {
+        val rgb = color and 0xFFFFFF
+        val alpha = color and -0x1000000
+        val mappedRgb = when (rgb) {
+            0x1B1F23 -> 0x000000 // AMOLED_CANVAS
+            0x1D2226 -> 0x0D0D0D // AMOLED_CARD
+            0x293037, 0x293138 -> 0x1A1A1A // AMOLED_TINT
+            else -> rgb
+        }
+        return alpha or mappedRgb
     }
 }
 
