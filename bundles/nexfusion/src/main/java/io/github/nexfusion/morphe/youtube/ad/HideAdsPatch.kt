@@ -71,6 +71,25 @@ val HideAds = patch(
         }
     }
 
+    setOf(
+        Endpoint.BROWSE,
+        Endpoint.SEARCH,
+        Endpoint.NEXT,
+    ).forEach { endpoint ->
+        addOSNameHook(endpoint) { AdsFilter.hideAds(it) }
+    }
+
+    setOf(
+        Endpoint.GET_WATCH,
+        Endpoint.PLAYER,
+    ).forEach { endpoint ->
+        addOSNameHook(endpoint) { AdsFilter.hideVideoAds(it) }
+    }
+
+    addOSNameHook(Endpoint.REEL, AdsFilter::hideShortsAds)
+
+    addOSNameHook(Endpoint.GUIDE, AdsFilter::overrideGuideOSName)
+
     // Hide YouTube Premium promotions
 
     hookElement(AdsFilter::hideStatementBanner)
