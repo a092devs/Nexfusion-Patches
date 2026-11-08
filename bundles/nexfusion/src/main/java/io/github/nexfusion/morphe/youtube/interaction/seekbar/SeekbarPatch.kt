@@ -1,5 +1,6 @@
 package io.github.nexfusion.morphe.youtube.interaction.seekbar
 
+import io.github.nexfusion.morphe.youtube.layout.hide.time.hideTimestampPatch
 import io.github.nexfusion.patch
 
 @Suppress("unused")
@@ -10,6 +11,8 @@ val seekbarPatch = patch(
             "custom seekbar thumb styling, " +
             "custom seekbar colors, " +
             "thumbnail preview, " +
+            "live stream DVR, " +
+            "hiding the timestamp, " +
             "hiding the seekbar, " +
             "and tapping the player seekbar to seek."
 ) {
@@ -21,6 +24,8 @@ val seekbarPatch = patch(
         hideSeekbarPatch,
         seekbarColorPatch,
         seekbarThumbnailPreviewPatch,
+        liveStreamDVRPatch,
+        hideTimestampPatch,
     )
 
     // Prevent Shorts seekbar from detaching when leaving settings or switching Shorts

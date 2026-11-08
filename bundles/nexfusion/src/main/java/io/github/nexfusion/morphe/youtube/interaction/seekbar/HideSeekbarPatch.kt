@@ -11,6 +11,7 @@ val hideSeekbarPatch = patch(
     description = "Adds an option to hide the seekbar.",
 ) {
     PreferenceScreen.SEEKBAR.addPreferences(
+        SwitchPreference("morphe_fullscreen_large_seekbar"),
         SwitchPreference("morphe_hide_seekbar"),
         SwitchPreference("morphe_hide_seekbar_thumbnail", summary = true),
     )
