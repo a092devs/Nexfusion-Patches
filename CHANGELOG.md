@@ -7,6 +7,21 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.2.12
+
+- `NexFusion` 4.2.12:
+  * YouTube Fixes & Feed Optimizations:
+    - Resolved YouTube Shorts feed advertisements by hooking the `REEL` endpoint (`reel/reel_item_watch` and `reel/reel_watch_sequence`) with dynamic client context OS spoofing.
+    - Fixed seekbar color picker crash when resetting color values in preferences.
+  * LinkedIn Patch Suite Modernization:
+    - Modernized patch architecture to support the latest LinkedIn releases.
+    - Added feed customization options to hide sponsored/promoted posts, hide suggested posts and channels, hide job recommendations in feeds, and suppress premium promotional upsells.
+    - Added navigation controls to customize navigation bar items and toggle floating action button visibility.
+    - Added profile viewer enhancements including anonymous browsing mode and suppressing profile view analytics prompts.
+  * Application Registry & Testing:
+    - Verified clean removal of deprecated targets across patch registry.
+    - Added comprehensive unit test coverage for ProtoEditor and LinkedIn runtime patch components.
+
 ## 4.2.11
 
 - `NexFusion` 4.2.11:
