@@ -19,11 +19,11 @@ android {
 
     defaultConfig {
         applicationId = "io.github.nexfusion.patches"
-        versionCode = 78
+        versionCode = 79
         val patchVersion = Properties().apply {
             rootProject.file("morphe-patches/gradle.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
         }["version"]
-        versionName = "4.2.12"
+        versionName = "4.3.0"
         buildConfigField("String", "PATCH_VERSION", "\"$patchVersion\"")
     }
     packaging {
@@ -78,6 +78,10 @@ tasks.withType<JavaCompile>().configureEach {
         "**/OAuth2Preference.java",
         "**/SpoofVideoStreamsSignInPreference.java",
         "**/SpoofSignaturePatch.java",
+        "**/preference/YouTubeGlassNavigationBarPreference.java",
+        "**/preference/MusicGlassNavigationBarPreference.java",
+        "**/preference/GlassNavigationBarSizePreference.java",
+        "**/preference/NavigationButtonsOrderPreference.java",
     )
 }
 
