@@ -1,4 +1,19 @@
 <resources>
     <string name="app_name">NexFusion Patches</string>
     <string name="bundle_description">Unified patch suite with dynamic bytecode hooks and feature enhancements for supported applications.</string>
+
+    <!-- Custom branding name entries for YouTube patches (match upstream) -->
+    <string name="morphe_custom_branding_name_entry_2" translatable="false">YouTube Morphe</string>
+    <string name="morphe_custom_branding_name_entry_3" translatable="false">YT Morphe</string>
+    <string name="morphe_custom_branding_name_entry_4" translatable="false">YT</string>
+    <string name="morphe_custom_branding_name_title">App name</string>
+
+    <!-- Custom branding icon entries -->
+    <string name="morphe_custom_branding_icon_entry_8">Original analog</string>
+    <string name="morphe_custom_branding_icon_entry_9">Original cake</string>
+    <string name="morphe_custom_branding_icon_entry_10">Original metal</string>
+
+    <!-- Custom seekbar thumb scale type entries -->
+    <string name="morphe_custom_seekbar_thumb_scale_type_entry_fit_seekbar" translatable="false">Fit seekbar</string>
+    <string name="morphe_custom_seekbar_thumb_scale_type_entry_original" translatable="false">Original</string>
 </resources>

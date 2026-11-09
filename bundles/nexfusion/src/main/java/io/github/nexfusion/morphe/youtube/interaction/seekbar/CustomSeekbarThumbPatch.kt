@@ -25,7 +25,7 @@ val customSeekbarThumbPatch = patch(
             NonInteractivePreference(
                 key = "morphe_custom_seekbar_thumb_file",
                 tag = CustomSeekbarThumbPreference::class.java,
-                selectable = true,
+                selectable = true
             ),
             ListPreference("morphe_custom_seekbar_thumb_scale_type"),
         ),
@@ -38,6 +38,8 @@ val customSeekbarThumbPatch = patch(
         }
     }
 
+    // Fix vertical alignment: upstream drawCircle centers thumb at (cx, cy) but seekbar track
+    // is slightly above the circle center. Nudge custom thumb up by ~2dp to align with track.
     val drawCircle =
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R)
             "Landroid/view/DisplayListCanvas;->drawCircle(FFFLandroid/graphics/Paint;)V"
@@ -52,11 +54,24 @@ val customSeekbarThumbPatch = patch(
                     val cx = param.args[0] as Float
                     val cy = param.args[1] as Float
                     val radius = param.args[2] as Float
-                    if (CustomSeekbarThumbPatch.drawCustomThumb(canvas, cx, cy, radius)) {
-                        param.result = null
-                    }
+                    // Nudge custom thumb up by ~2dp to align with seekbar track
+                    val nudge = -2.0f * density
+                    CustomSeekbarThumbPatch.drawCircle(canvas, cx, cy + nudge, param.args[2] as Float, param.args[3] as android.graphics.Paint)
+                    param.result = Unit
                 }
             }
         )
     )
+}
+
+// Screen density (will be initialized lazily)
+val density: Float by lazy {
+    try {
+        val activityThreadClass = Class.forName("android.app.ActivityThread")
+        val currentApplication = activityThreadClass.getMethod("currentApplication").invoke(null)
+        val context = currentApplication as android.content.Context
+        context.resources.displayMetrics.density
+    } catch (e: Exception) {
+        2.5f // fallback for typical modern device density
+    }
 }
