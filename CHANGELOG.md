@@ -7,6 +7,18 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.3.0
+
+- `NexFusion` 4.3.0:
+  * YouTube Glass Navigation Bar & Seekbar:
+    - Fixed `NavigationBarPatch` by correcting the `getFloatingRoom()` invocation signature to properly resolve dynamic padding on translucent navigation bars.
+    - Fine-tuned custom seekbar thumb vertical nudge alignment and color loading.
+  * X (Twitter) Telemetry Hardening:
+    - Updated Twitter/X telemetry blocking with comprehensive upstream tracker and analytics suppression.
+  * Codebase Maintenance & Quality:
+    - Removed `GenerateMorpheTargetsTask` dead code.
+    - Synchronized with updated patcher API and resolved all compilation issues across runtime hooks.
+
 ## 4.2.12
 
 - `NexFusion` 4.2.12:
