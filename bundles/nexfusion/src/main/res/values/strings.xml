@@ -3,9 +3,11 @@
     <string name="bundle_description">Unified patch suite with dynamic bytecode hooks and feature enhancements for supported applications.</string>
 
     <!-- Custom branding name entries for YouTube patches (match upstream) -->
+    <string name="morphe_custom_branding_name_entry_1" translatable="false">YouTube</string>
     <string name="morphe_custom_branding_name_entry_2" translatable="false">YouTube Morphe</string>
     <string name="morphe_custom_branding_name_entry_3" translatable="false">YT Morphe</string>
     <string name="morphe_custom_branding_name_entry_4" translatable="false">YT</string>
+    <string name="morphe_custom_branding_name_entry_5" translatable="false">Custom</string>
     <string name="morphe_custom_branding_name_title">App name</string>
 
     <!-- Custom branding icon entries -->

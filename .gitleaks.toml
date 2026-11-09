@@ -1,7 +1,21 @@
 [allowlist]
-description = "Known client-side YouTube API keys used by upstream Android flows"
+description = "Known telemetry endpoints and API URLs used for blocking in patches"
 regexes = [
-  '''AIzaSyAOghZGza2MQSZkY_zfZ370N-PUdXEo8AI''',
-  '''AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30''',
-  '''AIzaSyDyT5W0Jh49F30Pqqtyfdf7pDLFKLJoAnw''',
+    '''https://sdk\.iad-01\.braze\.com/api/v3/''',
+    '''https://sondheim\.braze\.com/api/v3/''',
+    '''https://o438986\.ingest\.sentry\.io/api/5405103/store/\?sentry_key=524610463d1141a58e7f57053dc7ef87''',
+    '''https://o438986\.ingest\.sentry\.io/api/5405103/store/''',
+    '''https://api2\.appsflyer\.com/api/v5/''',
+    '''https://analytics\.plaid\.com/sentry/api/''',
+    '''https://api\.scribeup\.io''',
+    '''https://googleads\.g\.doubleclick\.net''',
+    '''https://pubads\.g\.doubleclick\.net''',
+    '''https://static\.doubleclick\.net''',
+    '''https://firebase-settings\.crashlytics\.com/spi/v2/platforms/android/gmp/''',
+    '''https://app-measurement\.com/a''',
+    '''https://app-measurement\.com/s/d''',
+    '''https://app\.adjust\.com/''',
+    '''AIzaSyAOghZGza2MQSZkY_zfZ370N-PUdXEo8AI''',
+    '''AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30''',
+    '''AIzaSyDyT5W0Jh49F30Pqqtyfdf7pDLFKLJoAnw''',
 ]

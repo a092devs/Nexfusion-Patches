@@ -12,10 +12,6 @@ import de.robv.android.xposed.XposedBridge
 import java.lang.reflect.Method
 import java.util.concurrent.locks.ReentrantLock
 
-private val blackholeLock = ReentrantLock()
-private var blackholeUrl: Any? = null
-private var blackholeResolved = false
-
 // Ported from kveld9/kveld-extra-morphe-patches (GPL-3.0), TwitterBlockTelemetryPatch.kt (the
 // bytecode side). Upstream replaces the tracker URL string literals in place and drops the
 // Firebase Performance getInstance null checks; this port filters the URLs at the network layer and
@@ -180,3 +176,17 @@ internal fun IHook.blackholeHttpUrl(): Any? {
         return null
     }
 }
+
+/** Braze, Sentry, Google Ads, Crashlytics, AppsFlyer, and other telemetry endpoint blocking via string replacement.
+ * NOTE: This requires DexKit which is only available in the patcher module, not the bundle module.
+ * The string replacement logic has been moved to the patcher module (TwitterBlockTelemetryPatch.kt in kveld patches).
+ */
+private fun IHook.installStringReplacementFilters() {
+    // This function is intentionally empty in the bundle module.
+    // The string replacement logic has been moved to the patcher module (TwitterBlockTelemetryPatch.kt in kveld patches)
+    // which runs at build time with DexKit available.
+}
+
+private val blackholeLock = ReentrantLock()
+private var blackholeUrl: Any? = null
+private var blackholeResolved = false
