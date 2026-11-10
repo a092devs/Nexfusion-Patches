@@ -7,6 +7,23 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.3.1
+
+- `NexFusion` 4.3.1:
+  * YouTube Watch History Restored:
+    - Removed Automotive OS identity spoofing from ad-blocking hooks, resolving the issue where watch history and recent library shelves were disabled by backend services.
+    - Preserved complete client-side video, feed, and Litho ad elimination.
+  * Spotify Patch Suite:
+    - Integrated comprehensive ad-blocking and interface cleaner suite based on pablobaro-morphe-patches.
+    - Disabled playback ad breaks and audio interstitial ads via Cosmos Esperanto service calls.
+    - Blocked fullscreen promotional popups, brand-ad feed cards, and now-playing view ad banners.
+    - Removed the bottom navigation Premium tab and eliminated context menu promotional upsells.
+    - Sanitized sharing links by stripping query tracking parameters.
+  * Dynamic Runtime Bytecode Compatibility:
+    - Ensured full version-agnostic compatibility for Spotify across client releases.
+    - Corrected navigation tab set fingerprint resolution to reliably identify bottom navigation containers.
+    - Guarded optional widget and unplayable track anchors to prevent startup exceptions on newer versions.
+
 ## 4.3.0
 
 - `NexFusion` 4.3.0:
