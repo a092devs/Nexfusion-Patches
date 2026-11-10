@@ -5,7 +5,7 @@
   <p>
     <a href="https://github.com/a092devs/Nexfusion-Patches/releases"><img src="https://img.shields.io/github/v/release/a092devs/Nexfusion-Patches?style=flat&color=1f6feb&labelColor=21262d&logo=github&label=Release" alt="Latest Release" /></a>
     <img src="https://img.shields.io/badge/Format-.nxb%20(Signed%20APK)-8957e5?style=flat&labelColor=21262d" alt="Format: .nxb" />
-    <img src="https://img.shields.io/badge/LSPosed-API%20101-8957e5?style=flat&labelColor=21262d" alt="LSPosed API 101" />
+    <img src="https://img.shields.io/badge/LSPosed-API%20101%2F102-8957e5?style=flat&labelColor=21262d" alt="LSPosed API 101/102" />
     <img src="https://img.shields.io/badge/Targets-22%20Applications-238636?style=flat&labelColor=21262d" alt="Targets: 22 Applications" />
     <img src="https://img.shields.io/badge/Icon-Hardware%20Silicon%20Matrix-1f6feb?style=flat&labelColor=21262d" alt="Hardware Silicon Matrix" />
     <a href="https://t.me/a092devs"><img src="https://img.shields.io/badge/Telegram-@a092devs-2f81f7?style=flat&labelColor=21262d&logo=telegram&logoColor=white" alt="Telegram Support" /></a>
@@ -34,7 +34,7 @@ Unlike traditional patching tools that decompile, modify, re-sign, and reinstall
 - 📦 **Containerized `.nxb` Bundles:** Patches are packaged into signed `.nxb` APK containers loaded directly into process memory without requiring APK installation.
 
 > [!IMPORTANT]
-> - **Runtime-Only Architecture:** Patches run purely in-memory via LSPosed (API 101). Target APK files are never modified, re-signed, or repackaged.
+> - **Runtime-Only Architecture:** Patches run purely in-memory via LSPosed (API 101/102). Target APK files are never modified, re-signed, or repackaged.
 > - **Trusted Sources:** Bytecode executes within target application processes. Always install patch bundles from trusted developers and verified repositories.
 > - **Integrity Guarantee:** Banking, payment, and security-critical applications are deliberately excluded from patch targets.
 
@@ -222,7 +222,7 @@ Automated releases are published via [`.github/workflows/release.yml`](.github/w
 Contributions, bug reports, and feature requests are welcome!
 - **Feedback & Feature Requests:** If you encounter issues or have feature requests, feel free to contact [@a092devs](https://t.me/a092devs) on Telegram.
 - **Bug Reports & Pull Requests:** Ensure all unit tests pass prior to opening pull requests: `./gradlew testDebugUnitTest`
-- All contributions must adhere to the runtime-only architecture (in-memory execution via LSPosed API 101, zero APK modification).
+- All contributions must adhere to the runtime-only architecture (in-memory execution via LSPosed API 101/102, zero APK modification).
 - Ensure target application stability by wrapping non-essential hooks in `runCatching` safeguards.
 
 ---
@@ -237,7 +237,7 @@ Nexfusion-Patches is developed and maintained by **a092devs**. We gratefully ack
 
 | Project | Contribution |
 |---|---|
-| **[LSPosed](https://github.com/LSPosed/LSPosed)** | Core ART runtime hooking framework and official `libxposed` (API 101) |
+| **[LSPosed](https://github.com/LSPosed/LSPosed)** | Core ART runtime hooking framework and official `libxposed` (API 101/102) |
 | **[DexKit](https://luckypray.org/DexKit/en/)** | High-performance Dex bytecode pattern matching and opcode resolution |
 | **[Morphe](https://morphe.software)** | Bytecode runtime hook patterns, fingerprint specifications, and shared utilities |
 | **[ReVanced](https://revanced.app)** | Reverse engineering research, feature specifications, and community contributions |

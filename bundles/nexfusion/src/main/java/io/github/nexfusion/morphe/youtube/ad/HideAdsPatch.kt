@@ -71,6 +71,12 @@ val HideAds = patch(
         }
     }
 
+    ::BuildClientContextIsAutomotive.hookMethod {
+        after {
+            it.result = AdsFilter.hideAds(it.result as Boolean)
+        }
+    }
+
     setOf(
         Endpoint.BROWSE,
         Endpoint.SEARCH,
