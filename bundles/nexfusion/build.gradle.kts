@@ -81,7 +81,6 @@ tasks.withType<JavaCompile>().configureEach {
         "**/preference/YouTubeGlassNavigationBarPreference.java",
         "**/preference/MusicGlassNavigationBarPreference.java",
         "**/preference/GlassNavigationBarSizePreference.java",
-        "**/preference/NavigationButtonsOrderPreference.java",
     )
 }
 
