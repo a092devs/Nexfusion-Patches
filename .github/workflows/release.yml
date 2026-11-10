@@ -81,9 +81,6 @@ jobs:
 
                   echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
-            - name: Unit tests
-              run: ./gradlew testDebugUnitTest
-
             - name: Build bundles
               run: ./gradlew assembleBundle --stacktrace
 

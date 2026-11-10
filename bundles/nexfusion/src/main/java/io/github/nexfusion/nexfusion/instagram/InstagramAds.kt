@@ -39,7 +39,11 @@ private var adInjectorGuarded = false
  */
 internal fun PatchExecutor.guardAdInjector() {
     if (adInjectorGuarded) return
-    ::adInjectorMethod.hookMethod(returnConstant(false))
-    adInjectorGuarded = true
-    PatcherLog.info { "NexFusion Instagram: the ad injector answers that nothing went in" }
+    runCatching {
+        ::adInjectorMethod.hookMethod(returnConstant(false))
+        adInjectorGuarded = true
+        PatcherLog.info { "NexFusion Instagram: the ad injector answers that nothing went in" }
+    }.onFailure {
+        PatcherLog.info(it) { "NexFusion Instagram: failed to guard ad injector" }
+    }
 }

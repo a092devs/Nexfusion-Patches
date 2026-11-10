@@ -10,14 +10,22 @@ bundles after CI succeeds.
 ## 4.3.0
 
 - `NexFusion` 4.3.0:
+  * YouTube Ad-Blocking & Stream Integrity:
+    - Restored Android Automotive client context OS spoofing in `AdsFilter.java` across InnerTube endpoints (`BROWSE`, `SEARCH`, `NEXT`, `GET_WATCH`, `PLAYER`, `REEL`), completely suppressing general, home feed, shorts, and video playback advertisements.
   * YouTube Glass Navigation Bar & Seekbar:
-    - Fixed `NavigationBarPatch` by correcting the `getFloatingRoom()` invocation signature to properly resolve dynamic padding on translucent navigation bars.
+    - Fixed `CustomSeekbarThumbPatch` method hook recursion to eliminate application startup crashes.
+    - Corrected the `getFloatingRoom()` invocation signature in `NavigationBarPatch` to properly resolve dynamic padding on translucent navigation bars.
     - Fine-tuned custom seekbar thumb vertical nudge alignment and color loading.
   * X (Twitter) Telemetry Hardening:
-    - Updated Twitter/X telemetry blocking with comprehensive upstream tracker and analytics suppression.
-  * Codebase Maintenance & Quality:
-    - Removed `GenerateMorpheTargetsTask` dead code.
-    - Synchronized with updated patcher API and resolved all compilation issues across runtime hooks.
+    - Corrected Twitter/X telemetry blocking by eliminating non-void return stubbing in logger singletons, preventing crashes during app initialization.
+  * Instagram Patch Hardening:
+    - Wrapped cross-surface ad injector hooks in `runCatching` safeguards for stability across dynamic APK variations.
+  * Upstream Submodule Synchronization:
+    - Merged upstream `MorpheApp/morphe-patches` (`dev`) and `MorpheApp/morphe-patches-library` (`main`).
+    - Resolved all merge conflicts across `ClassicSubscriptionsLayoutPatch`, `NavigationBar`, and `BaseSettings` (`DEBUG_LEVEL`), preserving DexKit runtime hooking layers.
+  * CI Optimization:
+    - Removed redundant unit test runs from release workflow and skipped tests on `main` branch pushes to conserve GitHub Actions resources.
+    - Preserved full unit test suites on `beta` and pull request validations.
 
 ## 4.2.12
 
