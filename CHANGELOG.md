@@ -10,25 +10,30 @@ bundles after CI succeeds.
 ## 4.3.0
 
 - `NexFusion` 4.3.0:
-  * Pure Modern libxposed API 102 Framework Migration:
-    - Migrated full bundle codebase to link cleanly against NexFusion modern API 102 bridge (`io.github.nexfusion.compat.*`).
-    - Verified all 21 patch modules compile and pass 100% unit tests against target app binaries.
-  * YouTube Ad-Blocking & Stream Integrity:
-    - Restored Android Automotive client context OS spoofing in `AdsFilter.java` across InnerTube endpoints (`BROWSE`, `SEARCH`, `NEXT`, `GET_WATCH`, `PLAYER`, `REEL`), completely suppressing general, home feed, shorts, and video playback advertisements.
+  * libxposed API 101 & 102 Compatibility:
+    - Migrated bundle codebase to link cleanly against `io.github.nexfusion.compat.*`.
+    - Support for both **API 101** and **API 102** environments.
+    - Verified all 22 patch modules compile and pass 100% unit tests against target app binaries.
+  * YouTube Ad-Blocking & Sponsored Feed Elimination:
+    - Hooked `::BuildClientContextIsAutomotive` in `HideAdsPatch.kt` to force client context OS spoofing via `AdsFilter.hideAds(boolean)` at process creation, completely eliminating sponsored feed ads, promotional carousel cards, and video playback advertisements.
+    - Restored Android Automotive client context OS spoofing across all InnerTube endpoints (`BROWSE`, `SEARCH`, `NEXT`, `GET_WATCH`, `PLAYER`, `REEL`).
+  * Upstream Submodule & Extensions Sync (Morphe v2.2.0-dev.5):
+    - Ambient Mode: Fixed black band under the player upon scrolling ([#4610](https://github.com/MorpheApp/morphe-patches/issues/4610)) and white comment box in Enhanced Ambient mode ([#4603](https://github.com/MorpheApp/morphe-patches/issues/4603)).
+    - Video Action Buttons: Fixed portrait action bar "Ask" button filter.
+    - SponsorBlock: Fixed edge case where video would not complete after skipping a segment at the end.
+    - Stream Spoofing: Added Android VR experimental client and fixed stream buffering config.
+    - YouTube Music: Fixed LRC lyrics with line timestamps detected as unsynchronized ([#4611](https://github.com/MorpheApp/morphe-patches/issues/4611)).
+    - Layout Components: Fixed Channel tab filter with Home tab leaving Home feed blank on 21.44+.
   * YouTube Glass Navigation Bar & Seekbar:
     - Fixed `CustomSeekbarThumbPatch` method hook recursion to eliminate application startup crashes.
     - Corrected the `getFloatingRoom()` invocation signature in `NavigationBarPatch` to properly resolve dynamic padding on translucent navigation bars.
     - Fine-tuned custom seekbar thumb vertical nudge alignment and color loading.
-  * X (Twitter) Telemetry Hardening:
-    - Corrected Twitter/X telemetry blocking by eliminating non-void return stubbing in logger singletons, preventing crashes during app initialization.
-  * Instagram Patch Hardening:
-    - Wrapped cross-surface ad injector hooks in `runCatching` safeguards for stability across dynamic APK variations.
-  * Upstream Submodule Synchronization:
-    - Merged upstream `MorpheApp/morphe-patches` (`dev`) and `MorpheApp/morphe-patches-library` (`main`).
-    - Resolved all merge conflicts across `ClassicSubscriptionsLayoutPatch`, `NavigationBar`, and `BaseSettings` (`DEBUG_LEVEL`), preserving DexKit runtime hooking layers.
-  * CI Optimization:
-    - Removed redundant unit test runs from release workflow and skipped tests on `main` branch pushes to conserve GitHub Actions resources.
-    - Preserved full unit test suites on `beta` and pull request validations.
+  * Cross-App Runtime Patch Hardening:
+    - Reddit: Ported `HighQualityAvatars` to load uncompressed full-resolution user profile icons and Snoovatars; ad-blocking, AutoMod comment removal, and collapsed comment persistence.
+    - X (Twitter): Corrected Twitter/X telemetry blocking by eliminating non-void return stubbing in logger singletons, preventing crashes during app initialization.
+    - Instagram: Wrapped cross-surface ad injector hooks in `runCatching` safeguards for stability across dynamic APK variations.
+  * CI & Build Optimization:
+    - Skipped redundant unit tests on `main` branch pushes to conserve GitHub Actions resources while preserving complete unit test validation on `beta` and pull requests.
 
 ## 4.2.12
 
