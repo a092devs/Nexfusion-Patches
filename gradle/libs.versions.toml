@@ -1,6 +1,6 @@
 [versions]
 # NexFusion patcher API the bundles compile against.
-patcher = "2.0.0"
+patcher = "2.1.0"
 nexfusionBuildLogic = "1.0.0"
 agp = "9.2.1"
 dexkit = "2.3.0"
