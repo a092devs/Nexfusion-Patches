@@ -154,7 +154,6 @@ object NexFusionPatches : PatchBundle {
             appName = "Spotify",
             packageName = "com.spotify.music",
             patches = SpotifyPatches,
-            targets = listOf(AppTarget("9.1.94.1929")),
             appIconColor = 0x1ED760,
         ),
     )

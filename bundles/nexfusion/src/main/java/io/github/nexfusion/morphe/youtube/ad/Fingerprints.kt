@@ -16,7 +16,6 @@ import io.github.nexfusion.morphe.methodCall
 import io.github.nexfusion.morphe.opcode
 import io.github.nexfusion.morphe.resourceLiteral
 import io.github.nexfusion.morphe.string
-import io.github.nexfusion.morphe.youtube.shared.BuildClientContextBodyConstructorFingerprint
 
 private val ADD_METHOD_CALL = methodCall(
     opcode = Opcode.INVOKE_VIRTUAL,
@@ -94,7 +93,3 @@ internal object PlayerBytesAdLayoutFingerprint : Fingerprint(
         "Bootstrapped layout construction resulted in non PlayerBytesLayout. PlayerAds count: ",
     )
 )
-
-val BuildClientContextIsAutomotive = findMethodDirect {
-    BuildClientContextBodyConstructorFingerprint.instructionMatches[1].instruction.methodRef!!
-}

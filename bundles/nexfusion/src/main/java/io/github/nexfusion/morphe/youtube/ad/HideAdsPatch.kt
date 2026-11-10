@@ -13,16 +13,12 @@ import io.github.nexfusion.morphe.shared.misc.proto.hookElement
 import io.github.nexfusion.morphe.shared.misc.settings.preference.NonInteractivePreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.SwitchPreference
 import io.github.nexfusion.morphe.youtube.layout.hide.general.HideHorizontalShelves
-import io.github.nexfusion.morphe.youtube.misc.contexthook.Endpoint
-import io.github.nexfusion.morphe.youtube.misc.contexthook.addOSNameHook
-import io.github.nexfusion.morphe.youtube.misc.contexthook.clientContextHookPatch
 import io.github.nexfusion.morphe.youtube.misc.engagement.EngagementPanelHook
 import io.github.nexfusion.morphe.youtube.misc.engagement.addEngagementPanelIdHook
 import io.github.nexfusion.morphe.youtube.misc.litho.filter.LithoFilter
 import io.github.nexfusion.morphe.youtube.misc.playservice.VersionCheck
 import io.github.nexfusion.morphe.youtube.misc.proto.elementProtoParserHookPatch
 import io.github.nexfusion.morphe.youtube.misc.settings.PreferenceScreen
-import io.github.nexfusion.morphe.youtube.shared.BuildClientContextBodyConstructorFingerprint
 import io.github.nexfusion.patch
 import io.github.nexfusion.scopedHook
 
@@ -32,7 +28,6 @@ val HideAds = patch(
 ) {
     dependsOn(
         LithoFilter,
-        clientContextHookPatch,
         EngagementPanelHook,
         HideHorizontalShelves,
         elementProtoParserHookPatch,
@@ -70,31 +65,6 @@ val HideAds = patch(
             }
         }
     }
-
-    ::BuildClientContextIsAutomotive.hookMethod {
-        after {
-            it.result = AdsFilter.hideAds(it.result as Boolean)
-        }
-    }
-
-    setOf(
-        Endpoint.BROWSE,
-        Endpoint.SEARCH,
-        Endpoint.NEXT,
-    ).forEach { endpoint ->
-        addOSNameHook(endpoint) { AdsFilter.hideAds(it) }
-    }
-
-    setOf(
-        Endpoint.GET_WATCH,
-        Endpoint.PLAYER,
-    ).forEach { endpoint ->
-        addOSNameHook(endpoint) { AdsFilter.hideVideoAds(it) }
-    }
-
-    addOSNameHook(Endpoint.REEL, AdsFilter::hideShortsAds)
-
-    addOSNameHook(Endpoint.GUIDE, AdsFilter::overrideGuideOSName)
 
     // Hide YouTube Premium promotions
 
