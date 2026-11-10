@@ -113,11 +113,11 @@ private fun IHook.stubMeasurementAndTraces() {
     )
     stubVoidMethods(
         "com.google.android.gms.analytics.GoogleAnalytics",
-        "getInstance", "getLogger", "setLocalDispatchPeriod", "dispatchLocalHits"
+        "setLocalDispatchPeriod", "dispatchLocalHits"
     )
     stubVoidMethods(
         "com.google.android.gms.tagmanager.TagManager",
-        "getInstance", "dispatch", "dispatchSynchronously"
+        "dispatch", "dispatchSynchronously"
     )
     stubVoidMethods(
         "com.google.android.gms.tagmanager.ContainerHolder",

@@ -3,6 +3,7 @@ package io.github.nexfusion.morphe.youtube.interaction.seekbar
 import android.graphics.Canvas
 import android.os.Build
 import android.view.View
+import app.morphe.extension.shared.ui.Dim
 import app.morphe.extension.youtube.patches.CustomSeekbarThumbPatch
 import app.morphe.extension.youtube.settings.preference.CustomSeekbarThumbPreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.ListPreference
@@ -55,23 +56,12 @@ val customSeekbarThumbPatch = patch(
                     val cy = param.args[1] as Float
                     val radius = param.args[2] as Float
                     // Nudge custom thumb up by ~2dp to align with seekbar track
-                    val nudge = -2.0f * density
-                    CustomSeekbarThumbPatch.drawCircle(canvas, cx, cy + nudge, param.args[2] as Float, param.args[3] as android.graphics.Paint)
-                    param.result = Unit
+                    val nudge = -Dim.dp2.toFloat()
+                    if (CustomSeekbarThumbPatch.drawCustomThumb(canvas, cx, cy + nudge, radius)) {
+                        param.result = null
+                    }
                 }
             }
         )
     )
-}
-
-// Screen density (will be initialized lazily)
-val density: Float by lazy {
-    try {
-        val activityThreadClass = Class.forName("android.app.ActivityThread")
-        val currentApplication = activityThreadClass.getMethod("currentApplication").invoke(null)
-        val context = currentApplication as android.content.Context
-        context.resources.displayMetrics.density
-    } catch (e: Exception) {
-        2.5f // fallback for typical modern device density
-    }
 }
