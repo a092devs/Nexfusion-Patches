@@ -11,7 +11,7 @@ val FixThirdPartyLaunchersWidgets = patch(
     description = "Allows the Spotify widgets to be added to third party launchers.",
 ) {
     // Only the stock launcher has the BIND_APPWIDGET permission Spotify checks for.
-    val method = ::canBindAppWidgetPermissionMethod.memberOrNull
+    val method = runCatching { ::canBindAppWidgetPermissionMethod.member }.getOrNull()
     if (method == null) {
         PatcherLog.info { "The BIND_APPWIDGET permission check was not found, skipping the widget fix" }
         return@patch

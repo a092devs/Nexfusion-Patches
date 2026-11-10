@@ -24,27 +24,27 @@ val ShowUnavailableTracks = patch(
         "cannot be played (wrong market, removed, …) stay visible in collections instead of " +
         "being hidden. Playing them still depends on the account.",
 ) {
-    runCatching {
-        val field = ::showUnavailableTracksField.field
-        var writeFailureReported = false
-        XposedBridge.hookAllConstructors(field.declaringClass, object : XC_MethodHook() {
-            override fun afterHookedMethod(param: MethodHookParam) {
-                runCatching {
-                    XposedHelpers.setBooleanField(param.thisObject, field.name, true)
-                }.onFailure { err ->
-                    if (!writeFailureReported) {
-                        writeFailureReported = true
-                        PatcherLog.error(err) {
-                            "Show unplayable songs: cannot set ${field.declaringClass.simpleName}.${field.name}"
-                        }
+    val field = runCatching { ::showUnavailableTracksField.field }.getOrNull()
+    if (field == null) {
+        PatcherLog.info { "Spotify: Show unplayable songs anchor not found" }
+        return@patch
+    }
+    var writeFailureReported = false
+    XposedBridge.hookAllConstructors(field.declaringClass, object : XC_MethodHook() {
+        override fun afterHookedMethod(param: MethodHookParam) {
+            runCatching {
+                XposedHelpers.setBooleanField(param.thisObject, field.name, true)
+            }.onFailure { err ->
+                if (!writeFailureReported) {
+                    writeFailureReported = true
+                    PatcherLog.error(err) {
+                        "Show unplayable songs: cannot set ${field.declaringClass.simpleName}.${field.name}"
                     }
                 }
             }
-        })
-        PatcherLog.info {
-            "Show unplayable songs: forced ${field.declaringClass.simpleName}.${field.name} = true"
         }
-    }.onFailure { err ->
-        PatcherLog.info(err) { "Spotify: Show unplayable songs anchor not found" }
+    })
+    PatcherLog.info {
+        "Show unplayable songs: forced ${field.declaringClass.simpleName}.${field.name} = true"
     }
 }

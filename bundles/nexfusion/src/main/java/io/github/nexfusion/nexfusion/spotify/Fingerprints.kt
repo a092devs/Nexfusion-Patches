@@ -152,20 +152,20 @@ val navigationTabEnumClass = findClassDirect {
  * The bottom navigation is created with `(Tab, Tab, Tab, Tab, Tab, int flags)`.
  */
 val navigationTabSetConstructor = findMethodDirect {
-    val tabEnum = navigationTabEnumClass().name
-    val tab = findMethod {
+    val tabEnum = navigationTabEnumClass()
+    val fields = findField {
+        matcher { type(tabEnum.name) }
+    }.filter { !Modifier.isStatic(it.modifiers) }
+    val tabClasses = fields.map { it.declaredClassName }.toSet()
+    findMethod {
         matcher {
-            addUsingField {
-                usingType = UsingType.Read
-                declaredClass = tabEnum
-            }
+            paramCount(6)
+            paramTypes(listOf(null, null, null, null, null, "int"))
         }
-    }.first { it.isConstructor && it.paramCount >= 4 }.declaredClass!!
-
-    tab.methods.filter { method ->
-        val parameters = method.paramTypeNames
-        method.isConstructor && parameters.size == 6 &&
-            parameters.subList(0, 5).all { it == tab.name } && parameters[5] == "int"
+    }.filter { method ->
+        method.isConstructor &&
+            tabClasses.contains(method.paramTypeNames[0]) &&
+            method.paramTypeNames.subList(0, 5).distinct().size == 1
     }.single()
 }
 
@@ -179,7 +179,7 @@ val canBindAppWidgetPermissionMethod = findMethodDirect {
             returnType = "boolean"
             usingStrings("android.permission.BIND_APPWIDGET")
         }
-    }.first()
+    }.firstOrNull() ?: error("BIND_APPWIDGET boolean check not found in this version")
 }
 
 // endregion
