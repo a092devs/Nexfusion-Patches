@@ -7,11 +7,11 @@ import android.view.Window
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XC_MethodHook.MethodHookParam
-import de.robv.android.xposed.XC_MethodReplacement
-import de.robv.android.xposed.XposedBridge
-import de.robv.android.xposed.XposedHelpers
+import io.github.nexfusion.compat.XC_MethodHook
+import io.github.nexfusion.compat.XC_MethodHook.MethodHookParam
+import io.github.nexfusion.compat.XC_MethodReplacement
+import io.github.nexfusion.compat.XposedBridge
+import io.github.nexfusion.compat.XposedHelpers
 import io.github.nexfusion.IHook
 import io.github.nexfusion.PatcherLog
 import io.github.nexfusion.patch
@@ -592,7 +592,7 @@ val RememberCollapsedComments = patch(
                     if (original) return
                     val comment = param.thisObject ?: return
                     val id = runCatching { XposedHelpers.callMethod(comment, "getKindWithId") as? String }.getOrNull() ?: return
-                    val prefs = android.app.AndroidAppHelper.currentApplication()
+                    val prefs = io.github.nexfusion.compat.AndroidAppHelper.currentApplication()
                         ?.getSharedPreferences("morphe_collapsed_comments", android.content.Context.MODE_PRIVATE)
                     if (prefs != null && prefs.contains(id)) {
                         param.result = true
@@ -631,4 +631,5 @@ val RedditPatches = arrayOf(
     DisableModernHome,
     RememberCollapsedComments,
 )
+
 

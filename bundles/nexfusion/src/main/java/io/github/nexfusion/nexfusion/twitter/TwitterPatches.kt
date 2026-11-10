@@ -1,10 +1,10 @@
 package io.github.nexfusion.nexfusion.twitter
 
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XC_MethodHook.MethodHookParam
-import de.robv.android.xposed.XC_MethodReplacement
-import de.robv.android.xposed.XposedBridge
-import de.robv.android.xposed.XposedHelpers
+import io.github.nexfusion.compat.XC_MethodHook
+import io.github.nexfusion.compat.XC_MethodHook.MethodHookParam
+import io.github.nexfusion.compat.XC_MethodReplacement
+import io.github.nexfusion.compat.XposedBridge
+import io.github.nexfusion.compat.XposedHelpers
 import io.github.nexfusion.HookDsl
 import io.github.nexfusion.IHook
 import io.github.nexfusion.IHookCallback
@@ -515,3 +515,4 @@ private fun IHook.installSensitiveMediaDisabler() {
         }
     } catch (_: Throwable) {}
 }
+

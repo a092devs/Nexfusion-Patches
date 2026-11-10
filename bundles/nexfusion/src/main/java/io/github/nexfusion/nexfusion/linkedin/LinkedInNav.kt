@@ -10,9 +10,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.accessibility.AccessibilityNodeInfo
 import android.view.accessibility.AccessibilityNodeProvider
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XC_MethodHook.MethodHookParam
-import de.robv.android.xposed.XposedBridge
+import io.github.nexfusion.compat.XC_MethodHook
+import io.github.nexfusion.compat.XC_MethodHook.MethodHookParam
+import io.github.nexfusion.compat.XposedBridge
 import io.github.nexfusion.IHook
 import io.github.nexfusion.PatcherLog
 import io.github.nexfusion.patch
@@ -342,3 +342,4 @@ private class FeedSwipeGestureHandler {
         }.getOrNull()
     }
 }
+

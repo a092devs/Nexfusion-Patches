@@ -1,6 +1,6 @@
 package io.github.nexfusion.morphe.youtube.layout.hide.infocards
 
-import de.robv.android.xposed.XC_MethodReplacement
+import io.github.nexfusion.compat.XC_MethodReplacement
 import io.github.nexfusion.PatcherLog
 import io.github.nexfusion.morphe.youtube.misc.playservice.VersionCheck
 import io.github.nexfusion.patch
@@ -18,8 +18,9 @@ val hideInfoCardsPatch = patch(
 
     runCatching {
         ::hideInfoCardsMethod.hookMethod(object : XC_MethodReplacement() {
-            override fun replaceHookedMethod(param: de.robv.android.xposed.XC_MethodHook.MethodHookParam): Any = false
+            override fun replaceHookedMethod(param: io.github.nexfusion.compat.XC_MethodHook.MethodHookParam): Any = false
         })
         PatcherLog.info { "NexFusion YouTube: Hide info cards installed" }
     }.onFailure { PatcherLog.info(it) { "NexFusion YouTube: Hide info cards skipped" } }
 }
+

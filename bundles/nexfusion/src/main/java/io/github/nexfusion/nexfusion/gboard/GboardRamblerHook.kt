@@ -5,8 +5,8 @@ import android.content.Context
 import android.os.Build
 import android.preference.PreferenceManager
 import android.util.Log
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XposedBridge
+import io.github.nexfusion.compat.XC_MethodHook
+import io.github.nexfusion.compat.XposedBridge
 
 /**
  * Implements Gemini "Rambler" Natural Voice Typing and companion lifecycle fixes:
@@ -359,4 +359,5 @@ object GboardRamblerHook {
         }
     }
 }
+
 

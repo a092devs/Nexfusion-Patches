@@ -11,10 +11,10 @@ import android.util.AttributeSet
 import android.view.InflateException
 import android.view.LayoutInflater
 import android.view.View
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XC_MethodHook.MethodHookParam
-import de.robv.android.xposed.XposedBridge
-import de.robv.android.xposed.XposedHelpers
+import io.github.nexfusion.compat.XC_MethodHook
+import io.github.nexfusion.compat.XC_MethodHook.MethodHookParam
+import io.github.nexfusion.compat.XposedBridge
+import io.github.nexfusion.compat.XposedHelpers
 import java.lang.reflect.Constructor
 import java.util.concurrent.ConcurrentHashMap
 
@@ -119,3 +119,4 @@ private inline fun MethodHookParam.inflateExtension(name: String, create: () -> 
         throwable = InflateException("Error inflating module class $name", e)
     }
 }
+

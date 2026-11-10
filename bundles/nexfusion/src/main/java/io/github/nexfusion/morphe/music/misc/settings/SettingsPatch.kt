@@ -8,7 +8,7 @@ import app.morphe.extension.shared.ResourceUtils
 import app.morphe.extension.shared.Utils
 import app.morphe.extension.shared.settings.preference.ImportExportPreference
 import app.morphe.extension.shared.settings.preference.about.MorpheAboutPreference
-import de.robv.android.xposed.XC_MethodReplacement
+import io.github.nexfusion.compat.XC_MethodReplacement
 import io.github.nexfusion.patches.R
 import io.github.nexfusion.morphe.music.shared.MusicActivityOnCreateFingerprint
 import io.github.nexfusion.morphe.shared.misc.settings.preference.BasePreferenceScreen
@@ -211,3 +211,4 @@ object PreferenceScreen : BasePreferenceScreen() {
         preferences += screen
     }
 }
+

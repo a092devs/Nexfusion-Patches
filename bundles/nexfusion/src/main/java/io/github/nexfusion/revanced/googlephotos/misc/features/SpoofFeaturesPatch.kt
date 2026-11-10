@@ -1,8 +1,8 @@
 package io.github.nexfusion.revanced.googlephotos.misc.features
 
 import android.os.Build
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XposedHelpers
+import io.github.nexfusion.compat.XC_MethodHook
+import io.github.nexfusion.compat.XposedHelpers
 import io.github.nexfusion.patch
 import org.luckypray.dexkit.wrap.DexMethod
 

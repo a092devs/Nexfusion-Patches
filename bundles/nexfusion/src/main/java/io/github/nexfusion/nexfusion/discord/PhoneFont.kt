@@ -3,10 +3,10 @@ package io.github.nexfusion.nexfusion.discord
 import android.content.res.AssetManager
 import android.graphics.Typeface
 import android.os.Build
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XC_MethodHook.MethodHookParam
-import de.robv.android.xposed.XposedBridge
-import de.robv.android.xposed.XposedHelpers
+import io.github.nexfusion.compat.XC_MethodHook
+import io.github.nexfusion.compat.XC_MethodHook.MethodHookParam
+import io.github.nexfusion.compat.XposedBridge
+import io.github.nexfusion.compat.XposedHelpers
 import io.github.nexfusion.PatcherLog
 import io.github.nexfusion.patch
 import java.util.concurrent.ConcurrentHashMap
@@ -107,3 +107,4 @@ private object PhoneFont {
         return if (made == Typeface.DEFAULT) null else made
     }
 }
+

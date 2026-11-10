@@ -1,6 +1,6 @@
 package io.github.nexfusion.morphe.music.misc.backgroundplayback
 
-import de.robv.android.xposed.XC_MethodReplacement
+import io.github.nexfusion.compat.XC_MethodReplacement
 import io.github.nexfusion.patch
 
 val BackgroundPlayback = patch(

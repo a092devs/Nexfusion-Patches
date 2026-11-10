@@ -1,9 +1,9 @@
 package io.github.nexfusion.nexfusion.gboard
 
 import android.util.Log
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XposedBridge
-import de.robv.android.xposed.XposedHelpers
+import io.github.nexfusion.compat.XC_MethodHook
+import io.github.nexfusion.compat.XposedBridge
+import io.github.nexfusion.compat.XposedHelpers
 import io.github.nexfusion.PatcherLog
 import io.github.nexfusion.PatchExecutor
 import java.lang.reflect.Field
@@ -334,4 +334,5 @@ private fun flagName(receiver: Any): String? {
     receiverNameCache[id] = ""
     return null
 }
+
 

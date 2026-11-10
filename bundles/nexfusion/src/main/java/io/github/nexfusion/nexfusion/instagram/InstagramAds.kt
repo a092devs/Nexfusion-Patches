@@ -1,6 +1,6 @@
 package io.github.nexfusion.nexfusion.instagram
 
-import de.robv.android.xposed.XC_MethodReplacement.returnConstant
+import io.github.nexfusion.compat.XC_MethodReplacement.returnConstant
 import io.github.nexfusion.PatchExecutor
 import io.github.nexfusion.PatcherLog
 import io.github.nexfusion.morphe.findMethodDirect
@@ -47,3 +47,4 @@ internal fun PatchExecutor.guardAdInjector() {
         PatcherLog.info(it) { "NexFusion Instagram: failed to guard ad injector" }
     }
 }
+

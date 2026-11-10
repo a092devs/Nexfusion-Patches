@@ -9,8 +9,8 @@ import android.graphics.Shader
 import android.view.View
 import app.morphe.extension.shared.settings.preference.ColorPickerPreference
 import app.morphe.extension.youtube.patches.theme.SeekbarColorPatch
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XposedBridge
+import io.github.nexfusion.compat.XC_MethodHook
+import io.github.nexfusion.compat.XposedBridge
 import io.github.nexfusion.hookMethod
 import io.github.nexfusion.morphe.findMethodDirect
 import io.github.nexfusion.morphe.resourceMappings
@@ -181,3 +181,4 @@ val seekbarColorPatch = patch(
         )
     }
 }
+

@@ -1,7 +1,7 @@
 package io.github.nexfusion.nexfusion.twitter
 
-import de.robv.android.xposed.XC_MethodHook.MethodHookParam
-import de.robv.android.xposed.XposedHelpers
+import io.github.nexfusion.compat.XC_MethodHook.MethodHookParam
+import io.github.nexfusion.compat.XposedHelpers
 import io.github.nexfusion.HookDsl
 import io.github.nexfusion.IHook
 import io.github.nexfusion.IHookCallback
@@ -136,3 +136,4 @@ internal fun IHook.appUnit(): Any? {
     }
     return appUnitInstance
 }
+

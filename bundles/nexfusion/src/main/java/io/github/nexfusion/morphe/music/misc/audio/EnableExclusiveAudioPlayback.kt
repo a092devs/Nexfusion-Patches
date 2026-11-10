@@ -1,6 +1,6 @@
 package io.github.nexfusion.morphe.music.audio.exclusiveaudio
 
-import de.robv.android.xposed.XC_MethodReplacement
+import io.github.nexfusion.compat.XC_MethodReplacement
 import io.github.nexfusion.morphe.music.misc.playservice.is_9_32_or_greater
 import io.github.nexfusion.morphe.music.misc.playservice.versionCheckPatch
 import io.github.nexfusion.patch

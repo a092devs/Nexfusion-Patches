@@ -2,7 +2,7 @@ package io.github.nexfusion.nexfusion.gmail
 
 import android.view.View
 import android.view.ViewGroup
-import de.robv.android.xposed.XposedHelpers
+import io.github.nexfusion.compat.XposedHelpers
 import io.github.nexfusion.PatcherLog
 import io.github.nexfusion.hookMethod
 import io.github.nexfusion.patch
@@ -83,4 +83,5 @@ private fun View.collapse() {
         layoutParams = lp
     }
 }
+
 

@@ -8,9 +8,9 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XC_MethodHook.MethodHookParam
-import de.robv.android.xposed.XposedBridge
+import io.github.nexfusion.compat.XC_MethodHook
+import io.github.nexfusion.compat.XC_MethodHook.MethodHookParam
+import io.github.nexfusion.compat.XposedBridge
 import io.github.nexfusion.IHook
 import io.github.nexfusion.PatcherLog
 import io.github.nexfusion.hookMethod
@@ -611,3 +611,4 @@ private class LinkedInMaterialYouColors(context: Context) {
         return (color and -0x1000000) or (mapped and 0xFFFFFF)
     }
 }
+

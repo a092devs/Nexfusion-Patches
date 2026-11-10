@@ -1,6 +1,6 @@
 package io.github.nexfusion.nexfusion.reddit
 
-import de.robv.android.xposed.XC_MethodReplacement
+import io.github.nexfusion.compat.XC_MethodReplacement
 import io.github.nexfusion.PatcherLog
 import io.github.nexfusion.patch
 
@@ -18,3 +18,4 @@ val StartAsGuest = patch(
         PatcherLog.info(it) { "NexFusion: Reddit guest onboarding anchor not found" }
     }
 }
+

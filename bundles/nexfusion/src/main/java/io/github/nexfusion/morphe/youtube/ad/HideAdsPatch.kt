@@ -5,8 +5,8 @@ import app.morphe.extension.shared.Logger
 import app.morphe.extension.shared.ResourceUtils
 import app.morphe.extension.youtube.patches.components.AdsFilter
 import app.morphe.extension.youtube.settings.preference.ChannelWhitelistPreference
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XposedHelpers
+import io.github.nexfusion.compat.XC_MethodHook
+import io.github.nexfusion.compat.XposedHelpers
 import io.github.nexfusion.morphe.shared.ad.HideFullscreenAds
 import io.github.nexfusion.morphe.shared.misc.litho.filter.addLithoFilter
 import io.github.nexfusion.morphe.shared.misc.proto.hookElement

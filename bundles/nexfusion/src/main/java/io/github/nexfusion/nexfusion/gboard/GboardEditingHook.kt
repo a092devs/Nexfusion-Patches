@@ -8,8 +8,8 @@ import android.text.InputType
 import android.util.Log
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XposedBridge
+import io.github.nexfusion.compat.XC_MethodHook
+import io.github.nexfusion.compat.XposedBridge
 import java.lang.ref.WeakReference
 
 /**
@@ -92,3 +92,4 @@ object GboardEditingHook {
         }
     }
 }
+

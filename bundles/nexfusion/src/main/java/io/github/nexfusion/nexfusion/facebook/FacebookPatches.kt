@@ -10,10 +10,10 @@ import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XC_MethodHook.MethodHookParam
-import de.robv.android.xposed.XC_MethodReplacement
-import de.robv.android.xposed.XposedBridge
+import io.github.nexfusion.compat.XC_MethodHook
+import io.github.nexfusion.compat.XC_MethodHook.MethodHookParam
+import io.github.nexfusion.compat.XC_MethodReplacement
+import io.github.nexfusion.compat.XposedBridge
 import io.github.nexfusion.PatcherLog
 import io.github.nexfusion.patch
 import org.luckypray.dexkit.wrap.DexMethod
@@ -905,3 +905,4 @@ private fun Method.matchesWindowFlagsMethod(): Boolean = when (name) {
     "setAttributes" -> parameterTypes.size == 1 && parameterTypes[0].name == "android.view.WindowManager\$LayoutParams"
     else -> false
 }
+

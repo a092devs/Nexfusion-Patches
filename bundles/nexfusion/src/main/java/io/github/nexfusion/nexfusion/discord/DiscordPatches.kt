@@ -1,8 +1,8 @@
 package io.github.nexfusion.nexfusion.discord
 
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XC_MethodHook.MethodHookParam
-import de.robv.android.xposed.XposedHelpers
+import io.github.nexfusion.compat.XC_MethodHook
+import io.github.nexfusion.compat.XC_MethodHook.MethodHookParam
+import io.github.nexfusion.compat.XposedHelpers
 import io.github.nexfusion.IHook
 import io.github.nexfusion.PatcherLog
 import io.github.nexfusion.patch
@@ -52,7 +52,7 @@ val KeepBluetoothAudioClear = patch(
         for (m in cls.declaredMethods) {
             if (m.name == "setCommunicationModeOn") {
                 runCatching {
-                    de.robv.android.xposed.XposedBridge.hookMethod(m, de.robv.android.xposed.XC_MethodReplacement.DO_NOTHING)
+                    io.github.nexfusion.compat.XposedBridge.hookMethod(m, io.github.nexfusion.compat.XC_MethodReplacement.DO_NOTHING)
                 }
             }
         }
@@ -67,7 +67,7 @@ val DiscordBackgroundAudio = patch(
         val audioManagerCls = classLoader.loadClass("com.discord.chat.presentation.message.view.voicemessages.AudioPlayerManager")
         for (m in audioManagerCls.declaredMethods) {
             if (m.name == "pauseCurrentPlayer" && m.parameterTypes.contentEquals(arrayOf(java.lang.Boolean.TYPE))) {
-                de.robv.android.xposed.XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                io.github.nexfusion.compat.XposedBridge.hookMethod(m, object : XC_MethodHook() {
                     override fun beforeHookedMethod(param: MethodHookParam) {
                         val isBackgroundPause = param.args.firstOrNull() as? Boolean ?: false
                         if (isBackgroundPause) {
@@ -88,7 +88,7 @@ val DiscordPasskeyHint = patch(
         val securityCls = classLoader.loadClass("com.discord.security_key.SecurityKeyManagerModule")
         for (m in securityCls.declaredMethods) {
             if (m.name == "reject" && m.parameterTypes.size == 3) {
-                de.robv.android.xposed.XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                io.github.nexfusion.compat.XposedBridge.hookMethod(m, object : XC_MethodHook() {
                     override fun beforeHookedMethod(param: MethodHookParam) {
                         val message = param.args.getOrNull(1) as? String
                         val cause = param.args.getOrNull(2) as? Throwable
@@ -219,3 +219,4 @@ private fun MethodHookParam.newWritableMap(): Any? =
 
 private fun MethodHookParam.newWritableArray(): Any? =
     reactArguments()?.let { runCatching { XposedHelpers.callStaticMethod(it, "createArray") }.getOrNull() }
+

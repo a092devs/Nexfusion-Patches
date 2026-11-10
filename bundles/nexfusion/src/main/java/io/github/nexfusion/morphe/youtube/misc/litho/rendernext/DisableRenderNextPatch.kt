@@ -1,6 +1,6 @@
 package io.github.nexfusion.morphe.youtube.misc.litho.rendernext
 
-import de.robv.android.xposed.XC_MethodReplacement
+import io.github.nexfusion.compat.XC_MethodReplacement
 import io.github.nexfusion.morphe.youtube.misc.playservice.VersionCheck
 import io.github.nexfusion.morphe.youtube.insertLiteralOverride
 import io.github.nexfusion.morphe.youtube.misc.playservice.is_20_29_or_greater

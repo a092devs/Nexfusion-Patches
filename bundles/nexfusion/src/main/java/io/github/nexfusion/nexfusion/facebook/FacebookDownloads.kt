@@ -23,8 +23,8 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.EditText
 import android.widget.Toast
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XposedBridge
+import io.github.nexfusion.compat.XC_MethodHook
+import io.github.nexfusion.compat.XposedBridge
 import io.github.nexfusion.PatcherLog
 import io.github.nexfusion.patch
 import java.io.File
@@ -1806,3 +1806,4 @@ val DownloadFacebookMedia = patch(
     log("post menus=$menuHooks, can_viewer_download gates=$gateHooks, photo action=$photoActionHooked, reel=$reelHooks, story=$storyHooks, playerParams=$playerParamsHooks (total=$totalHooks)")
     check(totalHooks > 0) { "Download media: no Facebook download hook could be installed" }
 }
+

@@ -1,14 +1,14 @@
 package io.github.nexfusion.nexfusion.twitter
 
-import de.robv.android.xposed.XposedHelpers
+import io.github.nexfusion.compat.XposedHelpers
 import io.github.nexfusion.HookDsl
 import io.github.nexfusion.IHook
 import io.github.nexfusion.IHookCallback
 import io.github.nexfusion.PatcherLog
 import io.github.nexfusion.hookMethod
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XC_MethodReplacement
-import de.robv.android.xposed.XposedBridge
+import io.github.nexfusion.compat.XC_MethodHook
+import io.github.nexfusion.compat.XC_MethodReplacement
+import io.github.nexfusion.compat.XposedBridge
 import java.lang.reflect.Method
 import java.util.concurrent.locks.ReentrantLock
 

@@ -1,7 +1,7 @@
 package io.github.nexfusion.morphe.youtube.misc.backgroundplayback
 
 import app.morphe.extension.youtube.patches.BackgroundPlaybackPatch
-import de.robv.android.xposed.XC_MethodReplacement.returnConstant
+import io.github.nexfusion.compat.XC_MethodReplacement.returnConstant
 import io.github.nexfusion.morphe.shared.misc.settings.preference.ListPreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.SwitchPreference
 import io.github.nexfusion.morphe.youtube.insertLiteralOverride

@@ -1,6 +1,6 @@
 package io.github.nexfusion.revanced.googlephotos.misc.backup
 
-import de.robv.android.xposed.XC_MethodReplacement
+import io.github.nexfusion.compat.XC_MethodReplacement
 import io.github.nexfusion.patch
 
 val EnableDCIMFoldersBackupControl = patch(

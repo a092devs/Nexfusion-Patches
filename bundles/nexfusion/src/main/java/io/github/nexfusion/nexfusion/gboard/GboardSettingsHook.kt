@@ -7,8 +7,8 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.util.Log
 import android.view.View
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XposedBridge
+import io.github.nexfusion.compat.XC_MethodHook
+import io.github.nexfusion.compat.XposedBridge
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 
@@ -429,3 +429,4 @@ object GboardSettingsHook {
         return null
     }
 }
+

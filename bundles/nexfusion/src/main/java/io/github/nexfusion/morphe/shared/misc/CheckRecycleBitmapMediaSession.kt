@@ -3,7 +3,7 @@ package io.github.nexfusion.morphe.shared.misc
 import android.media.MediaMetadata
 import android.media.session.MediaSession
 import android.os.Build
-import de.robv.android.xposed.XposedBridge
+import io.github.nexfusion.compat.XposedBridge
 import io.github.nexfusion.callStaticMethod
 import io.github.nexfusion.patch
 import io.github.nexfusion.hookMethod
@@ -35,3 +35,4 @@ val CheckRecycleBitmapMediaSession = patch(name = "<CheckRecycleBitmapMediaSessi
         }
     }
 }
+

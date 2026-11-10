@@ -1,8 +1,8 @@
 package io.github.nexfusion.nexfusion.gboard
 
 import android.widget.TextView
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XposedBridge
+import io.github.nexfusion.compat.XC_MethodHook
+import io.github.nexfusion.compat.XposedBridge
 import io.github.nexfusion.patch
 
 // Ported from jasonwu1994/Gboard-patches (GPL-3.0): each patch mirrors the matching
@@ -644,5 +644,6 @@ val GboardPatches = arrayOf(
     GboardSignToText,
     GboardIncognitoMode,
 )
+
 
 

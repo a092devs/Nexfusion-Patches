@@ -23,7 +23,7 @@ import android.view.View
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.Toast
-import de.robv.android.xposed.XC_MethodHook.MethodHookParam
+import io.github.nexfusion.compat.XC_MethodHook.MethodHookParam
 import io.github.nexfusion.HookDsl
 import io.github.nexfusion.IScopedHookCallback
 import io.github.nexfusion.PatcherLog
@@ -1257,3 +1257,4 @@ val DownloadMedia = patch(
     }
     if (menus.values.all { it.isFailure }) throw Exception("No menu found for the download option")
 }
+

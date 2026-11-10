@@ -3,7 +3,7 @@ package io.github.nexfusion.morphe.youtube.video.speed.custom
 import app.morphe.extension.youtube.patches.components.PlaybackSpeedMenuFilter
 import app.morphe.extension.youtube.patches.playback.speed.CustomPlaybackSpeedPatch
 import app.morphe.extension.youtube.patches.playback.speed.CustomPlaybackSpeedPatch.customPlaybackSpeeds
-import de.robv.android.xposed.XC_MethodReplacement
+import io.github.nexfusion.compat.XC_MethodReplacement
 import io.github.nexfusion.invokeOriginalMethod
 import io.github.nexfusion.morphe.shared.misc.litho.filter.addLithoFilter
 import io.github.nexfusion.morphe.shared.misc.settings.preference.InputType
@@ -101,4 +101,5 @@ val CustomPlaybackSpeed = patch(
     // TODO Custom tap and hold 2x speed.
 
 }
+
 

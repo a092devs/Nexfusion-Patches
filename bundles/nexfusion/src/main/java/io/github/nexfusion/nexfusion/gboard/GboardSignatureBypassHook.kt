@@ -2,8 +2,8 @@ package io.github.nexfusion.nexfusion.gboard
 
 import android.content.Context
 import android.util.Log
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XposedBridge
+import io.github.nexfusion.compat.XC_MethodHook
+import io.github.nexfusion.compat.XposedBridge
 
 /**
  * Bypasses Gboard internal Google Play services and speech component signature whitelist checks.
@@ -54,3 +54,4 @@ object GboardSignatureBypassHook {
         }
     }
 }
+

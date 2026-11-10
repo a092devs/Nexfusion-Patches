@@ -2,7 +2,7 @@ package io.github.nexfusion.morphe.youtube.interaction.shorts
 
 import android.content.Context
 
-import de.robv.android.xposed.XposedHelpers
+import io.github.nexfusion.compat.XposedHelpers
 import io.github.nexfusion.FindMethodFunc
 import io.github.nexfusion.PatchExecutor
 import io.github.nexfusion.PatcherLog
@@ -344,3 +344,4 @@ val SkipLiveShorts = patch(
         PatcherLog.error(it) { "Skip live shorts initialization failed: ${it.message ?: it.javaClass.simpleName}" }
     }
 }
+

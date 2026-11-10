@@ -3,8 +3,8 @@ package io.github.nexfusion.morphe.shared.misc.privacy
 import android.content.ClipData
 import android.content.Intent
 import app.morphe.extension.shared.patches.SanitizeSharingLinksPatch
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XposedHelpers
+import io.github.nexfusion.compat.XC_MethodHook
+import io.github.nexfusion.compat.XposedHelpers
 import io.github.nexfusion.PatchExecutor
 import io.github.nexfusion.morphe.shared.misc.settings.preference.BasePreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.BasePreferenceScreen

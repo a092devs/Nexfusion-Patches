@@ -3,7 +3,7 @@ package io.github.nexfusion.morphe.youtube.layout.hide.shorts
 import android.view.View
 import app.morphe.extension.shared.ResourceUtils.getIdIdentifier
 import app.morphe.extension.youtube.patches.components.ShortsFilter
-import de.robv.android.xposed.XC_MethodReplacement
+import io.github.nexfusion.compat.XC_MethodReplacement
 import io.github.nexfusion.morphe.shared.misc.litho.filter.addLithoFilter
 import io.github.nexfusion.morphe.shared.misc.settings.preference.PreferenceCategory
 import io.github.nexfusion.morphe.shared.misc.settings.preference.PreferenceScreenPreference

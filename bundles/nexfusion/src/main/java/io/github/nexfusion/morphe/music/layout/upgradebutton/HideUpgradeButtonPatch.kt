@@ -1,6 +1,6 @@
 package io.github.nexfusion.morphe.music.layout.upgradebutton
 
-import de.robv.android.xposed.XposedHelpers
+import io.github.nexfusion.compat.XposedHelpers
 import io.github.nexfusion.patch
 import java.lang.reflect.Field
 

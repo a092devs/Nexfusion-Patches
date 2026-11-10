@@ -3,7 +3,7 @@ package io.github.nexfusion.morphe.shared.misc.litho.filter
 import app.morphe.extension.shared.StringTrieSearch
 import app.morphe.extension.shared.patches.components.Filter
 import app.morphe.extension.shared.patches.components.LithoFilterPatch
-import de.robv.android.xposed.XC_MethodReplacement
+import io.github.nexfusion.compat.XC_MethodReplacement
 import io.github.nexfusion.Patch
 import io.github.nexfusion.PatchExecutor
 import io.github.nexfusion.hookMethod

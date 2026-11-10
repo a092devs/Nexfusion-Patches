@@ -15,10 +15,10 @@ import android.view.ViewTreeObserver
 import android.view.Window
 import android.view.WindowManager
 import android.widget.TextView
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XC_MethodHook.MethodHookParam
-import de.robv.android.xposed.XC_MethodReplacement
-import de.robv.android.xposed.XposedBridge
+import io.github.nexfusion.compat.XC_MethodHook
+import io.github.nexfusion.compat.XC_MethodHook.MethodHookParam
+import io.github.nexfusion.compat.XC_MethodReplacement
+import io.github.nexfusion.compat.XposedBridge
 import io.github.nexfusion.PatcherLog
 import io.github.nexfusion.nexfusion.instagram.download.DownloadMedia
 import io.github.nexfusion.hookMethod
@@ -964,3 +964,4 @@ val InstagramPatches = arrayOf(
     DontSendReelWatchHistory,
     HideMetaAi,
 )
+

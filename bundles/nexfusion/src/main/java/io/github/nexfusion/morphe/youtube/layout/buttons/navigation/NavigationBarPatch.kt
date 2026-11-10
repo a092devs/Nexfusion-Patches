@@ -126,12 +126,12 @@ val NavigationBar = patch(
             classLoader.loadClass("com.google.android.libraries.youtube.rendering.ui.pivotbar.PivotBar")
         }.getOrNull()
         if (pivotBarClass != null) {
-            de.robv.android.xposed.XposedHelpers.findAndHookMethod(
+            io.github.nexfusion.compat.XposedHelpers.findAndHookMethod(
                 pivotBarClass,
                 "onMeasure",
                 Int::class.javaPrimitiveType,
                 Int::class.javaPrimitiveType,
-                object : de.robv.android.xposed.XC_MethodHook() {
+                object : io.github.nexfusion.compat.XC_MethodHook() {
                     override fun beforeHookedMethod(param: MethodHookParam) {
                         val view = param.thisObject as View
                         param.args[1] = NavigationBarPatch.getNavigationBarHeightMeasureSpec(view, param.args[1] as Int)

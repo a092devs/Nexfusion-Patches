@@ -6,9 +6,9 @@ import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.view.View
 import android.view.ViewGroup
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XposedBridge
-import de.robv.android.xposed.XposedHelpers
+import io.github.nexfusion.compat.XC_MethodHook
+import io.github.nexfusion.compat.XposedBridge
+import io.github.nexfusion.compat.XposedHelpers
 import io.github.nexfusion.PatcherLog
 import io.github.nexfusion.patch
 
@@ -307,4 +307,5 @@ val KickPatches = arrayOf(
     KickThirdPartyEmotes,
     KickAmoledTheme,
 )
+
 

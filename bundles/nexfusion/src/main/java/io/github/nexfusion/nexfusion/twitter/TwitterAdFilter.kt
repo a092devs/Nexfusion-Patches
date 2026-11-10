@@ -1,6 +1,6 @@
 package io.github.nexfusion.nexfusion.twitter
 
-import de.robv.android.xposed.XposedHelpers
+import io.github.nexfusion.compat.XposedHelpers
 import io.github.nexfusion.PatcherLog
 
 // Ported from kveld9/kveld-extra-morphe-patches (GPL-3.0), TwitterRemoveAdsPatch.kt.
@@ -133,3 +133,4 @@ internal class TwitterAdFilter(private val classLoader: ClassLoader) {
         return PROMOTED_ITEM_PROBES.map { it.modelClass }.distinct()
     }
 }
+

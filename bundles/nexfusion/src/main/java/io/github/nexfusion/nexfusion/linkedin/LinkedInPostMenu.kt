@@ -7,9 +7,9 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Environment
 import android.widget.Toast
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XC_MethodHook.MethodHookParam
-import de.robv.android.xposed.XposedBridge
+import io.github.nexfusion.compat.XC_MethodHook
+import io.github.nexfusion.compat.XC_MethodHook.MethodHookParam
+import io.github.nexfusion.compat.XposedBridge
 import io.github.nexfusion.IHook
 import io.github.nexfusion.PatcherLog
 import io.github.nexfusion.patch
@@ -311,3 +311,4 @@ private fun handlePostMenuAction(activity: Activity, uri: Uri) {
         }
     }
 }
+

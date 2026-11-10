@@ -5,8 +5,8 @@ import app.morphe.extension.shared.ResourceUtils
 import app.morphe.extension.shared.settings.preference.ImportExportPreference
 import app.morphe.extension.shared.settings.preference.about.MorpheAboutPreference
 import app.morphe.extension.youtube.settings.YouTubeActivityHook
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XC_MethodReplacement
+import io.github.nexfusion.compat.XC_MethodHook
+import io.github.nexfusion.compat.XC_MethodReplacement
 import io.github.nexfusion.patches.R
 import io.github.nexfusion.invokeOriginalMethod
 import io.github.nexfusion.morphe.shared.misc.initialization.initializationPatch
@@ -226,3 +226,4 @@ object PreferenceScreen : BasePreferenceScreen() {
         preferences += screen
     }
 }
+

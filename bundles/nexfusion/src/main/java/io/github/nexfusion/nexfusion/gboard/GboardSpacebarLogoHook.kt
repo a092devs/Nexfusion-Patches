@@ -9,8 +9,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.ImageView
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XposedBridge
+import io.github.nexfusion.compat.XC_MethodHook
+import io.github.nexfusion.compat.XposedBridge
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.WeakHashMap
@@ -145,3 +145,4 @@ object GboardSpacebarLogoHook {
         return null
     }
 }
+

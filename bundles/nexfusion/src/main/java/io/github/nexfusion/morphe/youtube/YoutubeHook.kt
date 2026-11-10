@@ -71,9 +71,9 @@ val ExtensionHook = patch(name = "<ExtensionHook>") {
         runCatching {
             val targetClass = runCatching { classLoader.loadClass("com.google.android.apps.youtube.app.watchwhile.MainActivity") }
                 .getOrNull() ?: ::mainActivityClass.clazz
-            de.robv.android.xposed.XposedHelpers.findAndHookMethod(
+            io.github.nexfusion.compat.XposedHelpers.findAndHookMethod(
                 targetClass, "onCreate", android.os.Bundle::class.java,
-                object : de.robv.android.xposed.XC_MethodHook() {
+                object : io.github.nexfusion.compat.XC_MethodHook() {
                     override fun beforeHookedMethod(param: MethodHookParam) {
                         val mainActivity = param.thisObject as Activity
                         mainActivity.addModuleAssets()
