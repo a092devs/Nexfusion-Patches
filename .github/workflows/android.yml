@@ -69,21 +69,6 @@ jobs:
                 echo "> **Note:** GitHub Actions packages runtime artifacts in the table above into a `.zip` archive by default." >> $GITHUB_STEP_SUMMARY
                 echo "> To download the direct standalone **`.nxb`** files without zip packaging, visit the **[Releases](https://github.com/${{ github.repository }}/releases)** page." >> $GITHUB_STEP_SUMMARY
 
-            - name: Create Beta Pre-Release
-              if: github.event_name == 'push' && github.ref == 'refs/heads/beta'
-              run: |
-                mkdir -p beta-dist
-                cp bundles/*/build/outputs/bundle/*.nxb beta-dist/
-                VERSION=$(grep -m1 -oP '^##\s+\K[0-9]+\.[0-9]+\.[0-9]+$' CHANGELOG.md || echo "beta")
-                gh release delete beta --cleanup-tag --yes || true
-                gh release create beta beta-dist/* \
-                  --prerelease \
-                  --target "${{ github.sha }}" \
-                  --title "Nexfusion Patches Beta (v${VERSION})" \
-                  --notes-file CHANGELOG.md
-              env:
-                GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
     auto-release:
         name: Trigger release build
         needs: build
