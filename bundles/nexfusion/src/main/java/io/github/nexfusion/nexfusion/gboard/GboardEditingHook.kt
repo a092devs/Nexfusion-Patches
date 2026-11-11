@@ -74,6 +74,32 @@ object GboardEditingHook {
             })
             Log.i(TAG, "NexFusion: Hooked Gboard terminal paste & auto select-all")
         }
+
+        // Intercept commitText to strip leaking XML resource tags (e.g. "?attr/") or escaped question marks
+        runCatching {
+            val icWrapper = classLoader.loadClass("android.view.inputmethod.InputConnectionWrapper")
+            val commitMethod = icWrapper.getDeclaredMethod("commitText", CharSequence::class.java, Int::class.javaPrimitiveType)
+            XposedBridge.hookMethod(commitMethod, object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    val raw = param.args[0] as? CharSequence ?: return
+                    param.args[0] = sanitizeCommitText(raw)
+                }
+            })
+            Log.i(TAG, "NexFusion: Hooked Gboard commitText sanitizer")
+        }
+    }
+
+    fun sanitizeCommitText(text: CharSequence?): CharSequence? {
+        if (text == null) return null
+        val s = text.toString()
+        var result = s
+        if (result.contains("?attr/")) {
+            result = result.replace("?attr/", "?")
+        }
+        if (result.indexOf('\\') != -1 && (result.contains("\\?") || result.contains("\\\u061f"))) {
+            result = result.replace(Regex("\\\\+([?\\u061f])"), "$1")
+        }
+        return if (result == s) text else result
     }
 
     internal fun pasteRawText(service: InputMethodService, connection: InputConnection): Boolean {

@@ -603,6 +603,23 @@ val RememberCollapsedComments = patch(
     }
 }
 
+val HideSearchAnswersPreview = patch(
+    name = "Hide search answers preview",
+    description = "Hides the Reddit Answers preview section at the top of search results.",
+    use = false,
+) {
+    runCatching {
+        AnswersPreviewStreamingSectionFingerprint.hookMethod {
+            before { it.result = Unit }
+        }
+    }
+    runCatching {
+        AnswersPreviewSectionFingerprint.hookMethod {
+            before { it.result = Unit }
+        }
+    }
+}
+
 val RedditPatches = arrayOf(
     DisableScreenshotBanner,
     HighQualityAvatars,
@@ -630,6 +647,7 @@ val RedditPatches = arrayOf(
     HideAskButton,
     DisableModernHome,
     RememberCollapsedComments,
+    HideSearchAnswersPreview,
 )
 
 

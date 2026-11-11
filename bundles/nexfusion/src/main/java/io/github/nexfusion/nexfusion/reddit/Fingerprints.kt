@@ -367,3 +367,35 @@ val CommentIndentDrawLineMethod = findMethodDirect {
     }
 }
 
+/** Search answers preview section fingerprints from adobo v1.7.0. */
+private object SearchAnswersPreviewStreamingSectionFingerprint : Fingerprint(
+    returnType = "Ljava/lang/String;",
+    parameters = listOf(),
+    filters = listOf(
+        string("SearchAnswersPreviewStreamingSection(viewState="),
+    ),
+)
+
+private object SearchAnswersPreviewSectionFingerprint : Fingerprint(
+    filters = listOf(
+        string("SearchAnswersPreviewSection(viewState="),
+    ),
+)
+
+internal object AnswersPreviewStreamingSectionFingerprint : Fingerprint(
+    classFingerprint = SearchAnswersPreviewStreamingSectionFingerprint,
+    returnType = "V",
+    filters = listOf(
+        literal(-0x5ccf1694),
+    ),
+)
+
+internal object AnswersPreviewSectionFingerprint : Fingerprint(
+    classFingerprint = SearchAnswersPreviewSectionFingerprint,
+    returnType = "V",
+    filters = listOf(
+        literal(-0xce97450),
+    ),
+)
+
+
