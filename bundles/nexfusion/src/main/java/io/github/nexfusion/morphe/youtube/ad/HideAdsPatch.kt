@@ -13,6 +13,9 @@ import io.github.nexfusion.morphe.shared.misc.proto.hookElement
 import io.github.nexfusion.morphe.shared.misc.settings.preference.NonInteractivePreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.SwitchPreference
 import io.github.nexfusion.morphe.youtube.layout.hide.general.HideHorizontalShelves
+import io.github.nexfusion.morphe.youtube.misc.contexthook.Endpoint
+import io.github.nexfusion.morphe.youtube.misc.contexthook.addOSNameHook
+import io.github.nexfusion.morphe.youtube.misc.contexthook.clientContextHookPatch
 import io.github.nexfusion.morphe.youtube.misc.engagement.EngagementPanelHook
 import io.github.nexfusion.morphe.youtube.misc.engagement.addEngagementPanelIdHook
 import io.github.nexfusion.morphe.youtube.misc.litho.filter.LithoFilter
@@ -34,6 +37,7 @@ val HideAds = patch(
 
         HideFullscreenAds(PreferenceScreen.ADS),
         VersionCheck,
+        clientContextHookPatch,
     )
 
     PreferenceScreen.ADS.addPreferences(
@@ -51,6 +55,11 @@ val HideAds = patch(
 
     addLithoFilter(AdsFilter())
     addEngagementPanelIdHook(AdsFilter::hidePlayerPopupAds)
+
+    // Hide Shorts ads via Reel endpoint OS spoofing
+    addOSNameHook(Endpoint.REEL) { osName ->
+        AdsFilter.hideShortsAds(osName ?: "")
+    }
 
     // Hide video ads
 

@@ -7,6 +7,14 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.3.3
+
+- `NexFusion` 4.3.3:
+  * YouTube Shorts Feed Ad Elimination:
+    - Restored `AdsFilter.hideShortsAds(osName)` Automotive OS spoofing specifically for `Endpoint.REEL` (`reel_watch_sequence` and `reel_item_watch`), eliminating sponsored ad reels between videos in the Shorts feed.
+    - Added `clientContextHookPatch` dependency and registered `Endpoint.REEL` context hook in `HideAdsPatch.kt`.
+    - Isolated OS spoofing strictly to Shorts endpoints (`REEL`), preserving standard client context on `BROWSE`, `GET_WATCH`, `NEXT`, and `PLAYER` so YouTube Watch History and Library shelves remain fully functional.
+
 ## 4.3.2
 
 - `NexFusion` 4.3.2:
