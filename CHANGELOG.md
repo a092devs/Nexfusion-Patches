@@ -7,6 +7,20 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.3.2
+
+- `NexFusion` 4.3.2:
+  * Upstream Morphe Patches v2.2.0 Sync:
+    - YouTube Music: Integrated third-party lyrics improvements (spring scroll physics, instrumental gap indicators, retimed sync, jump-to-current button), crossfade normalization fixes, and in-app playlist download improvements.
+    - YouTube: Added `LoopCountPatch` (configurable repeat count before advancing to next video), Return YouTube Dislike feed card placement fixes, background playback notification fixes when thumbnails lag, Litho filter spacing fixes, Ambient mode fixes, and ad pre-roll deferral updates.
+    - Watch History Fix Preserved: Maintained clean endpoint filtering in `AdsFilter.java` without Automotive OS identity spoofing.
+  * Signature Spoofing Enhancements (Morphe Library v2.2.0-dev.4):
+    - Added spoofing for installed packages and preserved original signatures across companion applications.
+  * Reddit:
+    - Ported `Hide search answers preview` (`HideSearchAnswersPreview`) from adobo v1.7.0, hiding the Reddit Answers preview section at the top of search results.
+  * Gboard:
+    - Added an `InputConnection` text commit sanitizer in `GboardEditingHook.kt` to strip leaking XML resource tokens (e.g. `?attr/` or escaped `\?` / `\؟`) from symbol keys into committed text.
+
 ## 4.3.1
 
 - `NexFusion` 4.3.1:
