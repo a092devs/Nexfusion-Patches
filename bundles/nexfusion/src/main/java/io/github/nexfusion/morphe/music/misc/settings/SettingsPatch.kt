@@ -3,20 +3,27 @@ package io.github.nexfusion.morphe.music.misc.settings
 import android.app.Activity
 import android.os.Bundle
 import app.morphe.extension.music.settings.MusicActivityHook
+import app.morphe.extension.music.settings.preference.AppLanguagePreference
 import app.morphe.extension.shared.Logger
 import app.morphe.extension.shared.ResourceUtils
 import app.morphe.extension.shared.Utils
+import app.morphe.extension.shared.settings.preference.ClearNewSettingsIndicatorPreference
 import app.morphe.extension.shared.settings.preference.ImportExportPreference
+import app.morphe.extension.shared.settings.preference.SeekBarPreference
+import app.morphe.extension.shared.settings.preference.SettingsNamePreference
+import app.morphe.extension.shared.settings.preference.SortedListPreference
 import app.morphe.extension.shared.settings.preference.about.MorpheAboutPreference
 import io.github.nexfusion.compat.XC_MethodReplacement
 import io.github.nexfusion.patches.R
 import io.github.nexfusion.morphe.music.shared.MusicActivityOnCreateFingerprint
 import io.github.nexfusion.morphe.shared.misc.settings.preference.BasePreferenceScreen
 import io.github.nexfusion.morphe.shared.misc.settings.preference.InputType
+import io.github.nexfusion.morphe.shared.misc.settings.preference.ListPreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.NonInteractivePreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.PreferenceScreenPreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.SwitchPreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.TextPreference
+import io.github.nexfusion.morphe.shared.misc.settings.preference.noTitleUnsortedPreferenceCategory
 import io.github.nexfusion.morphe.shared.settings.preferences
 import io.github.nexfusion.morphe.youtube.misc.settings.PreferenceFragmentCompat_addPreferencesFromResource
 import io.github.nexfusion.patch
@@ -51,6 +58,11 @@ val SettingsHook = patch(
 
     PreferenceScreen.GENERAL.addPreferences(
         SwitchPreference("morphe_settings_search_history"),
+        SwitchPreference("morphe_show_menu_icons"),
+        ListPreference(
+            key = "morphe_settings_name",
+            tag = SettingsNamePreference::class.java,
+        ),
         SwitchPreference("morphe_music_hide_get_premium_label"),
         SwitchPreference("morphe_music_hide_music_premium_promotions"),
         SwitchPreference("morphe_music_force_portrait_orientation"),
@@ -62,6 +74,8 @@ val SettingsHook = patch(
     )
 
     PreferenceScreen.PLAYER.addPreferences(
+        SwitchPreference("morphe_music_ab_loop", summary = true),
+        SwitchPreference("morphe_music_disable_audio_ducking", summary = true),
         SwitchPreference("morphe_music_exclusive_audio_playback"),
         SwitchPreference("morphe_music_background_playback"),
         SwitchPreference("morphe_crossfade"),
@@ -72,6 +86,8 @@ val SettingsHook = patch(
         SwitchPreference("morphe_playlist_track_tap"),
         SwitchPreference("morphe_remove_viewer_discretion_dialog"),
         SwitchPreference("morphe_disable_dislike_redirection"),
+        SwitchPreference("morphe_music_auto_song_version", summary = true),
+        SwitchPreference("morphe_music_enable_audio_video_switch", summary = true),
     )
 
     PreferenceScreen.FEED.addPreferences(
@@ -82,6 +98,8 @@ val SettingsHook = patch(
         SwitchPreference("morphe_music_hide_new_from_shelf"),
         SwitchPreference("morphe_music_hide_playlist_shelves"),
         SwitchPreference("morphe_music_hide_speed_dial_shelf"),
+        SwitchPreference("morphe_music_hide_you_may_also_like_section"),
+        SwitchPreference("morphe_music_hide_your_downloads_shelf"),
     )
 
     PreferenceScreen.LYRICS.addPreferences(
@@ -101,6 +119,18 @@ val SettingsHook = patch(
     )
 
     PreferenceScreen.MISC.addPreferences(
+        noTitleUnsortedPreferenceCategory(
+            NonInteractivePreference(
+                key = "morphe_settings_new_indicator_days",
+                tag = SeekBarPreference::class.java,
+                selectable = true,
+            ),
+            NonInteractivePreference(
+                key = "morphe_settings_new_indicator_clear",
+                tag = ClearNewSettingsIndicatorPreference::class.java,
+                selectable = true,
+            ),
+        ),
         SwitchPreference("morphe_soundproof"),
         SwitchPreference("morphe_music_jam_enabled"),
         TextPreference(
@@ -109,37 +139,54 @@ val SettingsHook = patch(
             summaryKey = "morphe_pref_import_export_summary",
             inputType = InputType.TEXT_MULTI_LINE,
             tag = ImportExportPreference::class.java,
-        )
+        ),
+        ListPreference(
+            key = "morphe_language",
+            tag = SortedListPreference::class.java,
+        ),
+        ListPreference("morphe_patches_update_notice"),
+        NonInteractivePreference(
+            key = "morphe_music_app_language",
+            summaryKey = null,
+            tag = AppLanguagePreference::class.java,
+            selectable = true,
+        ),
     )
 
-    val superOnCreateMethod =
-        Activity::class.java.getDeclaredMethod("onCreate", Bundle::class.java)
-
-    val superOnCreate = xposed.getInvoker(superOnCreateMethod)
-
-    ::googleApiActivityFingerprint.hookMethod {
-        before { param ->
-            val activity = param.thisObject as Activity
-            activity.setTheme(ResourceUtils.getStyleIdentifier("@style/Theme.YouTubeMusic"))
-            MusicActivityHook.initialize(activity)
-            activity.theme.applyStyle(R.style.ListDividerNull, true)
-            superOnCreate.invokeSpecial(param.thisObject, *param.args)
-            param.result = Unit
-        }
-    }
-
-    // Remove other methods as they will break as the onCreate method is modified above.
-    ::googleApiActivityNOTonCreate.dexMethodList.forEach {
-        if (it.returnTypeName == "void") it.hookMethod(XC_MethodReplacement.DO_NOTHING)
-    }
-
-    MusicActivityOnCreateFingerprint.hookMethod {
-        before {
-            MusicActivityHook.onMainActivityCreate()
-        }
-    }
-
     PreferenceScreen.close()
+
+    runCatching {
+        val superOnCreateMethod =
+            Activity::class.java.getDeclaredMethod("onCreate", Bundle::class.java)
+
+        val superOnCreate = xposed.getInvoker(superOnCreateMethod)
+
+        ::googleApiActivityFingerprint.hookMethod {
+            before { param ->
+                val activity = param.thisObject as Activity
+                activity.setTheme(ResourceUtils.getStyleIdentifier("@style/Theme.YouTubeMusic"))
+                MusicActivityHook.initialize(activity)
+                activity.theme.applyStyle(R.style.ListDividerNull, true)
+                superOnCreate.invokeSpecial(param.thisObject, *param.args)
+                param.result = Unit
+            }
+        }
+    }
+
+    runCatching {
+        // Remove other methods as they will break as the onCreate method is modified above.
+        ::googleApiActivityNOTonCreate.dexMethodList.forEach {
+            if (it.returnTypeName == "void") it.hookMethod(XC_MethodReplacement.DO_NOTHING)
+        }
+    }
+
+    runCatching {
+        MusicActivityOnCreateFingerprint.hookMethod {
+            before {
+                MusicActivityHook.onMainActivityCreate()
+            }
+        }
+    }
 }
 
 object PreferenceScreen : BasePreferenceScreen() {

@@ -7,6 +7,25 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.3.5
+
+- `NexFusion` 4.3.5:
+  * YouTube & YouTube Music Settings:
+    - Added "Mark all settings as seen" (`morphe_settings_new_indicator_clear`) and "Highlight new settings" (`morphe_settings_new_indicator_days`) settings to Miscellaneous preferences across YouTube and YouTube Music to remove all new setting indicator dots with one tap.
+    - Added "Show Morphe setting icons" (`morphe_show_menu_icons`) and "Settings search history" (`morphe_settings_search_history`) to General settings.
+    - Added language preference (`morphe_language`) to Miscellaneous settings.
+  * YouTube Enhancements:
+    - DeArrow: Added Glide image model hook (`getImageModel`) to dynamically bypass cached thumbnails when tapping the DeArrow icon to toggle between original and crowdsourced thumbnails.
+    - Ambient Mode: Added "Dim while scrolling" (`morphe_enhanced_ambient_mode_dim_while_scrolling`) and "Dim duration" (`morphe_enhanced_ambient_mode_dim_duration`) seekbar settings to Enhanced Ambient mode.
+    - Shorts: Added "Hide Shorts push notifications" (`morphe_hide_shorts_notifications`) setting to Hide Shorts components.
+  * YouTube Music Enhancements:
+    - Added "A-B loop" (`morphe_music_ab_loop`) and "Disable audio ducking" (`morphe_music_disable_audio_ducking`) toggles to Player settings.
+    - Added "Always play the song version" (`morphe_music_auto_song_version`) and "Enable audio/video switch" (`morphe_music_enable_audio_video_switch`) settings to Player settings.
+    - Added "Hide 'You may also like' section" (`morphe_music_hide_you_may_also_like_section`) and "Hide 'Your downloads' shelf" (`morphe_music_hide_your_downloads_shelf`) to Feed settings.
+  * Upstream Morphe Patches Sync (v2.3.0-dev.2):
+    - Merged upstream `SpoofVideoStreamsPatch` fix for feed video inline playback preventing `isOfflinePlayerResponse failure` errors.
+    - Cleaned up Crowdin synchronization workflows to skip gracefully when API secrets are unconfigured.
+
 ## 4.3.4
 
 - `NexFusion` 4.3.4:

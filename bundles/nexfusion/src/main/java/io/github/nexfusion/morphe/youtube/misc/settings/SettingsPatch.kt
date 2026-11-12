@@ -2,7 +2,11 @@ package io.github.nexfusion.morphe.youtube.misc.settings
 
 import android.app.Activity
 import app.morphe.extension.shared.ResourceUtils
+import app.morphe.extension.shared.settings.preference.ClearNewSettingsIndicatorPreference
 import app.morphe.extension.shared.settings.preference.ImportExportPreference
+import app.morphe.extension.shared.settings.preference.SeekBarPreference
+import app.morphe.extension.shared.settings.preference.SettingsNamePreference
+import app.morphe.extension.shared.settings.preference.SortedListPreference
 import app.morphe.extension.shared.settings.preference.about.MorpheAboutPreference
 import app.morphe.extension.youtube.settings.YouTubeActivityHook
 import io.github.nexfusion.compat.XC_MethodHook
@@ -13,10 +17,13 @@ import io.github.nexfusion.morphe.shared.misc.initialization.initializationPatch
 import io.github.nexfusion.morphe.shared.misc.settings.preference.BasePreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.BasePreferenceScreen
 import io.github.nexfusion.morphe.shared.misc.settings.preference.InputType
+import io.github.nexfusion.morphe.shared.misc.settings.preference.ListPreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.NonInteractivePreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.PreferenceScreenPreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.PreferenceScreenPreference.Sorting
+import io.github.nexfusion.morphe.shared.misc.settings.preference.SwitchPreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.TextPreference
+import io.github.nexfusion.morphe.shared.misc.settings.preference.noTitleUnsortedPreferenceCategory
 import io.github.nexfusion.morphe.shared.settings.preferences
 import io.github.nexfusion.morphe.youtube.layout.buttons.overlay.PlayerOverlayButtonsSettings
 import io.github.nexfusion.patch
@@ -45,30 +52,42 @@ val SettingsHook = patch(
         }
     }
 
-    val superOnCreateMethod = ::licenseActivitySuperOnCreate.method
-    val superOnCreate = xposed.getInvoker(superOnCreateMethod)
+    runCatching {
+        val superOnCreateMethod = ::licenseActivitySuperOnCreate.method
+        val superOnCreate = xposed.getInvoker(superOnCreateMethod)
 
-    ::licenseActivityOnCreateFingerprint.hookMethod(object : XC_MethodReplacement() {
-        override fun replaceHookedMethod(param: XC_MethodHook.MethodHookParam) {
-            val activity = param.thisObject as Activity
-            YouTubeActivityHook.initialize(activity)
-            activity.theme.applyStyle(R.style.ListDividerNull, true)
-            superOnCreate.invokeSpecial(param.thisObject, *param.args)
-        }
-    })
-
-    // Remove other methods as they will break as the onCreate method is modified above.
-    ::licenseActivityNOTonCreate.dexMethodList.forEach {
-        if (it.returnTypeName == "void") it.hookMethod(XC_MethodReplacement.DO_NOTHING)
+        ::licenseActivityOnCreateFingerprint.hookMethod(object : XC_MethodReplacement() {
+            override fun replaceHookedMethod(param: XC_MethodHook.MethodHookParam) {
+                val activity = param.thisObject as Activity
+                YouTubeActivityHook.initialize(activity)
+                activity.theme.applyStyle(R.style.ListDividerNull, true)
+                superOnCreate.invokeSpecial(param.thisObject, *param.args)
+            }
+        })
+    }.onFailure {
+        android.util.Log.e("NexfusionSettings", "licenseActivityOnCreate failed", it)
     }
 
-    // Update shared dark mode status based on YT theme.
-    // This is needed because YT allows forcing light/dark mode
-    // which then differs from the system dark mode status.
-    ::setThemeFingerprint.hookMethod {
-        after { param ->
-            YouTubeActivityHook.updateLightDarkModeStatus(param.result as Enum<*>)
+    runCatching {
+        // Remove other methods as they will break as the onCreate method is modified above.
+        ::licenseActivityNOTonCreate.dexMethodList.forEach {
+            if (it.returnTypeName == "void") it.hookMethod(XC_MethodReplacement.DO_NOTHING)
         }
+    }.onFailure {
+        android.util.Log.e("NexfusionSettings", "licenseActivityNOTonCreate failed", it)
+    }
+
+    runCatching {
+        // Update shared dark mode status based on YT theme.
+        // This is needed because YT allows forcing light/dark mode
+        // which then differs from the system dark mode status.
+        ::setThemeFingerprint.hookMethod {
+            after { param ->
+                YouTubeActivityHook.updateLightDarkModeStatus(param.result as Enum<*>)
+            }
+        }
+    }.onFailure {
+        android.util.Log.e("NexfusionSettings", "setThemeFingerprint failed", it)
     }
 
     // Add an "About" preference to the top.
@@ -88,12 +107,29 @@ val SettingsHook = patch(
 //        )
 //    }
 
-//    PreferenceScreen.GENERAL.addPreferences(
-//        SwitchPreference("morphe_settings_search_history"),
-//        SwitchPreference("morphe_show_menu_icons")
-//    )
+    PreferenceScreen.GENERAL.addPreferences(
+        SwitchPreference("morphe_settings_search_history"),
+        SwitchPreference("morphe_show_menu_icons"),
+        SwitchPreference("morphe_native_snackbar", summary = true),
+        ListPreference(
+            key = "morphe_settings_name",
+            tag = SettingsNamePreference::class.java,
+        ),
+    )
 
     PreferenceScreen.MISC.addPreferences(
+        noTitleUnsortedPreferenceCategory(
+            NonInteractivePreference(
+                key = "morphe_settings_new_indicator_days",
+                tag = SeekBarPreference::class.java,
+                selectable = true,
+            ),
+            NonInteractivePreference(
+                key = "morphe_settings_new_indicator_clear",
+                tag = ClearNewSettingsIndicatorPreference::class.java,
+                selectable = true,
+            ),
+        ),
         TextPreference(
             key = null,
             titleKey = "morphe_pref_import_export_title",
@@ -101,10 +137,11 @@ val SettingsHook = patch(
             inputType = InputType.TEXT_MULTI_LINE,
             tag = ImportExportPreference::class.java,
         ),
-//        ListPreference(
-//            key = "morphe_language",
-//            tag = SortedListPreference::class.java
-//        )
+        ListPreference(
+            key = "morphe_language",
+            tag = SortedListPreference::class.java,
+        ),
+        ListPreference("morphe_patches_update_notice"),
     )
 
     PreferenceScreen.close()

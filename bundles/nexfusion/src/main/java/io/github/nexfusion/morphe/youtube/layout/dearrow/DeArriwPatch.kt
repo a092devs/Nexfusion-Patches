@@ -2,6 +2,13 @@ package io.github.nexfusion.morphe.youtube.layout.dearrow
 
 import app.morphe.extension.youtube.patches.dearrow.DeArrowPatch
 import app.morphe.extension.youtube.settings.preference.DeArrowAboutPreference
+import io.github.nexfusion.hookMethod
+import io.github.nexfusion.morphe.AccessFlags
+import io.github.nexfusion.morphe.Fingerprint
+import io.github.nexfusion.morphe.InstructionLocation.MatchAfterWithin
+import io.github.nexfusion.morphe.Opcode
+import io.github.nexfusion.morphe.fieldAccess
+import io.github.nexfusion.morphe.string
 import io.github.nexfusion.morphe.shared.misc.settings.preference.ListPreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.NonInteractivePreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.screenInfoPreferenceCategory
@@ -96,4 +103,48 @@ val deArrowPatch = patch(
     addImageUrlHook(DeArrowPatch::overrideImageURL)
     addImageUrlSuccessCallbackHook(DeArrowPatch::handleCronetSuccess)
     addImageUrlErrorCallbackHook(DeArrowPatch::handleCronetFailure)
+
+    // Thumbnails are loaded with Glide, which caches them by the URL before it's replaced.
+    // The original thumbnail of a video whose DeArrow icon was tapped is loaded with another image model,
+    // so the replaced thumbnail cached for the URL is not shown.
+    runCatching {
+        GlideRequestBuilderLoadGenericFingerprint.hookMethod {
+            before { param ->
+                val arg = param.args?.getOrNull(0) ?: return@before
+                param.args[0] = DeArrowPatch.getImageModel(arg)
+            }
+        }
+    }
 }
+
+/**
+ * Glide RequestBuilder.into(Target, RequestListener, BaseRequestOptions, Executor).
+ */
+private object GlideRequestBuilderIntoFingerprint : Fingerprint(
+    returnType = "V",
+    filters = listOf(
+        string("You must call #load() before calling #into()"),
+    ),
+)
+
+/**
+ * Glide RequestBuilder.loadGeneric(Object), which all load(...) methods use to set the image model.
+ */
+internal object GlideRequestBuilderLoadGenericFingerprint : Fingerprint(
+    classFingerprint = GlideRequestBuilderIntoFingerprint,
+    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.FINAL),
+    returnType = "L",
+    parameters = listOf("Ljava/lang/Object;"),
+    filters = listOf(
+        fieldAccess(
+            opcode = Opcode.IPUT_OBJECT,
+            definingClass = "this",
+            type = "Ljava/lang/Object;",
+        ),
+        fieldAccess(
+            opcode = Opcode.IPUT_BOOLEAN,
+            definingClass = "this",
+            location = MatchAfterWithin(3),
+        ),
+    ),
+)

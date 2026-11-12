@@ -85,7 +85,8 @@ val HideShortsComponents = patch(
                 SwitchPreference("morphe_hide_shorts_search"),
                 SwitchPreference("morphe_hide_shorts_subscriptions"),
                 SwitchPreference("morphe_hide_shorts_video_description"),
-                SwitchPreference("morphe_hide_shorts_history")
+                SwitchPreference("morphe_hide_shorts_history"),
+                SwitchPreference("morphe_hide_shorts_notifications"),
             )
         )
     )

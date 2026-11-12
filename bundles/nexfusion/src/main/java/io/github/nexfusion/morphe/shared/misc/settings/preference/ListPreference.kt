@@ -25,10 +25,16 @@ class ListPreference(
         return super.build(ctx, prefMgr).apply {
             val listPreference = this as ListPreference
             entriesKey?.let {
-                listPreference.setEntries(ResourceUtils.getArrayIdentifier(entriesKey))
+                val id = ResourceUtils.getArrayIdentifier(entriesKey)
+                if (id != 0) {
+                    listPreference.setEntries(id)
+                }
             }
             entryValuesKey?.let {
-                listPreference.setEntryValues(ResourceUtils.getArrayIdentifier(entryValuesKey))
+                val id = ResourceUtils.getArrayIdentifier(entryValuesKey)
+                if (id != 0) {
+                    listPreference.setEntryValues(id)
+                }
             }
         }
     }
