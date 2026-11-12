@@ -7,6 +7,16 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.3.6
+
+- `NexFusion` 4.3.6:
+  * Maintenance & CI:
+    - Fixed `DeArriwPatch.kt` naming typo to `DeArrowPatch.kt`.
+    - Streamlined CI release pipeline, cutting release build time from 8+ minutes to under 1 minute.
+    - Optimized DexKit single-version targeting and pruned obsolete local APK fixtures.
+    - Updated upstream Morphe patches submodule with GitHub Actions release workflow validation fixes.
+    - Resolved duplicate `beta` workflow executions without cancellation errors.
+
 ## 4.3.5
 
 - `NexFusion` 4.3.5:

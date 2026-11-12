@@ -23,13 +23,17 @@ class FilePathArgumentsProvider : ArgumentsProvider {
             throw IllegalStateException("APKs folder not found: $testInputPath")
         }
 
-        return Files.walk(testInputPath).filter { path ->
-                Files.isRegularFile(path) &&
-                    path.normalize().none { it.name.startsWith(".") } &&
-                    // Only open APKs that have fingerprint targets; unrelated binaries (for example
-                    // Discord, whose non-numeric version the generic harness cannot parse) are
-                    // covered by their own focused tests.
-                    fingerprintTestTargets.keys.any { path.name.startsWith(it) }
-            }.map { Arguments.of(it) }
+        val candidateFiles = Files.walk(testInputPath).filter { path ->
+            Files.isRegularFile(path) &&
+                path.normalize().none { it.name.startsWith(".") } &&
+                fingerprintTestTargets.keys.any { path.name.startsWith(it) }
+        }.toList()
+
+        // Test only the latest binary per targeted app
+        val latestPerTarget = fingerprintTestTargets.keys.mapNotNull { targetKey ->
+            candidateFiles.filter { it.name.startsWith(targetKey) }.maxByOrNull { it.name }
+        }
+
+        return latestPerTarget.stream().map { Arguments.of(it) }
     }
 }

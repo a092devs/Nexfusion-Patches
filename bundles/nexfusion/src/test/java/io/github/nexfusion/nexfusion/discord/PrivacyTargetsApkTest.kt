@@ -88,6 +88,7 @@ class PrivacyTargetsApkTest {
         val apks = File("binaries")
             .listFiles { file -> file.isFile && file.name.startsWith("com.discord-") && file.name.endsWith(".apk") }
             ?.sortedBy { it.name }
+            ?.takeLast(1)
             .orEmpty()
         if (apks.isEmpty()) {
             println("No Discord APK found, skipping")

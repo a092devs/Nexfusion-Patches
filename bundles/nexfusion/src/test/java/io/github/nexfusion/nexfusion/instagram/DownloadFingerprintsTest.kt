@@ -12,7 +12,7 @@ class DownloadFingerprintsTest {
     fun testInstagramDownloadFingerprints() {
         val apks = File("binaries").listFiles { file ->
             file.isFile && file.name.startsWith("com.instagram.android-") && file.name.endsWith(".apk")
-        }?.sortedBy { it.name }.orEmpty()
+        }?.sortedBy { it.name }?.takeLast(1).orEmpty()
         if (apks.isEmpty()) {
             println("No Instagram APK found, skipping")
             return

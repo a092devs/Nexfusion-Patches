@@ -11,13 +11,30 @@ jobs:
         runs-on: ubuntu-latest
         permissions:
             contents: write
+            actions: write
 
         steps:
             - uses: actions/checkout@v6
               with:
                   submodules: recursive
+                  fetch-depth: 10
+
+            - name: Check duplicate push on beta
+              id: check-duplicate
+              if: github.ref == 'refs/heads/beta'
+              shell: bash
+              run: |
+                git fetch origin main --depth=10
+                MAIN_SHA="$(git rev-parse FETCH_HEAD 2>/dev/null || true)"
+                if [[ -n "$MAIN_SHA" ]] && git merge-base --is-ancestor "$GITHUB_SHA" "$MAIN_SHA"; then
+                  echo "Commit $GITHUB_SHA is already on main; skipping duplicate workflow run on beta."
+                  echo "skip=true" >> "$GITHUB_OUTPUT"
+                else
+                  echo "skip=false" >> "$GITHUB_OUTPUT"
+                fi
 
             - name: Set up JDK
+              if: steps.check-duplicate.outputs.skip != 'true'
               uses: actions/setup-java@v5
               with:
                   java-version: '21'
@@ -25,18 +42,21 @@ jobs:
                   cache: gradle
 
             - name: Set up Android SDK
+              if: steps.check-duplicate.outputs.skip != 'true'
               uses: android-actions/setup-android@v4
               with:
                   packages: 'platforms;android-36 build-tools;36.0.0 platform-tools'
 
             - name: Unit tests
-              if: github.ref != 'refs/heads/main'
+              if: steps.check-duplicate.outputs.skip != 'true' && github.ref != 'refs/heads/main'
               run: ./gradlew testDebugUnitTest
 
             - name: Build patch bundles
+              if: steps.check-duplicate.outputs.skip != 'true'
               run: ./gradlew assembleBundle
 
             - name: Verify generated bundles
+              if: steps.check-duplicate.outputs.skip != 'true'
               shell: bash
               run: |
                   shopt -s nullglob
@@ -56,53 +76,97 @@ jobs:
                     echo "Verified: $f ($(stat -c%s "$f") bytes)"
                   done
 
+            - name: Publish GitHub Release
+              if: steps.check-duplicate.outputs.skip != 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+
+                  VERSION=$(grep -m1 -oP '^##\s+\K[0-9]+\.[0-9]+\.[0-9]+$' CHANGELOG.md || true)
+
+                  if [[ -z "$VERSION" ]]; then
+                    echo "CHANGELOG.md has no 'X.Y.Z' section; skipping auto-release."
+                    exit 0
+                  fi
+
+                  if gh release view "$VERSION" >/dev/null 2>&1; then
+                    echo "Release $VERSION already exists; nothing to release."
+                    exit 0
+                  fi
+
+                  shopt -s nullglob
+                  assets=(bundles/*/build/outputs/bundle/*.nxb)
+                  if (( ${#assets[@]} == 0 )); then
+                    echo "::error::No verified NXB assets available to publish."
+                    exit 1
+                  fi
+
+                  # Extract release notes for this version from CHANGELOG.md
+                  base_tag="${VERSION%%-*}"
+                  section=""
+                  if [[ -f CHANGELOG.md ]]; then
+                    section="$(awk -v tag="$VERSION" -v base="$base_tag" '
+                      /^## / {
+                        if (found) exit
+                        rest = substr($0, 4)
+                        sub(/[ \t].*$/, "", rest)
+                        if (rest == tag || rest == base) found = 1
+                        next
+                      }
+                      found { print }
+                    ' CHANGELOG.md)"
+                  fi
+
+                  if [[ -n "${section//[[:space:]]/}" ]]; then
+                    printf '%s\n' "$section" > release-notes.md
+                  else
+                    gh api \
+                      "repos/$GITHUB_REPOSITORY/releases/generate-notes" \
+                      -f "tag_name=$VERSION" \
+                      -f "target_commitish=$GITHUB_SHA" \
+                      --jq '.body' > release-notes.md
+                  fi
+
+                  # Append compatibility metadata
+                  compat_series="$(sed -nE 's/.*compatibilitySeries = "([^"]+)".*/\1/p' bundles/nexfusion/build.gradle.kts | head -n1)"
+                  if [[ -n "$compat_series" ]]; then
+                    {
+                      echo ""
+                      echo "### Compatibility"
+                      echo "- **NexFusion Series:** \`$compat_series\`"
+                      echo "<!-- compat-series: $compat_series -->"
+                    } >> release-notes.md
+                  fi
+
+                  flags=()
+                  if [[ "$VERSION" == *-* ]]; then
+                    flags+=(--prerelease)
+                  fi
+
+                  gh release create "$VERSION" \
+                    "${assets[@]}" \
+                    "${flags[@]}" \
+                    --target "$GITHUB_SHA" \
+                    --title "$VERSION" \
+                    --notes-file release-notes.md
+
+                  echo "Successfully published release $VERSION directly from verified build artifacts."
+
             - name: Upload patch bundles
+              if: steps.check-duplicate.outputs.skip != 'true'
               uses: actions/upload-artifact@v4
               with:
                 name: nexfusion-ci-bundles
                 path: bundles/*/build/outputs/bundle/*.nxb
 
             - name: Publish Bundle Notice
+              if: steps.check-duplicate.outputs.skip != 'true'
               run: |
                 echo "## 📦 Standalone Bundle Downloads" >> $GITHUB_STEP_SUMMARY
                 echo "" >> $GITHUB_STEP_SUMMARY
                 echo "> **Note:** GitHub Actions packages runtime artifacts in the table above into a `.zip` archive by default." >> $GITHUB_STEP_SUMMARY
                 echo "> To download the direct standalone **`.nxb`** files without zip packaging, visit the **[Releases](https://github.com/${{ github.repository }}/releases)** page." >> $GITHUB_STEP_SUMMARY
 
-    auto-release:
-        name: Trigger release build
-        needs: build
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        runs-on: ubuntu-latest
 
-        permissions:
-            contents: read
-            actions: write
-
-        steps:
-            - uses: actions/checkout@v6
-
-            - name: Dispatch release workflow for the changelog version
-              shell: bash
-              env:
-                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              run: |
-                set -euo pipefail
-
-                VERSION=$(grep -m1 -oP '^##\s+\K[0-9]+\.[0-9]+\.[0-9]+$' CHANGELOG.md || true)
-
-                if [[ -z "$VERSION" ]]; then
-                  echo "::error::CHANGELOG.md has no 'X.Y.Z' section to release; add one before pushing."
-                  exit 1
-                fi
-
-                if gh release view "$VERSION" >/dev/null 2>&1; then
-                  echo "Release $VERSION already exists; nothing to release."
-                  exit 0
-                fi
-
-                gh workflow run release.yml \
-                  --repo "$GITHUB_REPOSITORY" \
-                  --ref "$GITHUB_REF_NAME" \
-                  -f tag="$VERSION"
-                echo "Dispatched release build for $VERSION."
