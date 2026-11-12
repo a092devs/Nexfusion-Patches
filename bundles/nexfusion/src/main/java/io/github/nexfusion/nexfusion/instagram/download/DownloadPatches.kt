@@ -1091,10 +1091,13 @@ val DownloadMedia = patch(
         val iconIndex = (onClickIndex + 1 until rowParameterTypes.size)
             .firstOrNull { rowParameterTypes[it] == Int::class.javaPrimitiveType }
             ?: throw Exception("Story menu row has no icon parameter")
+        val storySheetMethod = ::storyMenuSheetMethod.method
+        val rowsParamIndex = storySheetMethod.parameterTypes.indexOfFirst { List::class.java.isAssignableFrom(it) }
+            .takeIf { it >= 0 } ?: 0
         ::storyMenuSheetMethod.hookMethod {
             before { param ->
                 val viewer = resumedViewer.get() ?: return@before
-                val rows = param.args[0] as? List<*> ?: return@before
+                val rows = param.args.getOrNull(rowsParamIndex) as? List<*> ?: param.args.firstOrNull { it is List<*> } as? List<*> ?: return@before
                 try {
                     val hasDownload = rows.any { row ->
                         row != null && row.javaClass.declaredFields.any { field ->

@@ -12,7 +12,7 @@ import org.luckypray.dexkit.DexKitBridge
 import java.io.File
 import java.util.EnumSet
 
-class ApkContext(apkPath: String) {
+class ApkContext(apkPath: String) : AutoCloseable {
     val dexkit: DexKitBridge
     val jadx: JadxDecompiler
     val appVersion: AppVersion
@@ -21,6 +21,11 @@ class ApkContext(apkPath: String) {
         dexkit = setupDexKit(apkPath)
         jadx = setupJadx(apkPath)
         appVersion = jadx.getAppVersion()
+    }
+
+    override fun close() {
+        runCatching { dexkit.close() }
+        runCatching { jadx.close() }
     }
 
     companion object {

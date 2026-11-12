@@ -21,8 +21,8 @@ class DownloadFingerprintsTest {
 
         for (apkFile in apks) {
             println("=== ${apkFile.name} ===")
-            val context = ApkContext(apkFile.absolutePath)
-            val dexkit = context.dexkit
+            ApkContext(apkFile.absolutePath).use { context ->
+                val dexkit = context.dexkit
 
             assertNotNull(overflowMenuOptionsMethod(dexkit))
             assertNotNull(overflowMenuCreatorClass(dexkit))
@@ -39,7 +39,9 @@ class DownloadFingerprintsTest {
             val storyLabels = storyMenuLabelsMethod(dexkit)
             assertNotNull(storyLabels)
             println("Verified storyMenuLabelsMethod: $storyLabels")
-            assertNotNull(storyMenuSheetMethod(dexkit))
+            val storySheet = storyMenuSheetMethod(dexkit)
+            assertNotNull(storySheet)
+            println("Verified storyMenuSheetMethod: $storySheet")
             val storyRow = storyMenuRowConstructor(dexkit)
             assertNotNull(storyRow)
             println("Verified storyMenuRowConstructor: $storyRow")
@@ -104,6 +106,7 @@ class DownloadFingerprintsTest {
             assertClassExists("com.instagram.inappbrowser.fragments.BrowserLiteInMainProcessIGActivity")
 
             println("ALL FINGERPRINTS PASSED FOR ${apkFile.name}!")
+            }
         }
     }
 }

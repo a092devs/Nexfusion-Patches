@@ -208,12 +208,12 @@ val storyMenuSheetMethod = findMethodDirect {
     findMethod {
         matcher {
             returnType = "void"
-            paramTypes(
-                "java.util.List", "kotlin.jvm.functions.Function0", "kotlin.jvm.functions.Function0",
-                "kotlin.jvm.functions.Function0", "kotlin.jvm.functions.Function1", null,
-            )
         }
-    }.single { method -> method.instructions.any { it.classRef?.name == sheetClass } }
+    }.single { method ->
+        "java.util.List" in method.paramTypeNames &&
+            "kotlin.jvm.functions.Function1" in method.paramTypeNames &&
+            method.instructions.any { it.classRef?.name == sheetClass }
+    }
 }
 
 /**

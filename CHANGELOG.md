@@ -7,6 +7,24 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.3.4
+
+- `NexFusion` 4.3.4:
+  * Upstream Morphe Patches v2.3.0-dev.1 & Library v2.2.0-dev.5 Sync:
+    - Merged upstream `dev` updates into `morphe-patches` and `morphe-patches-library` submodules.
+    - Preserved `AdsFilter` Shorts feed ad blocking (`Endpoint.REEL`) without compromising YouTube Watch History or Library functionality.
+    - Fixed `RememberVideoQualityPatch.kt` type casting for Kotlin compiler compatibility with upstream changes.
+    - Added cross-classloader message serialization in `BaseInAppDownloadsPatch.java`.
+  * Instagram 455.0.0.51.72 Compatibility:
+    - Updated `storyMenuSheetMethod` fingerprint matcher to dynamically detect story bottom sheet launcher methods with variable parameter counts, supporting Instagram 455's 8-parameter signature while preserving backwards compatibility across versions 451 through 453.
+    - Added dynamic argument index resolution for story rows in `DownloadPatches.kt`.
+  * Discord 353.11+ Compatibility:
+    - Updated Discord privacy test verification to recognize 56 legacy internal jank/analytics classes retired in Discord 353.11+, verifying all 74 core privacy targets (Sentry, AppsFlyer, Ads, and React Native bridge entry points).
+    - Preserved graceful handling for optional patches across Discord releases.
+  * Test Suite & Resource Management:
+    - Implemented `AutoCloseable` in `ApkContext` to reliably close DexKit and Jadx resources after test runs.
+    - Increased test worker heap limit to prevent out-of-memory errors during large multi-dex APK analysis.
+
 ## 4.3.3
 
 - `NexFusion` 4.3.3:
