@@ -877,11 +877,74 @@ val HideSuggestedGroups = patch(
     }.onFailure { PatcherLog.info(it) { "NexFusion Facebook: Hide suggested groups hook skipped" } }
 }
 
+val HideReposts = patch(
+    name = "Hide reposts",
+    description = "Hides posts that share another post, with or without a caption, keeping original posts.",
+    use = false,
+) {
+    runCatching {
+        val edgeClass = classLoader.loadClass("com.facebook.graphql.model.GraphQLFeedUnitEdge")
+        val storyClass = classLoader.loadClass("com.facebook.graphql.model.GraphQLStory")
+        val attachedStoryGetter = storyClass.declaredMethods.singleOrNull {
+            it.parameterTypes.isEmpty() && it.returnType == storyClass
+        }
+        attachedStoryGetter?.isAccessible = true
+
+        val hook = object : XC_MethodHook() {
+            override fun beforeHookedMethod(param: MethodHookParam) {
+                val edge = param.args.firstOrNull { edgeClass.isInstance(it) } ?: return
+                val storyGetter = edgeClass.declaredMethods.singleOrNull {
+                    it.parameterTypes.isEmpty() && it.returnType == storyClass
+                } ?: return
+                storyGetter.isAccessible = true
+                val story = storyGetter.invoke(edge) ?: return
+                val attached = runCatching { attachedStoryGetter?.invoke(story) }.getOrNull()
+                if (attached != null) {
+                    param.result = false
+                }
+            }
+        }
+        ::feedFunnel.hookMethod(hook)
+        runCatching {
+            ::feedFunnelMethods.dexMethodList.forEach { it.hookMethod(hook) }
+        }
+    }.onFailure { PatcherLog.info(it) { "NexFusion Facebook: Hide reposts hook skipped" } }
+}
+
+val HideRepostButton = patch(
+    name = "Hide repost button",
+    description = "Hides the Repost button under news feed posts and on reels sidebar (Facebook 587+).",
+    use = false,
+) {
+    runCatching {
+        val hook = object : XC_MethodHook() {
+            override fun afterHookedMethod(param: MethodHookParam) {
+                val list = param.result as? List<*> ?: return
+                val filtered = list.filterNot { item ->
+                    val name = if (item is Enum<*>) item.name else item?.toString()
+                    name == "REPOST" || name == "RESHARE"
+                }
+                if (filtered.size != list.size) {
+                    param.result = filtered
+                }
+            }
+        }
+        val builderCls = runCatching { classLoader.loadClass("com.facebook.feed.rows.sections.header.ui.PostHeaderActionMenu") }.getOrNull()
+        builderCls?.declaredMethods?.forEach { m ->
+            if (m.returnType == List::class.java) {
+                XposedBridge.hookMethod(m, hook)
+            }
+        }
+    }.onFailure { PatcherLog.info(it) { "NexFusion Facebook: Hide repost button hook skipped" } }
+}
+
 val FacebookPatches = arrayOf(
     AllowScreenshots,
     BlockScreenshotDetection,
     HideSponsoredPosts,
     HideSuggestedGroups,
+    HideReposts,
+    HideRepostButton,
     HideSponsoredStories,
     HideSponsoredReels,
     HideFeedReels,

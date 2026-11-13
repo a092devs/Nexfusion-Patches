@@ -398,4 +398,26 @@ internal object AnswersPreviewSectionFingerprint : Fingerprint(
     ),
 )
 
+/** Matches the converter that builds the VideoCarousel (Videos for you) recommendations section (Adobo 0cd6659). */
+internal object VideoCarouselConverterFingerprint : Fingerprint(
+    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.FINAL),
+    returnType = "L",
+    parameters = listOf("L", "L"),
+    filters = listOf(
+        fieldAccess(
+            definingClass = "/VideoCarouselVariant;",
+            name = "LIST",
+        ),
+        fieldAccess(
+            definingClass = "/VideoCarouselLayout;",
+            name = "LIST",
+        ),
+        fieldAccess(
+            definingClass = "/VideoCarouselLayout;",
+            name = "PAGER",
+        ),
+    ),
+)
+
+
 

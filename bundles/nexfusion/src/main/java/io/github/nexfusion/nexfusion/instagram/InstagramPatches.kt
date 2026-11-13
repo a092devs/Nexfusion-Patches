@@ -942,6 +942,16 @@ val TurnOffHdrBoosts = patch(
     PatcherLog.info { "NexFusion Instagram: Turn off HDR brightness boosts installed" }
 }
 
+val StartFeedVideosWithSound = patch(
+    name = "Start feed videos with sound",
+    description = "Starts videos in the feed and reels with sound automatically, respecting phone ringer and media volume.",
+    use = false,
+) {
+    runCatching {
+        InstagramRequestFilter.ensureHooks(classLoader)
+    }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: Start feed videos with sound hook skipped" } }
+}
+
 val InstagramPatches = arrayOf(
     HideAds,
     HideSuggestedPosts,
@@ -963,5 +973,6 @@ val InstagramPatches = arrayOf(
     DontSaveRecentSearches,
     DontSendReelWatchHistory,
     HideMetaAi,
+    StartFeedVideosWithSound,
 )
 

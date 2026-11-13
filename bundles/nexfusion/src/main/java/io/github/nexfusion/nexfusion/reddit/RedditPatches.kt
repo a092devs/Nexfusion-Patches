@@ -620,6 +620,18 @@ val HideSearchAnswersPreview = patch(
     }
 }
 
+val HideVideosForYou = patch(
+    name = "Hide videos for you",
+    description = "Hides the \"Videos for you\" or video carousel recommendation section between feed posts.",
+    use = false,
+) {
+    runCatching {
+        VideoCarouselConverterFingerprint.memberOrNull?.let { member ->
+            XposedBridge.hookMethod(member, XC_MethodReplacement.returnConstant(null))
+        }
+    }.onFailure { PatcherLog.info(it) { "NexFusion Reddit: Hide videos for you hook skipped" } }
+}
+
 val RedditPatches = arrayOf(
     DisableScreenshotBanner,
     HighQualityAvatars,
@@ -648,6 +660,7 @@ val RedditPatches = arrayOf(
     DisableModernHome,
     RememberCollapsedComments,
     HideSearchAnswersPreview,
+    HideVideosForYou,
 )
 
 

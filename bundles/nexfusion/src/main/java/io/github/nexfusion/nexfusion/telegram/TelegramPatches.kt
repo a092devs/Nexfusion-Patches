@@ -658,10 +658,59 @@ val TelegramAntiScreenshotAlert = patch(
     }
 }
 
+val TelegramAllowScreenshots = patch(
+    name = "Allow screenshots",
+    description = "Allows taking screenshots and screen recording in secret chats, restricted channels, view-once media, and protected messages.",
+    use = false,
+) {
+    // 1. Clear FLAG_SECURE from Window setFlags/addFlags
+    val windowHook = object : XC_MethodHook() {
+        override fun beforeHookedMethod(param: MethodHookParam) {
+            when (param.method.name) {
+                "setFlags", "addFlags" -> {
+                    val flags = param.args.getOrNull(0) as? Int ?: return
+                    param.args[0] = flags and 0x2000.inv()
+                }
+            }
+        }
+    }
+    runCatching {
+        val windowClass = classLoader.loadClass("android.view.Window")
+        for (m in windowClass.declaredMethods) {
+            if (m.name in listOf("setFlags", "addFlags")) {
+                XposedBridge.hookMethod(m, windowHook)
+            }
+        }
+    }
+    // 2. Prevent SurfaceView.setSecure(true)
+    runCatching {
+        val surfaceViewClass = classLoader.loadClass("android.view.SurfaceView")
+        for (m in surfaceViewClass.declaredMethods) {
+            if (m.name == "setSecure") {
+                XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        param.args[0] = false
+                    }
+                })
+            }
+        }
+    }
+    // 3. Clear noforwards / copy protection in MessageObject
+    runCatching {
+        val messageObjectCls = classLoader.loadClass("org.telegram.messenger.MessageObject")
+        messageObjectCls.declaredMethods.filter {
+            it.name == "isCopyProtectionEnabled" || it.name == "needDrawBluredPreview"
+        }.forEach { m ->
+            XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(false))
+        }
+    }
+}
+
 val TelegramPatches = arrayOf(
     TelegramHideAds,
     TelegramUnlockPremium,
     TelegramBypassRestrictions,
+    TelegramAllowScreenshots,
     TelegramGhostTyping,
     TelegramAntiDisappearingMedia,
     TelegramAntiScreenshotAlert,
