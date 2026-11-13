@@ -3,6 +3,7 @@ package io.github.nexfusion.morphe.music
 import io.github.nexfusion.patches.ExtensionResourceHook
 import io.github.nexfusion.morphe.music.ad.HideAds
 import io.github.nexfusion.morphe.music.audio.exclusiveaudio.EnableExclusiveAudioPlayback
+import io.github.nexfusion.morphe.music.layout.captions.DisableAutoCaptions
 import io.github.nexfusion.morphe.music.layout.upgradebutton.HideUpgradeButton
 import io.github.nexfusion.morphe.music.misc.backgroundplayback.BackgroundPlayback
 import io.github.nexfusion.morphe.music.misc.debugging.EnableDebugging
@@ -23,5 +24,6 @@ val YTMusicPatches = arrayOf(
     SanitizeSharingLinks,
     OpenSystemShareSheet,
     RememberVideoQuality,
+    DisableAutoCaptions,
     SettingsHook
 )

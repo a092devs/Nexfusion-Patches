@@ -13,11 +13,13 @@ import io.github.nexfusion.morphe.youtube.misc.playservice.is_21_42_or_greater
 import io.github.nexfusion.morphe.shared.misc.CheckRecycleBitmapMediaSession
 import io.github.nexfusion.morphe.shared.misc.debugging.experimentalBooleanFeatureFlagFingerprint
 import io.github.nexfusion.morphe.youtube.ad.HideAds
+import io.github.nexfusion.morphe.youtube.interaction.autoplay.AutoplayControl
 import io.github.nexfusion.morphe.youtube.interaction.channelsearch.ChannelSearch
 import io.github.nexfusion.morphe.youtube.interaction.copyvideolink.CopyVideoLinkButtonPatch
 import io.github.nexfusion.morphe.youtube.interaction.downloads.Downloads
 import io.github.nexfusion.morphe.youtube.interaction.doubletap.disableChapterSkipDoubleTapPatch
 import io.github.nexfusion.morphe.youtube.interaction.onthego.onTheGoPatch
+import io.github.nexfusion.morphe.youtube.interaction.playlistpanel.PlaylistPanelButton
 import io.github.nexfusion.morphe.youtube.interaction.seekbar.customSeekbarThumbPatch
 import io.github.nexfusion.morphe.youtube.interaction.seekbar.seekbarPatch
 import io.github.nexfusion.morphe.youtube.interaction.shorts.SkipLiveShorts
@@ -31,6 +33,7 @@ import io.github.nexfusion.morphe.youtube.layout.sponsorblock.SponsorBlock
 import io.github.nexfusion.morphe.youtube.layout.hide.ambientmode.AmbientMode
 import io.github.nexfusion.morphe.youtube.layout.hide.general.HideLayoutComponents
 import io.github.nexfusion.morphe.youtube.layout.hide.shorts.HideShortsComponents
+import io.github.nexfusion.morphe.youtube.layout.player.playlistpanel.FullscreenPlaylistPanel
 import io.github.nexfusion.morphe.youtube.layout.statusbar.HideStatusBar
 import io.github.nexfusion.morphe.youtube.layout.miniplayer.Miniplayer
 import io.github.nexfusion.morphe.youtube.layout.player.pip.PipSeekButtons
@@ -39,6 +42,7 @@ import io.github.nexfusion.morphe.youtube.layout.shortsnoresume.DisableShortsRes
 import io.github.nexfusion.morphe.youtube.layout.startpage.changeStartPagePatch
 import io.github.nexfusion.morphe.youtube.layout.thumbnails.BypassImageRegionRestrictionsPatch
 import io.github.nexfusion.morphe.youtube.misc.backgroundplayback.BackgroundPlayback
+import io.github.nexfusion.morphe.youtube.misc.commandrouter.CommandRouterHook
 import io.github.nexfusion.morphe.youtube.misc.debugging.EnableDebugging
 import io.github.nexfusion.morphe.youtube.misc.privacy.SanitizeSharingLinks
 import io.github.nexfusion.morphe.youtube.misc.settings.SettingsHook
@@ -166,6 +170,10 @@ val YouTubePatches = arrayOf(
     CheckRecycleBitmapMediaSession,
     changeStartPagePatch,
     FixVerticalScroll,
+    AutoplayControl,
+    PlaylistPanelButton,
+    FullscreenPlaylistPanel,
+    CommandRouterHook,
     // make sure settingsHook at end to build preferences
     SettingsHook,
     FeatureOverride

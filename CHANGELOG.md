@@ -7,6 +7,29 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.3.9
+
+- `NexFusion` 4.3.9:
+  * YouTube Music:
+    - Added "Disable auto captions" patch (`DisableAutoCaptions`) to prevent captions from automatically enabling when a video starts while retaining manual caption toggles.
+    - Added retention of SponsorBlock segments for offline music and video playback (`#4768`).
+    - Fixed third-party lyrics minor bugs (`#4709`).
+    - Adjusted downloads in-app export string.
+  * YouTube:
+    - Added "Fullscreen playlist panel" patch (`FullscreenPlaylistPanel`) to display playlist panels over the fullscreen player on tablets without exiting fullscreen.
+    - Added "Autoplay control" patch (`AutoplayControl`) with bottom overlay button, configurable autoplay mode (Auto, Single, Off), and customizable Mix stop count.
+    - Added "Playlist button" patch (`PlaylistPanelButton`) in player top controls to quickly open the active playlist panel via command router.
+    - Enhanced "Playback speed" dialog button: tap to cycle through custom speed list, tap and hold to open speed menu (`#4656`).
+    - Fixed "Back button exits the feed" on YouTube 21.45+ (`ee58c03bd`).
+    - Fixed recommended downloads quality restriction (`#4769`).
+    - Fixed enhanced Ambient mode light rendering and two-column tablet layout (`#4747`, `#4748`, `#4749`).
+    - Restored device files search for GmsCore support (`#4725`).
+  * Reddit:
+    - Added experimental support for Reddit `2026.46.0` with updated post content and NSFW dialog fingerprints.
+  * Upstream Submodules:
+    - Synced `morphe-patches` submodule with upstream `dev` branch (`v2.3.0-dev.3`).
+    - Synced `morphe-patches-library` submodule with upstream `dev` branch.
+
 ## 4.3.8
 
 - `NexFusion` 4.3.8:
