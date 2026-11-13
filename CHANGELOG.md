@@ -7,6 +7,31 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.3.7
+
+- `NexFusion` 4.3.7:
+  * YouTube Music:
+    - Added "Open system share sheet" patch and setting to open Android's native share sheet for songs, playlists, and artists.
+    - Added "Remember video quality" patch with Wi-Fi and mobile default quality preferences and toast notifications.
+  * YouTube:
+    - Merged upstream Morphe dev (v2.3.0-dev.2 updates).
+    - Ported Spoof Video Streams "Mobile Web" client (`bb647062a`).
+    - Ported visionOS 1.06 experimental client and pcm2 server A/B test stream fix (`0306f45b1`, `6597ba81f`).
+    - Fixed loop count behavior when using the loop video button.
+  * Reddit:
+    - Ported "Hide videos for you" patch (`0cd6659`) to remove video recommendation carousels between feed posts.
+    - Added support for Reddit 2026.45.0.
+  * Facebook:
+    - Added "Hide reposts" patch to filter shared posts out of the news feed.
+    - Added "Hide repost button" patch to hide the two-arrows repost action button under feed posts and reels sidebar (Facebook 587+).
+  * Telegram:
+    - Added "Allow screenshots" patch (`TelegramAllowScreenshots`) to allow taking screenshots and screen recording in secret chats, restricted channels, view-once media, and message cells.
+  * Instagram:
+    - Added "Start feed videos with sound" patch (`StartFeedVideosWithSound`) respecting ringer mode and media volume.
+  * CI & Repository Maintenance:
+    - Removed redundant Crowdin workflows and configuration from `morphe-patches` (maintained by parent upstream).
+    - Streamlined CI pipeline with auto-cancellation for duplicate beta workflow runs.
+
 ## 4.3.6
 
 - `NexFusion` 4.3.6:

@@ -71,9 +71,22 @@ val SettingsHook = patch(
         SwitchPreference("morphe_music_hide_history_button"),
         SwitchPreference("morphe_music_hide_search_button"),
         SwitchPreference("morphe_music_hide_notification_button"),
+        SwitchPreference("morphe_open_system_share_sheet", summary = true),
     )
 
     PreferenceScreen.PLAYER.addPreferences(
+        ListPreference(
+            key = "morphe_video_quality_default_wifi",
+            entriesKey = "morphe_video_quality_default_entries",
+            entryValuesKey = "morphe_video_quality_default_entry_values"
+        ),
+        ListPreference(
+            key = "morphe_video_quality_default_mobile",
+            entriesKey = "morphe_video_quality_default_entries",
+            entryValuesKey = "morphe_video_quality_default_entry_values"
+        ),
+        SwitchPreference("morphe_remember_video_quality_last_selected", summary = true),
+        SwitchPreference("morphe_remember_video_quality_last_selected_toast", summary = true),
         SwitchPreference("morphe_music_ab_loop", summary = true),
         SwitchPreference("morphe_music_disable_audio_ducking", summary = true),
         SwitchPreference("morphe_music_exclusive_audio_playback"),

@@ -8,6 +8,8 @@ import io.github.nexfusion.morphe.music.misc.backgroundplayback.BackgroundPlayba
 import io.github.nexfusion.morphe.music.misc.debugging.EnableDebugging
 import io.github.nexfusion.morphe.music.misc.privacy.SanitizeSharingLinks
 import io.github.nexfusion.morphe.music.misc.settings.SettingsHook
+import io.github.nexfusion.morphe.music.misc.sharesheet.OpenSystemShareSheet
+import io.github.nexfusion.morphe.music.video.quality.RememberVideoQuality
 import io.github.nexfusion.morphe.shared.misc.CheckRecycleBitmapMediaSession
 
 val YTMusicPatches = arrayOf(
@@ -19,5 +21,7 @@ val YTMusicPatches = arrayOf(
     CheckRecycleBitmapMediaSession,
     EnableDebugging,
     SanitizeSharingLinks,
+    OpenSystemShareSheet,
+    RememberVideoQuality,
     SettingsHook
 )
