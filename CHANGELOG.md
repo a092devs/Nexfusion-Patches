@@ -7,6 +7,16 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.3.8
+
+- `NexFusion` 4.3.8:
+  * Gboard (`com.google.android.inputmethod.latin`):
+    - Hardened flag override retention across GMS Phenotype sync cycles and background service restarts.
+    - Synchronized all boolean flag overrides directly into dynamic SharedPreferences overrides.
+    - Intercepted `SharedPreferencesImpl.EditorImpl` write operations (`putBoolean`, `putString`) to prevent Gboard and Google Play Services from resetting enabled features to `false`.
+    - Enhanced `SharedPreferencesImpl.getAll()` and `contains()` hooks so Gboard theme and flag loaders consistently read active patch preferences at runtime.
+    - Expanded Material 3 Belka rounded keycap preferences across all UI flag variations (`belka_rounded_keyboard`, `belka_ui`, `belka_background`, `more_pill_keys`, `enable_rounded_key_by_default`, `rounded_key_banner`, `rounded_key_prompt`).
+
 ## 4.3.7
 
 - `NexFusion` 4.3.7:

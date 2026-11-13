@@ -91,16 +91,16 @@ fun PatchExecutor.enableGboardPreferences(
             )
             val editor = latinPrefs.edit()
             var modified = false
-            booleans.forEach { (k, v) ->
+            dynamicBooleanPrefOverrides.forEach { (k, v) ->
                 val existing = runCatching { latinPrefs.all[k] }.getOrNull()
-                if (existing == null || existing !is Boolean) {
+                if (existing != v) {
                     editor.putBoolean(k, v)
                     modified = true
                 }
             }
-            strings.forEach { (k, v) ->
+            dynamicStringPrefOverrides.forEach { (k, v) ->
                 val existing = runCatching { latinPrefs.all[k] }.getOrNull()
-                if (existing == null || existing !is String) {
+                if (existing != v) {
                     editor.putString(k, v)
                     modified = true
                 }
@@ -111,16 +111,16 @@ fun PatchExecutor.enableGboardPreferences(
             val defaultPrefs = android.preference.PreferenceManager.getDefaultSharedPreferences(ctx)
             val editor = defaultPrefs.edit()
             var modified = false
-            booleans.forEach { (k, v) ->
+            dynamicBooleanPrefOverrides.forEach { (k, v) ->
                 val existing = runCatching { defaultPrefs.all[k] }.getOrNull()
-                if (existing == null || existing !is Boolean) {
+                if (existing != v) {
                     editor.putBoolean(k, v)
                     modified = true
                 }
             }
-            strings.forEach { (k, v) ->
+            dynamicStringPrefOverrides.forEach { (k, v) ->
                 val existing = runCatching { defaultPrefs.all[k] }.getOrNull()
-                if (existing == null || existing !is String) {
+                if (existing != v) {
                     editor.putString(k, v)
                     modified = true
                 }
@@ -184,6 +184,69 @@ fun PatchExecutor.enableGboardPreferences(
                     }
                 }
             )
+            XposedHelpers.findAndHookMethod(
+                sharedPrefsImpl,
+                "getAll",
+                object : XC_MethodHook() {
+                    @Suppress("UNCHECKED_CAST")
+                    override fun afterHookedMethod(param: MethodHookParam) {
+                        val original = param.result as? Map<String, Any?> ?: return
+                        val modified = HashMap(original)
+                        dynamicBooleanPrefOverrides.forEach { (k, v) -> modified[k] = v }
+                        dynamicStringPrefOverrides.forEach { (k, v) -> modified[k] = v }
+                        param.result = modified
+                    }
+                }
+            )
+            XposedHelpers.findAndHookMethod(
+                sharedPrefsImpl,
+                "contains",
+                String::class.java,
+                object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        val key = param.args[0] as? String ?: return
+                        if (dynamicBooleanPrefOverrides.containsKey(key) || dynamicStringPrefOverrides.containsKey(key)) {
+                            param.result = true
+                        }
+                    }
+                }
+            )
+
+            // Intercept SharedPreferences.Editor writes to prevent background sync from wiping overridden flags
+            runCatching {
+                val editorImpl = runCatching { classLoader.loadClass("android.app.SharedPreferencesImpl\$EditorImpl") }.getOrNull()
+                    ?: Class.forName("android.app.SharedPreferencesImpl\$EditorImpl")
+                XposedHelpers.findAndHookMethod(
+                    editorImpl,
+                    "putBoolean",
+                    String::class.java,
+                    Boolean::class.javaPrimitiveType,
+                    object : XC_MethodHook() {
+                        override fun beforeHookedMethod(param: MethodHookParam) {
+                            val key = param.args[0] as? String ?: return
+                            val override = dynamicBooleanPrefOverrides[key]
+                            if (override != null) {
+                                param.args[1] = override
+                            }
+                        }
+                    }
+                )
+                XposedHelpers.findAndHookMethod(
+                    editorImpl,
+                    "putString",
+                    String::class.java,
+                    String::class.java,
+                    object : XC_MethodHook() {
+                        override fun beforeHookedMethod(param: MethodHookParam) {
+                            val key = param.args[0] as? String ?: return
+                            val override = dynamicStringPrefOverrides[key]
+                            if (override != null) {
+                                param.args[1] = override
+                            }
+                        }
+                    }
+                )
+            }
         }
     }
 }
@@ -219,7 +282,16 @@ fun PatchExecutor.enableGboardScreenshotPreferences() {
  */
 fun PatchExecutor.enableGboardRoundedKeysPreference() {
     enableGboardPreferences(
-        booleans = mapOf("enable_rounded_keys" to true)
+        booleans = mapOf(
+            "enable_rounded_keys" to true,
+            "belka_rounded_keyboard" to true,
+            "belka_ui" to true,
+            "belka_background" to true,
+            "more_pill_keys" to true,
+            "enable_rounded_key_by_default" to true,
+            "rounded_key_banner" to true,
+            "rounded_key_prompt" to true,
+        )
     )
 }
 
@@ -249,7 +321,17 @@ fun PatchExecutor.enableGboardWritingToolsPreference() {
  * Gboard patch while it runs, so a disabled patch never contributes its flags.
  */
 fun PatchExecutor.gboardFlagOverrides(vararg entries: Pair<String, FlagOverride>) {
-    for ((name, override) in entries) overrides.putIfAbsent(name, override)
+    val newBooleans = mutableMapOf<String, Boolean>()
+    for ((name, override) in entries) {
+        overrides.putIfAbsent(name, override)
+        val sample = override.applyTo(null)
+        if (sample is Boolean) {
+            newBooleans[name] = sample
+        }
+    }
+    if (newBooleans.isNotEmpty()) {
+        enableGboardPreferences(booleans = newBooleans)
+    }
     if (installed) return
 
     val hook = object : XC_MethodHook() {
