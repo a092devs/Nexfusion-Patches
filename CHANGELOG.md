@@ -7,6 +7,15 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.3.12
+
+- `NexFusion` 4.3.12:
+  * Reddit:
+    - Implemented dedicated Morphe settings row on `2026.30+` without replacing 'Privacy policy' (`#4806`), registering a distinct Compose row in `UserSettingsRegistry` with the Morphe gear icon and click routing.
+    - Overhauled `TransparentSystemNavBar` to hook concrete `PhoneWindow` (`setNavigationBarColor`, `setNavigationBarContrastEnforced`), zero Reddit's internal edge-to-edge navbar spacer, and configure `LAYOUT_HIDE_NAVIGATION` window flags.
+    - Overhauled `RedditUnlockPremium` to hook account getters (`getHasPremium`, `isPremiumSubscriber`, `getHasPremiumAvatarTreatment`, `getHideAds`, expiration timestamps), `AccountPreferences$PremiumPreferences`, and `AppIcon` model classes (`getIsPremium`, `hasIsPremium`).
+    - Enabled `ExtensionResourceHook` for Reddit to properly initialize Morphe extension assets and drawables across all activities.
+
 ## 4.3.11
 
 - `NexFusion` 4.3.11:

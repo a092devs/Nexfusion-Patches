@@ -117,68 +117,106 @@ val TransparentSystemNavBar = patch(
     name = "Transparent Reddit navigation bar",
     description = "Makes the system navigation bar fully transparent.",
 ) {
-    // 1. Hook Reddit's internal EdgeToEdge setup method
-    ::EdgeToEdgeSetUpMethod.memberOrNull?.let { member ->
-        XposedBridge.hookMethod(member, object : XC_MethodHook() {
-            override fun afterHookedMethod(param: MethodHookParam) {
-                val window = param.args.firstOrNull { it is Window } as? Window
-                if (window != null) {
-                    window.navigationBarColor = Color.TRANSPARENT
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        window.isNavigationBarContrastEnforced = false
-                    }
-                }
-            }
-        })
-    }
-
-    // 2. Hook Activity.onWindowFocusChanged for Reddit Activities to enforce transparency
-    val onWindowFocusChanged = XposedHelpers.findMethodExactIfExists(
-        Activity::class.java,
-        "onWindowFocusChanged",
-        Boolean::class.javaPrimitiveType,
-    )
-    if (onWindowFocusChanged != null) {
-        XposedBridge.hookMethod(onWindowFocusChanged, object : XC_MethodHook() {
-            override fun afterHookedMethod(param: MethodHookParam) {
-                val activity = param.thisObject as? Activity ?: return
-                val window = activity.window ?: return
-                window.navigationBarColor = Color.TRANSPARENT
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    window.isNavigationBarContrastEnforced = false
-                }
-            }
-        })
-    }
-
-    // 3. Intercept direct Window setNavigationBarColor calls
+    // 1. Hook PhoneWindow (the concrete implementation of Window)
     runCatching {
+        val phoneWindowClass = Class.forName("com.android.internal.policy.PhoneWindow")
         XposedHelpers.findAndHookMethod(
-            Window::class.java,
+            phoneWindowClass,
             "setNavigationBarColor",
             Int::class.javaPrimitiveType,
             object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
                     param.args[0] = Color.TRANSPARENT
                 }
-            },
+            }
         )
-    }
-
-    // 4. Intercept direct Window setNavigationBarContrastEnforced calls
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        runCatching {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             XposedHelpers.findAndHookMethod(
-                Window::class.java,
+                phoneWindowClass,
                 "setNavigationBarContrastEnforced",
                 Boolean::class.javaPrimitiveType,
                 object : XC_MethodHook() {
                     override fun beforeHookedMethod(param: MethodHookParam) {
                         param.args[0] = false
                     }
-                },
+                }
             )
         }
+    }
+
+    // 2. Hook Reddit's internal EdgeToEdge setup method
+    runCatching {
+        ::EdgeToEdgeSetUpMethod.memberOrNull?.let { member ->
+            XposedBridge.hookMethod(member, object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    val kdk = param.args.getOrNull(1)
+                    if (kdk != null) {
+                        runCatching {
+                            for (field in kdk.javaClass.declaredFields) {
+                                if (field.type == Int::class.javaPrimitiveType) {
+                                    field.isAccessible = true
+                                    field.setInt(kdk, 0)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    val window = param.args.firstOrNull { it is Window } as? Window
+                    if (window != null) {
+                        window.navigationBarColor = Color.TRANSPARENT
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            window.isNavigationBarContrastEnforced = false
+                        }
+                    }
+                }
+            })
+        }
+    }
+
+    // 3. Hook Activity lifecycle (onPostCreate, onResume, onWindowFocusChanged)
+    runCatching {
+        val applyTransparency = { activity: Activity ->
+            activity.window?.let { window ->
+                window.navigationBarColor = Color.TRANSPARENT
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    window.isNavigationBarContrastEnforced = false
+                }
+                @Suppress("DEPRECATION")
+                window.decorView.systemUiVisibility = window.decorView.systemUiVisibility or
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+                    View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+            }
+        }
+
+        XposedBridge.hookAllMethods(
+            Activity::class.java,
+            "onPostCreate",
+            object : XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    (param.thisObject as? Activity)?.let(applyTransparency)
+                }
+            }
+        )
+        XposedBridge.hookAllMethods(
+            Activity::class.java,
+            "onResume",
+            object : XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    (param.thisObject as? Activity)?.let(applyTransparency)
+                }
+            }
+        )
+        XposedBridge.hookAllMethods(
+            Activity::class.java,
+            "onWindowFocusChanged",
+            object : XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    (param.thisObject as? Activity)?.let(applyTransparency)
+                }
+            }
+        )
     }
 }
 
@@ -298,15 +336,61 @@ val RedditUnlockPremium = patch(
     name = "Unlock Premium",
     description = "Enables local Reddit Premium UI perks (custom app icons, premium styling, avatar styling). Server-side perks cannot be unlocked.",
 ) {
+    // 1. Hook Account model
     runCatching {
         val accountClass = classLoader.loadClass("com.reddit.domain.model.Account")
         for (m in accountClass.declaredMethods) {
             val name = m.name.lowercase()
             if (m.returnType == java.lang.Boolean.TYPE || m.returnType == java.lang.Boolean::class.java) {
-                if (name == "isgold" || name == "haspremium" || name == "ispremiumsubscriber" ||
-                    name == "haspremiumavatartreatment" || name.contains("premium")
+                if (name == "isgold" || name.contains("premium") || name.contains("gold") ||
+                    name == "gethaspremium" || name == "ispremiumsubscriber" || name == "gethideads"
                 ) {
                     XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
+                }
+            } else if (m.returnType == java.lang.Long::class.java || m.returnType == java.lang.Long.TYPE) {
+                if (name.contains("premiumexpiration")) {
+                    XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(4102444800000L))
+                } else if (name.contains("premiumsince")) {
+                    XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(1577836800000L))
+                }
+            }
+        }
+    }
+
+    // 2. Hook AccountPreferences.PremiumPreferences
+    runCatching {
+        val premiumPrefsClass = classLoader.loadClass("com.reddit.domain.model.AccountPreferences\$PremiumPreferences")
+        for (m in premiumPrefsClass.declaredMethods) {
+            if (m.returnType == java.lang.Boolean.TYPE || m.returnType == java.lang.Boolean::class.java) {
+                XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
+            }
+        }
+    }
+
+    // 3. Hook AppIcon model to ungate all marketplace and custom launcher icons
+    runCatching {
+        val appIconClass = classLoader.loadClass("com.reddit.marketplacedata.common.AppIcon")
+        for (m in appIconClass.declaredMethods) {
+            if ((m.name == "getIsPremium" || m.name == "hasIsPremium") &&
+                (m.returnType == java.lang.Boolean.TYPE || m.returnType == java.lang.Boolean::class.java)
+            ) {
+                XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(false))
+            }
+        }
+    }
+
+    // 4. Hook User / UserData model premium getters
+    runCatching {
+        listOf("com.reddit.domain.model.User", "com.reddit.domain.model.UserData").forEach { className ->
+            runCatching {
+                val clazz = classLoader.loadClass(className)
+                for (m in clazz.declaredMethods) {
+                    val name = m.name.lowercase()
+                    if ((name.contains("premium") || name.contains("gold")) &&
+                        (m.returnType == java.lang.Boolean.TYPE || m.returnType == java.lang.Boolean::class.java)
+                    ) {
+                        XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
+                    }
                 }
             }
         }
@@ -633,6 +717,7 @@ val HideVideosForYou = patch(
 }
 
 val RedditPatches = arrayOf(
+    RedditSettings,
     DisableScreenshotBanner,
     HighQualityAvatars,
     OpenLinksDirectly,

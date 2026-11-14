@@ -1,0 +1,169 @@
+package io.github.nexfusion.nexfusion.reddit
+
+import android.app.Activity
+import android.os.Bundle
+import app.morphe.extension.reddit.settings.RedditActivityHook
+import io.github.nexfusion.compat.XC_MethodHook
+import io.github.nexfusion.compat.XposedBridge
+import io.github.nexfusion.compat.XposedHelpers
+import io.github.nexfusion.PatcherLog
+import io.github.nexfusion.hookMethod
+import io.github.nexfusion.patch
+
+private val currentRowKey = ThreadLocal<String?>()
+
+val RedditSettings = patch(
+    name = "Reddit Settings",
+    description = "Adds Morphe settings into Reddit's settings menu.",
+) {
+    // 1. Hook WebBrowserActivity to host Morphe settings
+    runCatching {
+        val webBrowserClass = classLoader.loadClass("com.reddit.webembed.browser.WebBrowserActivity")
+
+        XposedHelpers.findAndHookMethod(
+            webBrowserClass,
+            "onCreate",
+            Bundle::class.java,
+            object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    val activity = param.thisObject as? Activity ?: return
+                    if (RedditActivityHook.hook(activity)) {
+                        PatcherLog.info { "NexFusion: Initialized Morphe settings inside WebBrowserActivity" }
+                    }
+                }
+            }
+        )
+
+        XposedHelpers.findAndHookMethod(
+            webBrowserClass,
+            "finish",
+            object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    val activity = param.thisObject as? Activity ?: return
+                    if (RedditActivityHook.handleFinish(activity)) {
+                        param.result = null
+                    }
+                }
+            }
+        )
+    }.onFailure {
+        PatcherLog.info(it) { "NexFusion Reddit: WebBrowserActivity hook skipped" }
+    }
+
+    // 2. Hook UserSettingsRegistry to register dedicated Morphe row on 2026.30+
+    runCatching {
+        UserSettingsRegistryConstructorFingerprint.hookMethod {
+            before { param ->
+                val rows = param.args[0] as? Set<*> ?: return@before
+                var privacyPolicyRow: Any? = null
+                for (row in rows) {
+                    if (row == null) continue
+                    val isPrivacyPolicy = runCatching {
+                        row.javaClass.declaredFields.any { f ->
+                            f.isAccessible = true
+                            f.get(row) == "key_pref_privacy_policy"
+                        }
+                    }.getOrDefault(false)
+                    if (isPrivacyPolicy) {
+                        privacyPolicyRow = row
+                        break
+                    }
+                }
+
+                if (privacyPolicyRow == null) return@before
+
+                val rowClass = privacyPolicyRow.javaClass
+                val morpheRow = runCatching {
+                    val ctor = rowClass.declaredConstructors.first()
+                    ctor.isAccessible = true
+                    val dummyArgs = arrayOfNulls<Any?>(ctor.parameterTypes.size)
+                    for (i in ctor.parameterTypes.indices) {
+                        dummyArgs[i] = when (ctor.parameterTypes[i]) {
+                            Int::class.javaPrimitiveType -> 0
+                            Boolean::class.javaPrimitiveType -> false
+                            else -> null
+                        }
+                    }
+                    val f1 = runCatching { XposedHelpers.getObjectField(privacyPolicyRow, "b") }.getOrNull()
+                    if (f1 != null && dummyArgs.isNotEmpty()) dummyArgs[0] = f1
+                    ctor.newInstance(*dummyArgs)
+                }.getOrNull() ?: runCatching {
+                    val unsafeClass = Class.forName("sun.misc.Unsafe")
+                    val theUnsafe = unsafeClass.getDeclaredField("theUnsafe").apply { isAccessible = true }.get(null)
+                    val allocateInstance = unsafeClass.getMethod("allocateInstance", Class::class.java)
+                    allocateInstance.invoke(theUnsafe, rowClass)
+                }.getOrNull()
+
+                if (morpheRow != null) {
+                    for (f in rowClass.declaredFields) {
+                        f.isAccessible = true
+                        runCatching { f.set(morpheRow, f.get(privacyPolicyRow)) }
+                    }
+                    for (f in rowClass.declaredFields) {
+                        f.isAccessible = true
+                        if (f.get(morpheRow) == "key_pref_privacy_policy") {
+                            f.set(morpheRow, "key_pref_morphe")
+                        }
+                        if (f.type == Int::class.javaPrimitiveType && f.getInt(morpheRow) == 10) {
+                            f.setInt(morpheRow, -1000)
+                        }
+                        if (f.type.name.contains("UserSettingsSection")) {
+                            val generalSection = runCatching {
+                                f.type.getField("General").get(null)
+                            }.getOrNull()
+                            if (generalSection != null) {
+                                f.set(morpheRow, generalSection)
+                            }
+                        }
+                    }
+
+                    val newRows = LinkedHashSet(rows)
+                    newRows.add(morpheRow)
+                    param.args[0] = newRows
+                    PatcherLog.info { "NexFusion Reddit: Added dedicated Morphe setting row" }
+                }
+            }
+        }
+    }.onFailure {
+        PatcherLog.info(it) { "NexFusion Reddit: UserSettingsRegistry hook skipped" }
+    }
+
+    // 3. Hook PrivacyPolicySettingRowContentFingerprint to render the Morphe row
+    runCatching {
+        PrivacyPolicySettingRowContentFingerprint.hookMethod {
+            before { param ->
+                val row = param.thisObject ?: return@before
+                val key = runCatching {
+                    row.javaClass.declaredFields.firstOrNull { it.name == "e" || it.type == String::class.java }
+                        ?.apply { isAccessible = true }
+                        ?.get(row) as? String
+                }.getOrNull()
+                currentRowKey.set(key)
+            }
+            after { _ ->
+                currentRowKey.remove()
+            }
+        }
+
+        ::SettingsRowComposableMethod.hookMethod {
+            before { param ->
+                if (currentRowKey.get() == "key_pref_morphe") {
+                    param.args[0] = RedditActivityHook.getSettingLabel()
+                    val origOnClick = param.args[1]
+                    val onClick = runCatching {
+                        RedditActivityHook::class.java.getMethod("getSettingOnClick", Class.forName("kotlin.jvm.functions.Function0"))
+                            .invoke(null, origOnClick)
+                    }.getOrNull()
+                    if (onClick != null) {
+                        param.args[1] = onClick
+                    }
+                    runCatching {
+                        param.args[5] = RedditActivityHook.getSettingIconComposable()
+                    }
+                }
+            }
+        }
+    }.onFailure {
+        PatcherLog.info(it) { "NexFusion Reddit: Compose setting row rendering hook skipped" }
+    }
+}

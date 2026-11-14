@@ -18,7 +18,11 @@ val ExtensionContextHook = patch {
 }
 
 /** Makes the bundle's resources available to the Morphe extension code in every activity. */
+private var resourceHookInitialized = false
+
 val ExtensionResourceHook = patch {
+    if (resourceHookInitialized) return@patch
+    resourceHookInitialized = true
     appContext.addModuleAssets()
     ResourceUtils.fallbackPackageName = BuildConfig.APPLICATION_ID
 

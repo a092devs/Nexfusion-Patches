@@ -12,6 +12,8 @@ import io.github.nexfusion.morphe.findMethodDirect
 import io.github.nexfusion.morphe.literal
 import io.github.nexfusion.morphe.methodCall
 import io.github.nexfusion.morphe.newInstance
+import io.github.nexfusion.morphe.ResourceType
+import io.github.nexfusion.morphe.resourceLiteral
 import io.github.nexfusion.morphe.string
 
 // Ported from jkennethcarino/adobo (GPL-3.0),
@@ -418,6 +420,72 @@ internal object VideoCarouselConverterFingerprint : Fingerprint(
         ),
     ),
 )
+
+/**
+ * Constructor of the Compose settings row "Privacy policy", which is copied as the Morphe settings row.
+ * 2026.30.0+
+ */
+@RequireAppVersion("2026.30.0")
+internal object PrivacyPolicySettingRowConstructorFingerprint : Fingerprint(
+    name = "<init>",
+    returnType = "V",
+    filters = listOf(
+        string("key_pref_privacy_policy"),
+        fieldAccess(
+            opcode = Opcode.IPUT_OBJECT,
+            type = "Ljava/lang/String;",
+            location = MatchAfterImmediately(),
+        ),
+    ),
+)
+
+/**
+ * Composable content of the "Privacy policy" settings row.
+ * 2026.30.0+
+ */
+@RequireAppVersion("2026.30.0")
+internal object PrivacyPolicySettingRowContentFingerprint : Fingerprint(
+    classFingerprint = PrivacyPolicySettingRowConstructorFingerprint,
+    returnType = "V",
+    parameters = listOf("L", "L", "I"),
+    filters = listOf(
+        resourceLiteral(ResourceType.STRING, "label_privacy_policy"),
+        methodCall(
+            opcode = Opcode.INVOKE_STATIC_RANGE,
+            returnType = "V",
+            parameters = listOf(
+                "Ljava/lang/String;",
+                "Lkotlin/jvm/functions/Function0;",
+                "L",
+                "Z",
+                "Ljava/lang/String;",
+                "Lkotlin/jvm/functions/Function2;",
+                "Lkotlin/jvm/functions/Function2;",
+                "L",
+                "Z",
+                "L",
+                "I",
+                "I",
+            ),
+        ),
+    ),
+)
+
+@RequireAppVersion("2026.30.0")
+internal object UserSettingsRegistryConstructorFingerprint : Fingerprint(
+    name = "<init>",
+    returnType = "V",
+    parameters = listOf("Ljava/util/Set;", "Ljava/util/Set;"),
+    filters = listOf(
+        newInstance("Lcom/reddit/settings/usersettings/UserSettingsContributionException;"),
+    ),
+)
+
+@get:RequireAppVersion("2026.30.0")
+internal val SettingsRowComposableMethod = findMethodDirect {
+    PrivacyPolicySettingRowContentFingerprint.instructionMatches.last().instruction.methodRef!!
+}
+
 
 
 

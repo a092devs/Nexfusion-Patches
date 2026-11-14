@@ -7,6 +7,7 @@ import io.github.nexfusion.PatchBundle
 import io.github.nexfusion.morphe.music.YTMusicPatches
 import io.github.nexfusion.morphe.youtube.YouTubePatches
 import io.github.nexfusion.patches.ExtensionContextHook
+import io.github.nexfusion.patches.ExtensionResourceHook
 import io.github.nexfusion.revanced.googlephotos.GooglePhotosPatches
 import io.github.nexfusion.nexfusion.crunchyroll.CrunchyrollPatches
 import io.github.nexfusion.nexfusion.discord.DiscordPatches
@@ -35,7 +36,13 @@ object NexFusionPatches : PatchBundle {
         patches: Array<Patch>,
         targets: List<AppTarget> = emptyList(),
         appIconColor: Int? = null,
-    ) = AppPatchInfo(appName, packageName, arrayOf(ExtensionContextHook, *patches), targets, appIconColor)
+    ) = AppPatchInfo(
+        appName,
+        packageName,
+        arrayOf(ExtensionContextHook, ExtensionResourceHook, *patches),
+        targets,
+        appIconColor
+    )
 
     override val apps = listOf(
         morpheApp("YouTube", "com.google.android.youtube", YouTubePatches, appIconColor = 0xFF0033),
