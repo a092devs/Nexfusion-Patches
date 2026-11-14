@@ -25,11 +25,11 @@ android {
 
     defaultConfig {
         applicationId = "io.github.nexfusion.patches"
-        versionCode = 95
+        versionCode = 96
         val patchVersion = Properties().apply {
             rootProject.file("morphe-patches/gradle.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
         }["version"]
-        versionName = "4.3.16"
+        versionName = "4.3.17"
         buildConfigField("String", "PATCH_VERSION", "\"$patchVersion\"")
     }
     packaging {
@@ -211,30 +211,27 @@ abstract class CopyResourcesTask @Inject constructor() : DefaultTask() {
         val outputDir = outputDirectory.get().asFile
         outputDir.deleteRecursively()
 
-        val resourcePaths = mapOf(
-            "qualitybutton/drawable" to null,
-            "settings/drawable" to null,
-            "settings/menu" to null,
-            "settings/layout" to listOf("morphe_settings_with_toolbar.xml"),
-            "sponsorblock/drawable" to null,
-            "sponsorblock/layout" to listOf("morphe_sb_skip_sponsor_button.xml"),
-            "swipecontrols/drawable" to null,
-            "copyvideolinkbutton/drawable" to null,
-            "downloads/drawable" to null,
-            "speedbutton/drawable" to null,
-            "navigationbuttons/drawable" to null,
-            "speed/drawable" to null,
-            "searchcomments/drawable" to null,
-            "channelsearch/drawable" to null,
+        val excludes = setOf(
+            "morphe_settings_with_toolbar.xml",
+            "morphe_sb_skip_sponsor_button.xml",
+            "morphe_ic_video_delay.xml",
         )
+        val validPrefixes = listOf("drawable", "layout", "xml", "menu")
 
-        for ((resourcePath, excludes) in resourcePaths) {
-            val dir = resourcePath.substringAfter('/')
-            val sourceDir = File(baseDir, resourcePath)
-            val targetDir = File(outputDir, dir)
-            sourceDir.listFiles()?.forEach { file ->
-                if (excludes == null || !excludes.contains(file.name)) {
-                    file.copyTo(File(targetDir, file.name), overwrite = true)
+        baseDir.walkTopDown().forEach { dir ->
+            if (dir.isDirectory) {
+                val rel = dir.relativeTo(baseDir).path.replace('\\', '/')
+                val parts = rel.split('/')
+                if (parts.size >= 2 && parts[0] != "addresources" && !parts.contains("host")) {
+                    val leaf = parts.last()
+                    if (validPrefixes.any { leaf.startsWith(it) }) {
+                        val targetDir = File(outputDir, leaf)
+                        dir.listFiles()?.filter { it.isFile }?.forEach { file ->
+                            if (!excludes.contains(file.name)) {
+                                file.copyTo(File(targetDir, file.name), overwrite = true)
+                            }
+                        }
+                    }
                 }
             }
         }

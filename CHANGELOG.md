@@ -7,6 +7,20 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.3.17
+
+- `NexFusion` 4.3.17:
+  * Reddit:
+    - Fixed Choose App Icon picker: made icon list rows directly clickable with touch feedback and blocked descendant focus capture, ensuring custom app icons (Alien Blue, Doge, Anime, Retro, etc.) are instantly selectable with a single tap.
+    - Added automatic app restart confirmation upon selecting a custom app icon to apply the launcher component alias immediately.
+    - Fixed edge-to-edge transparent navigation bar on Android 11+ (API 30+ / Android 16) by applying `window.setDecorFitsSystemWindows(false)`.
+    - Fully balanced dialog button layout (Cancel and OK equal 1:1 width) and single-tap responsiveness across all Morphe confirmation dialogs.
+  * YouTube / YT Music:
+    - Fixed Morphe settings preference list loading: dynamically attach NexFusion runtime preferences (`PreferencesKt.getPreferences()`) into `AbstractPreferenceFragment`, ensuring all 12 preference categories (About, Ads, DeArrow, Feed, General, Player, Shorts, Seekbar, Swipe controls, SponsorBlock, Misc, Video) render with their icons and sub-preferences.
+    - Enhanced resource packaging task (`CopyResourcesTask`) to bundle all necessary XML preferences and layout resources.
+  * All Apps / Dialogs:
+    - Enforced `FOCUS_BLOCK_DESCENDANTS` and direct item click handling on `CustomDialogListPreference` dialogs across all apps so every dialog list row responds immediately on single tap.
+
 ## 4.3.16
 
 - `NexFusion` 4.3.16:

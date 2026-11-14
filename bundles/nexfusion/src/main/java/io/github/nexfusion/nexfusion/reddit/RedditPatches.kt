@@ -179,6 +179,9 @@ val TransparentSystemNavBar = patch(
     runCatching {
         val applyTransparency = { activity: Activity ->
             activity.window?.let { window ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    window.setDecorFitsSystemWindows(false)
+                }
                 window.navigationBarColor = Color.TRANSPARENT
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     window.isNavigationBarContrastEnforced = false
