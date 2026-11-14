@@ -7,6 +7,15 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.3.13
+
+- `NexFusion` 4.3.13:
+  * Reddit:
+    - Fixed `UserSettingsRegistryConstructorFingerprint` and `PrivacyPolicySettingRowContentFingerprint` matching with `@StrictQuery` filtering on Reddit `2026.45.0+`, preventing DexKit multiple candidate exceptions so the dedicated Morphe settings row is reliably registered in `UserSettingsRegistry`.
+    - Added dynamic modern Compose settings styling (`RedditSettingsStyle.isModernStyle`) hook for Reddit `2026.25+` themes and dialogs.
+    - Added resilient Compose row key detection across fields and getter methods for `key_pref_morphe`.
+    - Enhanced `ExtensionResourceHook` to track foreground activity references across `onActivityCreated` and `onActivityResumed` ensuring `Utils.getActivity()` is always valid when presenting settings dialogs.
+
 ## 4.3.12
 
 - `NexFusion` 4.3.12:

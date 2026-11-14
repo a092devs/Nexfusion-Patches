@@ -3,7 +3,9 @@ package io.github.nexfusion.nexfusion.reddit
 import android.app.Activity
 import android.os.Bundle
 import app.morphe.extension.reddit.settings.RedditActivityHook
+import app.morphe.extension.reddit.settings.preference.RedditSettingsStyle
 import io.github.nexfusion.compat.XC_MethodHook
+import io.github.nexfusion.compat.XC_MethodReplacement
 import io.github.nexfusion.compat.XposedBridge
 import io.github.nexfusion.compat.XposedHelpers
 import io.github.nexfusion.PatcherLog
@@ -16,6 +18,14 @@ val RedditSettings = patch(
     name = "Reddit Settings",
     description = "Adds Morphe settings into Reddit's settings menu.",
 ) {
+    // 0. Enable modern Compose settings style for Reddit 2026.25+
+    runCatching {
+        XposedBridge.hookMethod(
+            RedditSettingsStyle::class.java.getMethod("isModernStyle"),
+            XC_MethodReplacement.returnConstant(true)
+        )
+    }
+
     // 1. Hook WebBrowserActivity to host Morphe settings
     runCatching {
         val webBrowserClass = classLoader.loadClass("com.reddit.webembed.browser.WebBrowserActivity")
@@ -133,12 +143,18 @@ val RedditSettings = patch(
         PrivacyPolicySettingRowContentFingerprint.hookMethod {
             before { param ->
                 val row = param.thisObject ?: return@before
-                val key = runCatching {
-                    row.javaClass.declaredFields.firstOrNull { it.name == "e" || it.type == String::class.java }
-                        ?.apply { isAccessible = true }
-                        ?.get(row) as? String
-                }.getOrNull()
-                currentRowKey.set(key)
+                val isMorpheRow = runCatching {
+                    row.javaClass.declaredFields.any { f ->
+                        f.isAccessible = true
+                        f.get(row) == "key_pref_morphe"
+                    } || row.javaClass.declaredMethods.any { m ->
+                        m.returnType == String::class.java && m.parameterTypes.isEmpty() &&
+                            runCatching { m.isAccessible = true; m.invoke(row) == "key_pref_morphe" }.getOrDefault(false)
+                    }
+                }.getOrDefault(false)
+                if (isMorpheRow) {
+                    currentRowKey.set("key_pref_morphe")
+                }
             }
             after { _ ->
                 currentRowKey.remove()

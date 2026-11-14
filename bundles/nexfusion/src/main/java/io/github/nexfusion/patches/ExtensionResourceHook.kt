@@ -32,6 +32,7 @@ val ExtensionResourceHook = patch {
 
             override fun onActivityCreated(activity: Activity, bundle: Bundle?) {
                 Logger.printDebug { "onActivityCreated $activity" }
+                Utils.setActivity(activity)
                 if (!handleWebView) {
                     WebView(activity).destroy()
                     appContext.addModuleAssets()
@@ -51,6 +52,7 @@ val ExtensionResourceHook = patch {
 
             override fun onActivityResumed(activity: Activity) {
                 Logger.printDebug { "onActivityResumed $activity" }
+                Utils.setActivity(activity)
                 activity.addModuleAssets()
             }
 

@@ -6,6 +6,7 @@ import io.github.nexfusion.morphe.Fingerprint
 import io.github.nexfusion.morphe.InstructionLocation.MatchAfterImmediately
 import io.github.nexfusion.morphe.InstructionLocation.MatchAfterWithin
 import io.github.nexfusion.morphe.Opcode
+import io.github.nexfusion.morphe.StrictQuery
 import io.github.nexfusion.morphe.fieldAccess
 import io.github.nexfusion.morphe.findFieldDirect
 import io.github.nexfusion.morphe.findMethodDirect
@@ -444,6 +445,7 @@ internal object PrivacyPolicySettingRowConstructorFingerprint : Fingerprint(
  * 2026.30.0+
  */
 @RequireAppVersion("2026.30.0")
+@StrictQuery
 internal object PrivacyPolicySettingRowContentFingerprint : Fingerprint(
     classFingerprint = PrivacyPolicySettingRowConstructorFingerprint,
     returnType = "V",
@@ -472,6 +474,7 @@ internal object PrivacyPolicySettingRowContentFingerprint : Fingerprint(
 )
 
 @RequireAppVersion("2026.30.0")
+@StrictQuery
 internal object UserSettingsRegistryConstructorFingerprint : Fingerprint(
     name = "<init>",
     returnType = "V",
