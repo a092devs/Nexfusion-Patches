@@ -8,7 +8,7 @@ import java.lang.reflect.Modifier
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 
-// Ported from gnadgnaoh/NexFusion-XES (GPL-3.0) and hxreborn/discover-ads-filter (GPL-3.0).
+// Ported from gnadgnaoh/SexAlloy (GPL-3.0) and hxreborn/discover-ads-filter (GPL-3.0).
 // Filters promoted ad cards from the Google Discover feed.
 
 val FilterDiscoverAds = patch(

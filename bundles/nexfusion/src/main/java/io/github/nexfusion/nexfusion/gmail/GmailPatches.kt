@@ -9,7 +9,7 @@ import io.github.nexfusion.patch
 import org.luckypray.dexkit.wrap.DexMethod
 import java.lang.reflect.Constructor
 
-// Ported from MrxSiN/GmailHideAds (GPL-3.0) and gnadgnaoh/NexFusion-XES (GPL-3.0).
+// Ported from MrxSiN/GmailHideAds (GPL-3.0) and gnadgnaoh/SexAlloy (GPL-3.0).
 // Removes sponsored conversation rows rendered in Gmail's Promotions and Social tabs.
 
 val HideAds = patch(

@@ -3,7 +3,7 @@ package io.github.nexfusion.nexfusion.google
 import io.github.nexfusion.morphe.findMethodDirect
 import java.util.Locale
 
-// Ported from gnadgnaoh/NexFusion-XES (GPL-3.0) and hxreborn/discover-ads-filter (GPL-3.0).
+// Ported from gnadgnaoh/SexAlloy (GPL-3.0) and hxreborn/discover-ads-filter (GPL-3.0).
 
 val streamRenderableListFingerprint = findMethodDirect {
     val streamClasses = findClass {

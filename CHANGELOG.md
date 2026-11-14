@@ -901,8 +901,8 @@ bundles after CI succeeds.
 ## 3.3.0
 
 - `NexFusion` 3.3.0:
-  * Gmail: Added "Hide ads" patch to remove sponsored conversation rows between emails in Promotions and Social tabs (ported from `MrxSiN/GmailHideAds` and `gnadgnaoh/NexFusion-XES`).
-  * Google App: Added "Filter Discover ads" patch to filter promoted ad cards from the Google Discover feed (ported from `hxreborn/discover-ads-filter` and `gnadgnaoh/NexFusion-XES`).
+  * Gmail: Added "Hide ads" patch to remove sponsored conversation rows between emails in Promotions and Social tabs (ported from `MrxSiN/GmailHideAds` and `gnadgnaoh/SexAlloy`).
+  * Google App: Added "Filter Discover ads" patch to filter promoted ad cards from the Google Discover feed (ported from `hxreborn/discover-ads-filter` and `gnadgnaoh/SexAlloy`).
   * NOTICE: Added full attribution and license credits for ported material.
 
 ## 3.2.9

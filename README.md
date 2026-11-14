@@ -247,7 +247,7 @@ Nexfusion-Patches is developed and maintained by **a092devs**. We gratefully ack
 | **[heyymichii](https://github.com/heyymichii/michii-patches)** | Share-link cleaning, direct navigation, and tracking removal |
 | **[ak800i](https://github.com/ak800i/mixplorer-patches-for-morphe)** | Scoped-storage file sharing fix for Android 11+ |
 | **[jkennethcarino](https://github.com/jkennethcarino/adobo)** | Screenshot-banner suppression, link sanitization, and UI hooks |
-| **[gnadgnaoh](https://github.com/gnadgnaoh/NexFusion-XES)** | Inbox promotion and Discover feed ad filtering |
+| **[gnadgnaoh](https://github.com/gnadgnaoh/SexAlloy)** | Inbox promotion and Discover feed ad filtering |
 
 </details>
 
