@@ -7,6 +7,16 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.3.15
+
+- `NexFusion` 4.3.15:
+  * Reddit:
+    - Fixed unclickable preferences (switches, dialogs, list preferences) in Morphe settings on Reddit `2026.25+` / `2026.45.0+`:
+      * Enforced `FOCUS_BLOCK_DESCENDANTS` and `setItemsCanFocus(false)` on both `ListView` and preference row containers to prevent `AbsListView` from dropping item clicks (`TOUCH_MODE_DONE_WAITING`).
+      * Stripped focus, text selection, and click consumption from title and summary TextViews so touches are properly routed to preference click handlers instead of triggering text selection / IME.
+      * Attached row-level click dispatching to reliably invoke `ListView.performItemClick()` with haptic feedback, debouncing, and preference execution.
+    - Verified full click and toggle functionality on physical device with Reddit `2026.45.0`.
+
 ## 4.3.14
 
 - `NexFusion` 4.3.14:
