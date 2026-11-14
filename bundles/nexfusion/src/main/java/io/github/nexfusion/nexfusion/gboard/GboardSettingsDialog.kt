@@ -3,7 +3,9 @@ package io.github.nexfusion.nexfusion.gboard
 import android.app.Activity
 import android.app.Dialog
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
+import android.net.Uri
 import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.graphics.Canvas
@@ -414,6 +416,23 @@ object GboardSettingsDialog {
             }
         )
 
+        addDivider(context, card, dividerCol)
+
+        // Action Row: Frosted Glass & Navigation Bar FAQ
+        addActionRow(
+            context = context,
+            container = card,
+            title = "Frosted Glass & Navigation Bar FAQ",
+            summary = "Troubleshooting guide for transparent navigation bar, theme contrast, and hardware acceleration.",
+            onSurface = onSurface,
+            onSurfaceVariant = onSurfaceVariant,
+            onClick = {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/jasonwu1994/Gboard-patches/issues/68"))
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                runCatching { context.startActivity(intent) }
+            }
+        )
+
         scrollContent.addView(card)
 
         // Footer attribution ("NexFusion")
@@ -447,6 +466,56 @@ object GboardSettingsDialog {
             }
         }
         container.addView(divider)
+    }
+
+    private fun addActionRow(
+        context: Context,
+        container: LinearLayout,
+        title: String,
+        summary: String,
+        onSurface: Int,
+        onSurfaceVariant: Int,
+        onClick: () -> Unit
+    ) {
+        val row = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(context, 16f), dp(context, 16f), dp(context, 16f), dp(context, 16f))
+            isClickable = true
+            isFocusable = true
+            background = RippleDrawable(ColorStateList.valueOf(0x22888888), null, null)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            setOnClickListener { onClick() }
+        }
+
+        val textLayout = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                rightMargin = dp(context, 16f)
+            }
+        }
+
+        val titleView = TextView(context).apply {
+            text = title
+            textSize = 16f
+            setTextColor(onSurface)
+            typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
+        }
+        textLayout.addView(titleView)
+
+        val summaryView = TextView(context).apply {
+            text = summary
+            textSize = 13f
+            setTextColor(onSurfaceVariant)
+            setPadding(0, dp(context, 4f), 0, 0)
+        }
+        textLayout.addView(summaryView)
+        row.addView(textLayout)
+
+        container.addView(row)
     }
 
     private fun addSwitchRow(

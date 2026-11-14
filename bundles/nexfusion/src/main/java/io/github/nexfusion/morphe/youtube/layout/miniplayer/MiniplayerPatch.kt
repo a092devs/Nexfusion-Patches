@@ -9,6 +9,7 @@ import io.github.nexfusion.morphe.shared.misc.settings.preference.PreferenceScre
 import io.github.nexfusion.morphe.shared.misc.settings.preference.SwitchPreference
 import io.github.nexfusion.morphe.youtube.insertLiteralOverride
 import io.github.nexfusion.morphe.youtube.misc.settings.PreferenceScreen
+import io.github.nexfusion.morphe.youtube.shared.seekbarOnDrawFingerprint
 import io.github.nexfusion.patch
 
 /**
@@ -32,6 +33,7 @@ val Miniplayer = patch(
                     entryValuesKey = "morphe_miniplayer_type_21_29_entry_values",
                 ),
                 SwitchPreference("morphe_miniplayer_hide_title", summary = true),
+                SwitchPreference("morphe_miniplayer_glass", summary = true),
                 SwitchPreference("morphe_miniplayer_disable_rounded_corners", summary = true),
                 SwitchPreference("morphe_miniplayer_disable_drag_and_drop", summary = true),
                 SwitchPreference("morphe_miniplayer_disable_horizontal_drag", summary = true),
@@ -79,6 +81,19 @@ val Miniplayer = patch(
                     ::miniplayerPreviousRectField.field.get(param.thisObject) as? Rect
                 }.getOrNull()
                 param.args[0] = ExtensionMiniplayerPatch.blockOffscreenMiniplayerHorizontalReposition(current, previous)
+            }
+        }
+    }
+
+    // Glass minimal miniplayer: cut seekbar progress to the straight bottom edge of the glass.
+    runCatching {
+        ::seekbarOnDrawFingerprint.hookMethod {
+            before { param ->
+                val view = param.thisObject as? android.view.View
+                val canvas = param.args.firstOrNull() as? android.graphics.Canvas
+                if (view != null && canvas != null) {
+                    app.morphe.extension.youtube.patches.MinimalMiniplayerPatch.clipSeekbar(view, canvas)
+                }
             }
         }
     }

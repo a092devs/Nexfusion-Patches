@@ -7,6 +7,34 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.3.10
+
+- `NexFusion` 4.3.10:
+  * YouTube:
+    - Added "Glass minimal miniplayer" option and support (`#4801`) with clipped seekbar under the glass bar.
+    - Added "Show in picture-in-picture" setting for Niconico comments (`#4816`).
+    - Added "Show feed thumbnail likes next to view count" in Return YouTube Dislike (`#4776`).
+    - Fixed media session stop causing media notification and background audio drops when another player stops the session (`#4762`).
+    - Fixed swipe controls triggering volume or brightness changes when swiping on the On-the-go panel (`#4609`).
+    - Fixed empty band above navigation bar when feed behind flag is active without translucent navigation bar (`#4797`).
+    - Fixed video playback loop on Android VR Experimental (`#4791`).
+    - Fixed enhanced Ambient mode turning black above/below player on its way to miniplayer and delayed lighting on filter chips (`#4811`, `#4813`, `#4789`).
+    - Merged and stabilized official "Mobile Web" client video stream spoofing (`#4764`).
+  * Reddit:
+    - Modernized Morphe settings UI and dialog styling for Reddit `2026.25+` (`#4803`).
+  * Telegram:
+    - Upgraded "Bypass channel restrictions" (`TelegramBypassRestrictions`) to unlock Copy, Save, Share, and Forward across protected messages, restricted channels, and private chats.
+    - Cleared no-forwarding flag on message owners dynamically in memory.
+  * Facebook:
+    - Ported full-screen and landscape reel fill with pinch-to-zoom controls and updated story topic scroll-past tracking from Hushfacebook.
+  * Instagram:
+    - Ported swipe-to-profile from author row on reels off the Reels tab and painted burn-in shift border strips black from HushGram.
+  * Gboard:
+    - Added Frosted Glass & Navigation Bar FAQ action and troubleshooting guide to Advanced Settings dialog.
+  * Upstream Submodules:
+    - Synced `morphe-patches` with upstream `dev` branch (`79059b0c8`).
+    - Synced `morphe-patches-library` with upstream `dev` branch (`60c45dc` / `bc87ff1`).
+
 ## 4.3.9
 
 - `NexFusion` 4.3.9:

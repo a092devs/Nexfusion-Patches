@@ -117,6 +117,7 @@ val FeatureOverride = patch {
         }
     }
     if (is_21_42_or_greater) {
+        insertLiteralOverride(45857115L, true) // Media session owner check (#4762)
         runCatching {
             ::experimentalIndexedBooleanFeatureFlagFingerprint.hookMethod {
                 priority = XposedInterface.PRIORITY_DEFAULT - 1

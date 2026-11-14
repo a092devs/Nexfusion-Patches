@@ -605,6 +605,11 @@ val TelegramBypassRestrictions = patch(
         messagesControllerCls.declaredMethods.filter { it.name == "getRestrictionReason" }.forEach { m ->
             XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(null))
         }
+        messagesControllerCls.declaredMethods.filter {
+            it.name == "isChatNoForwards" || it.name == "isPeerNoForwards"
+        }.forEach { m ->
+            XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(false))
+        }
     }
     runCatching {
         val messageObjectCls = classLoader.loadClass("org.telegram.messenger.MessageObject")
@@ -613,8 +618,21 @@ val TelegramBypassRestrictions = patch(
         }.forEach { m ->
             XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(false))
         }
-        messageObjectCls.declaredMethods.filter { it.name == "canForward" || it.name == "canShare" }.forEach { m ->
+        messageObjectCls.declaredMethods.filter {
+            it.name == "canForward" || it.name == "canShare" || it.name == "canForwardMessage"
+        }.forEach { m ->
             XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
+        }
+        messageObjectCls.declaredConstructors.forEach { ctor ->
+            XposedBridge.hookMethod(ctor, object : XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    val thisObj = param.thisObject ?: return
+                    val msgOwner = runCatching { XposedHelpers.getObjectField(thisObj, "messageOwner") }.getOrNull()
+                    if (msgOwner != null) {
+                        runCatching { XposedHelpers.setBooleanField(msgOwner, "noforwards", false) }
+                    }
+                }
+            })
         }
     }
 }
