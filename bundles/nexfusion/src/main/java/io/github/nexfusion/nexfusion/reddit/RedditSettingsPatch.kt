@@ -14,6 +14,32 @@ import io.github.nexfusion.patch
 
 private val currentRowKey = ThreadLocal<String?>()
 
+private fun findActivity(obj: Any?): Activity? {
+    if (obj == null) return null
+    return runCatching {
+        var ctx: Any? = obj
+        while (ctx is android.content.ContextWrapper) {
+            if (ctx is Activity) return ctx
+            val base = ctx.baseContext
+            if (base === ctx) break
+            ctx = base
+        }
+        for (field in obj.javaClass.declaredFields) {
+            if (field.type.isPrimitive) continue
+            field.isAccessible = true
+            val value = field.get(obj) ?: continue
+            var fCtx: Any? = value
+            while (fCtx is android.content.ContextWrapper) {
+                if (fCtx is Activity) return fCtx
+                val base = fCtx.baseContext
+                if (base === fCtx) break
+                fCtx = base
+            }
+        }
+        null
+    }.getOrNull()
+}
+
 val RedditSettings = patch(
     name = "Reddit Settings",
     description = "Adds Morphe settings into Reddit's settings menu.",
@@ -166,15 +192,25 @@ val RedditSettings = patch(
                 if (currentRowKey.get() == "key_pref_morphe") {
                     param.args[0] = RedditActivityHook.getSettingLabel()
                     val origOnClick = param.args[1]
-                    val onClick = runCatching {
-                        RedditActivityHook::class.java.getMethod("getSettingOnClick", Class.forName("kotlin.jvm.functions.Function0"))
-                            .invoke(null, origOnClick)
-                    }.getOrNull()
-                    if (onClick != null) {
-                        param.args[1] = onClick
-                    }
-                    runCatching {
-                        param.args[5] = RedditActivityHook.getSettingIconComposable()
+                    val fn0Class = runCatching { classLoader.loadClass("kotlin.jvm.functions.Function0") }.getOrNull()
+                    if (fn0Class != null) {
+                        val rowActivity = findActivity(origOnClick)
+                        val proxyOnClick = java.lang.reflect.Proxy.newProxyInstance(
+                            classLoader,
+                            arrayOf(fn0Class)
+                        ) { _, method, _ ->
+                            if (method.name == "invoke") {
+                                var activity = rowActivity
+                                if (activity == null || activity.isFinishing || activity.isDestroyed) {
+                                    activity = app.morphe.extension.shared.Utils.getActivity()
+                                }
+                                RedditActivityHook.showSettingsDialog(activity)
+                                null
+                            } else {
+                                null
+                            }
+                        }
+                        param.args[1] = proxyOnClick
                     }
                 }
             }

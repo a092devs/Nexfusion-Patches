@@ -7,6 +7,13 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.3.14
+
+- `NexFusion` 4.3.14:
+  * Reddit:
+    - Fixed crash when opening Reddit settings on `2026.30+` by eliminating ClassLoader mismatch on the Compose settings row (`som0.l`), dynamically proxying `kotlin.jvm.functions.Function0` through Reddit's host ClassLoader and omitting the leading icon composable to match native Reddit settings styling.
+    - Verified full functionality on physical device with Reddit `2026.45.0`: dedicated Morphe settings row opens cleanly under General settings without replacing 'Privacy policy'.
+
 ## 4.3.13
 
 - `NexFusion` 4.3.13:
