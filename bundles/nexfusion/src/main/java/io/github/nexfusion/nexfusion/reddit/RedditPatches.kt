@@ -336,22 +336,25 @@ val RedditUnlockPremium = patch(
     name = "Unlock Premium",
     description = "Enables local Reddit Premium UI perks (custom app icons, premium styling, avatar styling). Server-side perks cannot be unlocked.",
 ) {
-    // 1. Hook Account model
-    runCatching {
-        val accountClass = classLoader.loadClass("com.reddit.domain.model.Account")
-        for (m in accountClass.declaredMethods) {
-            val name = m.name.lowercase()
-            if (m.returnType == java.lang.Boolean.TYPE || m.returnType == java.lang.Boolean::class.java) {
-                if (name == "isgold" || name.contains("premium") || name.contains("gold") ||
-                    name == "gethaspremium" || name == "ispremiumsubscriber" || name == "gethideads"
-                ) {
-                    XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
-                }
-            } else if (m.returnType == java.lang.Long::class.java || m.returnType == java.lang.Long.TYPE) {
-                if (name.contains("premiumexpiration")) {
-                    XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(4102444800000L))
-                } else if (name.contains("premiumsince")) {
-                    XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(1577836800000L))
+    // 1. Hook Account and MyAccount models (current logged in user and other accounts)
+    listOf("com.reddit.domain.model.Account", "com.reddit.domain.model.MyAccount").forEach { className ->
+        runCatching {
+            val accountClass = classLoader.loadClass(className)
+            for (m in accountClass.declaredMethods) {
+                val name = m.name.lowercase()
+                if (m.returnType == java.lang.Boolean.TYPE || m.returnType == java.lang.Boolean::class.java) {
+                    if (name == "isgold" || name.contains("premium") || name.contains("gold") ||
+                        name == "gethaspremium" || name == "ispremiumsubscriber" || name == "gethideads" ||
+                        name == "gethaspremiumavatartreatment"
+                    ) {
+                        XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
+                    }
+                } else if (m.returnType == java.lang.Long::class.java || m.returnType == java.lang.Long.TYPE) {
+                    if (name.contains("premiumexpiration")) {
+                        XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(4102444800000L))
+                    } else if (name.contains("premiumsince")) {
+                        XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(1577836800000L))
+                    }
                 }
             }
         }
@@ -367,7 +370,32 @@ val RedditUnlockPremium = patch(
         }
     }
 
-    // 3. Hook AppIcon model to ungate all marketplace and custom launcher icons
+    // 3. Hook client-side User protobuf model (GraphQL user)
+    runCatching {
+        val clientUserClass = classLoader.loadClass("com.reddit.data.common.client.user.User")
+        for (m in clientUserClass.declaredMethods) {
+            val name = m.name.lowercase()
+            if (m.returnType == java.lang.Boolean.TYPE || m.returnType == java.lang.Boolean::class.java) {
+                if (name == "gethaspremium" || name == "hasaccount" || name == "getispremiumsubscriber" ||
+                    name == "hashaspremium" || name == "hasispremiumsubscriber"
+                ) {
+                    XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
+                }
+            }
+        }
+    }
+
+    // 4. Hook Snoovatar SubscriptionState
+    runCatching {
+        val subStateClass = classLoader.loadClass("com.reddit.snoovatar.domain.common.model.SubscriptionState")
+        for (m in subStateClass.declaredMethods) {
+            if (m.name == "isPremium" && (m.returnType == java.lang.Boolean.TYPE || m.returnType == java.lang.Boolean::class.java)) {
+                XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
+            }
+        }
+    }
+
+    // 5. Hook AppIcon model to ungate all marketplace and custom launcher icons
     runCatching {
         val appIconClass = classLoader.loadClass("com.reddit.marketplacedata.common.AppIcon")
         for (m in appIconClass.declaredMethods) {
@@ -379,18 +407,42 @@ val RedditUnlockPremium = patch(
         }
     }
 
-    // 4. Hook User / UserData model premium getters
+    // 6. Hook Snoovatar model to enable premium avatar gear
     runCatching {
-        listOf("com.reddit.domain.model.User", "com.reddit.domain.model.UserData").forEach { className ->
-            runCatching {
-                val clazz = classLoader.loadClass(className)
-                for (m in clazz.declaredMethods) {
-                    val name = m.name.lowercase()
-                    if ((name.contains("premium") || name.contains("gold")) &&
-                        (m.returnType == java.lang.Boolean.TYPE || m.returnType == java.lang.Boolean::class.java)
-                    ) {
-                        XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
-                    }
+        val snoovatarClass = classLoader.loadClass("com.reddit.marketplacedata.common.Snoovatar")
+        for (m in snoovatarClass.declaredMethods) {
+            if ((m.name == "getHasPremiumGear" || m.name == "hasHasPremiumGear") &&
+                (m.returnType == java.lang.Boolean.TYPE || m.returnType == java.lang.Boolean::class.java)
+            ) {
+                XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
+            }
+        }
+    }
+
+    // 7. Hook Comment and Link avatar treatment
+    listOf("com.reddit.domain.model.Comment", "com.reddit.domain.model.Link").forEach { className ->
+        runCatching {
+            val clazz = classLoader.loadClass(className)
+            for (m in clazz.declaredMethods) {
+                if (m.name == "getHasPremiumAvatarTreatment" &&
+                    (m.returnType == java.lang.Boolean.TYPE || m.returnType == java.lang.Boolean::class.java)
+                ) {
+                    XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
+                }
+            }
+        }
+    }
+
+    // 8. Hook User / UserData model premium getters
+    listOf("com.reddit.domain.model.User", "com.reddit.domain.model.UserData").forEach { className ->
+        runCatching {
+            val clazz = classLoader.loadClass(className)
+            for (m in clazz.declaredMethods) {
+                val name = m.name.lowercase()
+                if ((name.contains("premium") || name.contains("gold")) &&
+                    (m.returnType == java.lang.Boolean.TYPE || m.returnType == java.lang.Boolean::class.java)
+                ) {
+                    XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
                 }
             }
         }

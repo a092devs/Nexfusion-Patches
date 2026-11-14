@@ -7,6 +7,19 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.3.16
+
+- `NexFusion` 4.3.16:
+  * UI / Dialogs:
+    - Fixed dialog button layout misalignment in `CustomDialog`: dialog action buttons in horizontal rows (such as Cancel / OK) now have equal, balanced widths (`weight = 1.0f`) instead of lopsided proportional widths based on text length.
+    - Fixed dialog button responsiveness: explicitly set `setFocusable(false)` and `setFocusableInTouchMode(false)` on dialog buttons so Cancel, OK, and Neutral buttons immediately respond to a single tap without requiring a focus tap first.
+  * Settings & Toggles:
+    - Fixed preference toggle responsiveness in modern Compose Reddit settings (`RedditSettingsStyle`): attached touch listener and widget-frame click forwarding so tapping the switch directly, tapping the widget frame, or tapping anywhere on the row toggles immediately without dead zones.
+    - Ensured confirmed setting dialog changes (`SettingChange.saveConfirmed`) immediately update the preference UI state.
+  * Reddit:
+    - Fixed `RedditUnlockPremium` on Reddit `2026.45.0+`: hooked `MyAccount` (logged-in user account), client `User` protobuf model (`getHasPremium`, `isPremiumSubscriber`), Snoovatar avatar `SubscriptionState.isPremium`, and `Snoovatar` gear getters, and un-gated `AppIcon` model so custom app icons and premium perks work as expected.
+    - Verified all fixes on physical device with Reddit `2026.45.0`.
+
 ## 4.3.15
 
 - `NexFusion` 4.3.15:
