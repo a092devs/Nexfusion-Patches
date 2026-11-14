@@ -170,7 +170,7 @@ val TwitterSanitizeShareLinks = patch(
 
 val TwitterDisableAutoRefresh = patch(
     name = "Disable timeline auto-refresh",
-    description = "Stops the home timeline from refreshing and jumping to the top automatically.",
+    description = "Stops the home timeline from refreshing and jumping to the top automatically, and preserves timeline position on startup.",
     use = false,
 ) {
     neutralizeTwitterFlags(
@@ -178,6 +178,10 @@ val TwitterDisableAutoRefresh = patch(
         "home_timeline_auto_refresh_policy_enabled",
         "android_timeline_auto_refresh_enabled",
         "timeline_auto_refresh_interval",
+    )
+    zeroTwitterIntFlags(
+        "android_xlite_home_timeline_start_trim_entries_to_keep",
+        "android_xlite_home_timeline_start_trim_min_entries",
     )
 }
 

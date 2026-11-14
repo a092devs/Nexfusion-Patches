@@ -7,6 +7,17 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.3.11
+
+- `NexFusion` 4.3.11:
+  * Reddit:
+    - Added dedicated Morphe settings row without replacing 'Privacy policy' on `2026.30+` (`#4806`).
+  * Twitter / X:
+    - Added timeline startup trim suppression (`android_xlite_home_timeline_start_trim_entries_to_keep` & `android_xlite_home_timeline_start_trim_min_entries`) to preserve home timeline position on launch across NewX 12.43.0+ (ported from Piko).
+  * Upstream Submodules:
+    - Synced `morphe-patches` with upstream `dev` branch (`d23553329`, `v2.3.0-dev.4`).
+    - Synced community translations across all supported apps and languages.
+
 ## 4.3.10
 
 - `NexFusion` 4.3.10:
