@@ -7,6 +7,27 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.3.18
+
+- `NexFusion` 4.3.18:
+  * Upstream Patches Sync (v2.3.0-dev.5):
+    - YouTube:
+      * Fixed Watch later button alignment with duration badge in card feed layout.
+      * Enhanced Ambient Mode: added "Light strength" setting and extended light illumination behind comments and auxiliary panels.
+      * Spoof video streams: resolved Mobile Web playback errors after Shorts, resolved OOM during fast/high-quality playback, and restored proper re-use of Mobile Web client.
+      * Fixed background audio mute after another player stops playback.
+      * Updated AV1 stream support for VR and visionOS experimental clients.
+      * Fixed empty status bar rendering above video player without edge-to-edge top bar.
+      * Fixed feed card and Shorts card layout spacing for accounts in newer A/B tests.
+      * Fixed "Hide video labels" for newer A/B test feed cards (Auto-dubbed, Hyped).
+    - YouTube Music:
+      * Added `Pause when muted` patch.
+      * Added "Replace shuffle with loop button" setting to Media notification controls.
+      * Fixed `Play album songs` to ignore 'Don't play music videos' setting exclusively while albums are playing.
+    - Shared & Settings:
+      * Fixed crash when opening list preferences containing new indicator entries.
+      * Synced upstream gradle dependencies and protobuf runtime.
+
 ## 4.3.17
 
 - `NexFusion` 4.3.17:
