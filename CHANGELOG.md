@@ -13,7 +13,7 @@ bundles after CI succeeds.
   * Upstream Patches Sync (v2.3.0-dev.5):
     - YouTube:
       * Fixed Watch later button alignment with duration badge in card feed layout.
-      * Enhanced Ambient Mode: added "Light strength" setting and extended light illumination behind comments and auxiliary panels.
+      * Enhanced Ambient Mode: added "Light strength", "Light smoothing" and "Light blur" settings and extended light illumination behind comments and auxiliary panels.
       * Spoof video streams: resolved Mobile Web playback errors after Shorts, resolved OOM during fast/high-quality playback, and restored proper re-use of Mobile Web client.
       * Fixed background audio mute after another player stops playback.
       * Updated AV1 stream support for VR and visionOS experimental clients.
