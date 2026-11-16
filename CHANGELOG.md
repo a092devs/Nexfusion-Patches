@@ -7,6 +7,35 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.3.19-beta1
+
+- `NexFusion` 4.3.19-beta1:
+  * Upstream Patches Sync (v2.3.0-dev.9) & Extension Library (v2.3.0-dev.1):
+    - YouTube:
+      * Added setting to force 1440p and 4K downloads for low end or older devices.
+      * Added 1440p and 2160p (4k) video quality to in-app downloading.
+      * Added "Show download in video menus" setting for video menus that have no download item.
+      * DeArrow: added title and thumbnail submission and voting; display DeArrow icon on titles with thumbnail-only replacements.
+      * Added push notification debugging support.
+      * Added queue actions to video thumbnails.
+      * Enhanced Ambient Mode: added "Light smoothing" and "Light blur" settings; resolved fullscreen toggle interaction.
+      * Fixed "Stable volume" visibility in player flyout menu when disabled.
+      * Fixed auto-caption behavior on Shorts.
+      * Fixed feed card and Shorts card spacing and YouTube Premium promotion hiding for newer A/B tests.
+      * Fixed playlist drag handles and reorder behavior across non-English locales.
+      * Fixed Shorts playback advance after live streams with live chat.
+      * Fixed Explore menu item hiding in Home More tab.
+      * Resolved Mobile Web renderer crash recovery and PoToken initialization in video stream spoofing.
+      * Resolved segmented dislike button empty spacing when dislikes fail to load.
+      * Fixed download button localization in post image downloads.
+    - YouTube Music:
+      * Added experimental support for version 9.46.51.
+      * Fixed Jam queue sharing crash on version 9.46.
+      * Kept Play button of Liked music above glass navigation bar.
+    - Shared & Library:
+      * Updated CharSequence emptiness helpers and modernized StringRef handling.
+      * Memory leak cleanup, inspection modernizations, and string check optimizations.
+
 ## 4.3.18
 
 - `NexFusion` 4.3.18:
