@@ -1156,7 +1156,7 @@ val DownloadMedia = patch(
                     args[onClickIndex] = onClick
                     args[iconIndex] = icon
                     val row = rowConstructor.newInstance(*args)
-                    param.args[targetRowsIndex] = listOf(row) + rows
+                    param.args[targetRowsIndex] = rows + listOf(row)
                     log("added to the story menu rows")
                 } catch (e: Exception) {
                     PatcherLog.error(e) { "Could not add the download row to the story menu" }
