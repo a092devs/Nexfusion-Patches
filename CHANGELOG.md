@@ -7,6 +7,11 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.3.19-beta4
+
+- `Instagram`:
+  * Fixed force close when opening the story options menu to download a story by setting the augmented row list on the correct parameter index.
+
 ## 4.3.19-beta3
 
 - `Gboard`:

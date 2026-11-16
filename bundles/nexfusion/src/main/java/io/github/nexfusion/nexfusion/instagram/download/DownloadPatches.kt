@@ -1097,7 +1097,12 @@ val DownloadMedia = patch(
         ::storyMenuSheetMethod.hookMethod {
             before { param ->
                 val viewer = resumedViewer.get() ?: return@before
-                val rows = param.args.getOrNull(rowsParamIndex) as? List<*> ?: param.args.firstOrNull { it is List<*> } as? List<*> ?: return@before
+                val targetRowsIndex = if (rowsParamIndex < param.args.size && param.args[rowsParamIndex] is List<*>) {
+                    rowsParamIndex
+                } else {
+                    param.args.indexOfFirst { it is List<*> }.takeIf { it >= 0 } ?: return@before
+                }
+                val rows = param.args.getOrNull(targetRowsIndex) as? List<*> ?: return@before
                 try {
                     val hasDownload = rows.any { row ->
                         row != null && row.javaClass.declaredFields.any { field ->
@@ -1147,7 +1152,7 @@ val DownloadMedia = patch(
                     args[onClickIndex] = onClick
                     args[iconIndex] = icon
                     val row = rowConstructor.newInstance(*args)
-                    param.args[0] = listOf(row) + rows
+                    param.args[targetRowsIndex] = listOf(row) + rows
                     log("added to the story menu rows")
                 } catch (e: Exception) {
                     PatcherLog.error(e) { "Could not add the download row to the story menu" }
