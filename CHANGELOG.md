@@ -7,6 +7,13 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.3.19-beta2
+
+- `Instagram`:
+  * Suppress Reels Meta AI Litho render pills (`ClipsMetaAiPillComponent_render`) and creation prompt chips.
+  * Suppress Reels More menu AI Discovery ("Ask Meta AI") options gate.
+  * Add updated "About this reel" summary server configuration flags.
+
 ## 4.3.19-beta1
 
 - `NexFusion` 4.3.19-beta1:

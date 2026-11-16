@@ -688,6 +688,13 @@ private val META_AI_VIEW_IDS = listOf(
     "ai_rewrite_bottom_sheet_meta_ai_icon_view",
     "ai_rewrite_nux_meta_ai_icon_view",
     "ai_rewrite_nux_meta_ai_text",
+    "clips_meta_ai_pill",
+    "clips_meta_ai_pill_stub",
+    "reel_meta_ai_pill",
+    "reel_meta_ai_pill_stub",
+    "clips_ai_summary",
+    "meta_ai_reel_prompt",
+    "meta_ai_blend",
 )
 
 private val META_AI_MOBILE_CONFIG_FLAGS = setOf(
@@ -695,7 +702,9 @@ private val META_AI_MOBILE_CONFIG_FLAGS = setOf(
     0x81040c0006109dL, // Messages inbox "Search or ask Meta AI"
     0x81040a001b1093L, // Messages search bar Meta AI ring
     0x81168700017258L, // Home top bar Meta AI chats / hatch button
-    0x8110c200115a92L, // About this reel summary factory
+    0x8110c200115a92L, // About this reel summary factory (450)
+    0x8110a600115abdL, // About this reel summary flag (453)
+    0x81106500115afcL, // About this reel summary flag (454/455)
     0x810ba900064043L, // Reels / post ask meta ai upsell
     0x8103A800000EB2L, // Direct tap & hold ask meta ai
     0x81061700032BF3L, // Regenerate ai message
@@ -843,7 +852,37 @@ val HideMetaAi = patch(
         PatcherLog.info { "NexFusion Instagram: Meta AI gate methods hooked on $gateHooked methods" }
     }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: Meta AI gate hook skipped" } }
 
-    // 2c. MobileConfig reflection fallback on known manager classes
+    // 2c. Reels Meta AI Litho render component hooks (e.g. ClipsMetaAiPillComponent_render)
+    runCatching {
+        var pillHooked = 0
+        val nullReplacer = object : XC_MethodReplacement() {
+            override fun replaceHookedMethod(param: MethodHookParam): Any? = null
+        }
+        for (dex in ::reelsMetaAiRenderMethods.dexMethodList) {
+            runCatching {
+                dex.hookMethod(nullReplacer)
+                pillHooked++
+            }
+        }
+        PatcherLog.info { "NexFusion Instagram: Reels Meta AI Litho render hooked on $pillHooked methods" }
+    }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: Reels Meta AI render hook skipped" } }
+
+    // 2d. Reels More menu AI Discovery ("Ask Meta AI") options gate (hasAiDiscoveryMenu)
+    runCatching {
+        var menuHooked = 0
+        val falseReplacer = object : XC_MethodReplacement() {
+            override fun replaceHookedMethod(param: MethodHookParam): Any = false
+        }
+        for (dex in ::reelsAiDiscoveryMenuMethods.dexMethodList) {
+            runCatching {
+                dex.hookMethod(falseReplacer)
+                menuHooked++
+            }
+        }
+        PatcherLog.info { "NexFusion Instagram: Reels AI Discovery menu hooked on $menuHooked methods" }
+    }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: Reels AI Discovery hook skipped" } }
+
+    // 2e. MobileConfig reflection fallback on known manager classes
     runCatching {
         val candidateClasses = listOf(
             "com.facebook.mobileconfig.MobileConfigManagerHolderImpl",
