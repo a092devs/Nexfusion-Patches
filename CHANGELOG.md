@@ -7,6 +7,23 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.3.19-beta3
+
+- `Gboard`:
+  * Added Gboard 18.6.3 native split readiness check for Advanced Voice Typing.
+  * Added screen rotation grace window to Rambler voice typing, preventing session deactivation during orientation changes.
+  * Fixed Rambler dictation to prevent dropped repeated phrases and avoid overwriting preceding text.
+  * Enforced Gboard server backend for AI Writing Tools and disabled incompatible local AICore backend overrides.
+- `Facebook`:
+  * Retained user-hidden posts across pull-to-refresh feeds.
+  * Filtered duplicate touch dispatches in Saved reels viewer.
+- `Instagram`:
+  * Extended view hider to scroll change events so views scrolled into view are hidden immediately without waiting for layout.
+  * Added patch to hide unread story rings from profile pictures outside the Home stories tray.
+- `Telegram`:
+  * Added link preview redirection patch for embed-friendly services.
+  * Hardened screenshot allowance by stripping secure window flags across view layout parameters.
+
 ## 4.3.19-beta2
 
 - `Instagram`:

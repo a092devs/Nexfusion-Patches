@@ -66,6 +66,70 @@ private fun neuterVoidMethods(classLoader: ClassLoader, className: String): Int 
     return hooked
 }
 
+/**
+ * Remembers posts the user hid in-session so a pull-to-refresh does not bring them back.
+ * Ported from SysAdminDoc/Hushfacebook HiddenPosts (issue #444).
+ */
+object FacebookHiddenPosts {
+    private const val MAX = 500
+    private const val CONTRACTING = 1
+    private const val HIDDEN = 2
+    private const val GONE = 3
+    private val ids = java.util.Collections.synchronizedSet(java.util.LinkedHashSet<String>())
+
+    fun published(id: String?, visibility: Int?) {
+        if (id.isNullOrEmpty() || visibility == null) return
+        val hidden = visibility == CONTRACTING || visibility == HIDDEN || visibility == GONE
+        synchronized(ids) {
+            if (hidden) {
+                ids.remove(id)
+                ids.add(id)
+                val it = ids.iterator()
+                while (ids.size > MAX && it.hasNext()) {
+                    it.next()
+                    it.remove()
+                }
+            } else {
+                ids.remove(id)
+            }
+        }
+    }
+
+    fun isPostHidden(id: String?): Boolean {
+        if (id.isNullOrEmpty()) return false
+        synchronized(ids) {
+            return ids.contains(id)
+        }
+    }
+
+    fun extractPostId(feedUnitOrEdge: Any?): String? {
+        if (feedUnitOrEdge == null) return null
+        for (m in feedUnitOrEdge.javaClass.methods) {
+            if (m.name == "getId" && m.parameterTypes.isEmpty() && m.returnType == String::class.java) {
+                val res = runCatching { m.invoke(feedUnitOrEdge) as? String }.getOrNull()
+                if (!res.isNullOrEmpty()) return res
+            }
+        }
+        for (m in feedUnitOrEdge.javaClass.declaredMethods) {
+            if (m.parameterTypes.isEmpty() && m.returnType != Void.TYPE && !m.returnType.isPrimitive && m.name != "getId") {
+                val candidateUnit = runCatching { m.invoke(feedUnitOrEdge) }.getOrNull()
+                if (candidateUnit != null && candidateUnit !== feedUnitOrEdge) {
+                    val candidateId = extractPostId(candidateUnit)
+                    if (!candidateId.isNullOrEmpty()) return candidateId
+                }
+            }
+        }
+        val idHash = "id".hashCode()
+        for (m in feedUnitOrEdge.javaClass.methods) {
+            if (m.parameterTypes.size == 1 && m.parameterTypes[0] == Int::class.javaPrimitiveType && m.returnType == String::class.java) {
+                val res = runCatching { m.invoke(feedUnitOrEdge, idHash) as? String }.getOrNull()
+                if (!res.isNullOrEmpty()) return res
+            }
+        }
+        return null
+    }
+}
+
 val AllowScreenshots = patch(
     name = "Allow screenshots",
     description = "Clears FLAG_SECURE so screenshots and screen recording work everywhere.",
@@ -182,21 +246,26 @@ val HideSponsoredPosts = patch(
         }
         val edge = param.args.firstOrNull { edgeClass.isInstance(it) }
         if (edge != null) {
-            val categoryName = runCatching {
-                categoryGetter.invoke(edge)?.toString()
-            }.getOrNull()
-            if (categoryName != null && (
-                categoryName.contains("SPONSORED") ||
-                categoryName.contains("PROMOTION") ||
-                categoryName.contains("INJECTED") ||
-                categoryName.contains("SHOWCASE") ||
-                categoryName.contains("META_AI") ||
-                categoryName.contains("GEN_AI") ||
-                categoryName.contains("GENAI")
-            )) {
-                // A refused edge is an outcome the feed already handles: it logs "Edge not added
-                // to FUC" and carries on.
+            val postId = FacebookHiddenPosts.extractPostId(edge)
+            if (FacebookHiddenPosts.isPostHidden(postId)) {
                 param.result = false
+            } else {
+                val categoryName = runCatching {
+                    categoryGetter.invoke(edge)?.toString()
+                }.getOrNull()
+                if (categoryName != null && (
+                    categoryName.contains("SPONSORED") ||
+                    categoryName.contains("PROMOTION") ||
+                    categoryName.contains("INJECTED") ||
+                    categoryName.contains("SHOWCASE") ||
+                    categoryName.contains("META_AI") ||
+                    categoryName.contains("GEN_AI") ||
+                    categoryName.contains("GENAI")
+                )) {
+                    // A refused edge is an outcome the feed already handles: it logs "Edge not added
+                    // to FUC" and carries on.
+                    param.result = false
+                }
             }
         }
     }
@@ -205,6 +274,29 @@ val HideSponsoredPosts = patch(
     runCatching {
         ::feedFunnelMethods.dexMethodList.forEach { dex ->
             dex.hookMethod { before(hookFunnel) }
+        }
+    }
+
+    // Hook local story visibility publications to keep user-hidden posts out on pull-to-refresh
+    runCatching {
+        ::localStoryVisibilityPublishMethods.dexMethodList.forEach { dex ->
+            dex.hookMethod {
+                before { param ->
+                    val visibility = param.args.firstOrNull { it is Int || it is java.lang.Integer } as? Int
+                    var id = param.args.firstOrNull { it is String } as? String
+                    if (id.isNullOrEmpty()) {
+                        for (arg in param.args) {
+                            if (arg != null && arg !is Int && arg !is String) {
+                                id = FacebookHiddenPosts.extractPostId(arg)
+                                if (!id.isNullOrEmpty()) break
+                            }
+                        }
+                    }
+                    if (!id.isNullOrEmpty() && visibility != null) {
+                        FacebookHiddenPosts.published(id, visibility)
+                    }
+                }
+            }
         }
     }
 
@@ -587,11 +679,16 @@ val HideFeedReels = patch(
     val reelsHook: (XC_MethodHook.MethodHookParam) -> Unit = { param ->
         val edge = param.args.firstOrNull { edgeClass.isInstance(it) }
         if (edge != null) {
-            val categoryName = runCatching {
-                categoryGetter.invoke(edge)?.toString()
-            }.getOrNull()
-            if (categoryName in reelsCategories) {
+            val postId = FacebookHiddenPosts.extractPostId(edge)
+            if (FacebookHiddenPosts.isPostHidden(postId)) {
                 param.result = false
+            } else {
+                val categoryName = runCatching {
+                    categoryGetter.invoke(edge)?.toString()
+                }.getOrNull()
+                if (categoryName in reelsCategories) {
+                    param.result = false
+                }
             }
         }
     }

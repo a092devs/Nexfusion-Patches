@@ -309,9 +309,13 @@ fun PatchExecutor.enableGboardWritingToolsPreference() {
             "pref_key_stop_dictation_after_sending_writing_tools_v2_prompts" to false,
             "enable_jarvis" to true,
             "jarvis_enabled" to true,
+            "pref_ai_writing_tools_v2_enabled" to false,
+            "pref_v2_force_disabled_v1" to true,
+            "pref_backend_force_server_v2" to true,
         ),
         strings = mapOf(
             "jarvis_consent_history" to "Granted (Form)",
+            "pref_ai_writing_tools_backend_type" to "GBOARD_SERVER",
         )
     )
 }
@@ -338,6 +342,10 @@ fun PatchExecutor.gboardFlagOverrides(vararg entries: Pair<String, FlagOverride>
         override fun afterHookedMethod(param: MethodHookParam) {
             val receiver = param.thisObject ?: return
             val name = flagName(receiver) ?: return
+            if (name == "agentic_dictation_deactivation_delay_ms") {
+                param.result = GboardRamblerRotationGrace.deactivationDelayMs()
+                return
+            }
             val override = overrides[name] ?: return
             val oldVal = param.result
             val newVal = override.applyTo(oldVal)

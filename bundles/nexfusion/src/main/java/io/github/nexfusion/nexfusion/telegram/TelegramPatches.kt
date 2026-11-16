@@ -512,6 +512,30 @@ val TelegramDisableDraftPreviews = patch(
     }
 }
 
+val TelegramFixLinkPreviews = patch(
+    name = "Fix link previews",
+    description = "Redirects link previews for X/Twitter, Instagram, Reddit, TikTok, and Threads to embed-friendly alternative services (fxtwitter, fixupx, ddinstagram, rxddit, vxtiktok).",
+    use = false,
+) {
+    runCatching {
+        val controllerCls = classLoader.loadClass("org.telegram.messenger.MessagesController")
+        controllerCls.declaredMethods.filter { it.name.contains("loadWebPagePreview") }.forEach { m ->
+            XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    val urlArgIndex = param.args.indexOfFirst { it is String }
+                    if (urlArgIndex >= 0) {
+                        val rawUrl = param.args[urlArgIndex] as String
+                        val rewritten = TelegramLinkSanitizer.rewritePreviewUrl(rawUrl)
+                        if (rewritten != rawUrl) {
+                            param.args[urlArgIndex] = rewritten
+                        }
+                    }
+                }
+            })
+        }
+    }
+}
+
 val TelegramUseSystemFont = patch(
     name = "Use system font",
     description = "Draws Telegram text in your phone's system font instead of bundled Roboto font assets.",
@@ -722,6 +746,35 @@ val TelegramAllowScreenshots = patch(
             XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(false))
         }
     }
+
+    // 4. Strip FLAG_SECURE from WindowManager LayoutParams (issue #34)
+    runCatching {
+        val clearSecureParams: (Any?) -> Unit = { params ->
+            val layoutParams = params as? android.view.WindowManager.LayoutParams
+            if (layoutParams != null) {
+                layoutParams.flags = layoutParams.flags and 0x2000.inv()
+            }
+        }
+        val windowClass = classLoader.loadClass("android.view.Window")
+        val setAttributes = windowClass.declaredMethods.firstOrNull { it.name == "setAttributes" }
+        if (setAttributes != null) {
+            XposedBridge.hookMethod(setAttributes, object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    clearSecureParams(param.args.getOrNull(0))
+                }
+            })
+        }
+        val wmImpl = classLoader.loadClass("android.view.WindowManagerImpl")
+        for (m in wmImpl.declaredMethods) {
+            if (m.name in listOf("addView", "updateViewLayout")) {
+                XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        clearSecureParams(param.args.getOrNull(1))
+                    }
+                })
+            }
+        }
+    }
 }
 
 val TelegramPatches = arrayOf(
@@ -755,6 +808,7 @@ val TelegramPatches = arrayOf(
     TelegramDisableChannelPull,
     TelegramDisableChatSwipeActions,
     TelegramDisableDraftPreviews,
+    TelegramFixLinkPreviews,
     TelegramUseSystemFont,
     TelegramAmoledBlack,
 )

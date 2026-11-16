@@ -48,6 +48,7 @@ object GboardRamblerHook {
         hookVoiceSettingsSelectors(classLoader)
         hookMicActivation(classLoader)
         hookVoiceTextPromptFix(classLoader)
+        hookNativeSplitReadiness(classLoader)
         hookLanguageDownloadGuard(classLoader)
         hookClipboardDataHandler(classLoader)
         hookSpellCheckerChips(classLoader)
@@ -144,10 +145,35 @@ object GboardRamblerHook {
                 XposedBridge.hookMethod(method, object : XC_MethodHook() {
                     override fun beforeHookedMethod(param: MethodHookParam) {
                         val proto = param.args.getOrNull(0) ?: return
-                        GboardRamblerDictationRuntime.filterVoiceText(proto)
+                        GboardRamblerDictationRuntime.filterVoiceText(param.thisObject, proto)
                     }
                 })
                 Log.i(TAG, "NexFusion: Hooked Rambler voice text prompt fix in $className.j(...)")
+            }
+        }
+    }
+
+    private fun hookNativeSplitReadiness(classLoader: ClassLoader) {
+        // Native split readiness checks across releases:
+        // 18.6.3: smi.a() -> boolean
+        // 18.5.3/18.5.4: ssi.a() -> boolean
+        // 18.4.1: slc.a() -> boolean
+        // 18.0.3: scn.a() -> boolean
+        val readinessClasses = listOf("smi", "ssi", "slc", "scn")
+        for (className in readinessClasses) {
+            val clazz = runCatching { classLoader.loadClass(className) }.getOrNull() ?: continue
+            val method = clazz.declaredMethods.firstOrNull {
+                it.name == "a" && it.parameterTypes.isEmpty() &&
+                        it.returnType == Boolean::class.javaPrimitiveType
+            } ?: continue
+
+            runCatching {
+                XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        param.result = true
+                    }
+                })
+                Log.i(TAG, "NexFusion: Hooked Gboard native split readiness $className.a()")
             }
         }
     }
@@ -200,6 +226,7 @@ object GboardRamblerHook {
                 .putBoolean("has_shown_voice_donation_promo", true)
                 .putBoolean("pref_key_always_show_agentic_dictation_promo_banner", false)
                 .apply()
+            GboardRamblerRotationGrace.ensureListening(targetContext)
             Log.i(TAG, "NexFusion: Ensured Rambler preferences in ${targetContext.packageName}")
         } catch (t: Throwable) {
             Log.w(TAG, "NexFusion: Failed to ensure Rambler preferences", t)

@@ -796,9 +796,19 @@ private fun installMetaAiViewHiderOnDecor(decorView: View) {
             hideMetaAiViews(decorView)
         }
     }
+    val scrollListener = ViewTreeObserver.OnScrollChangedListener {
+        val now = android.os.SystemClock.uptimeMillis()
+        if (now - lastScanTime > 500L) {
+            lastScanTime = now
+            if (hideMetaAiViews(decorView)) {
+                decorView.postInvalidateOnAnimation()
+            }
+        }
+    }
 
     metaAiHiderSessions[decorView] = layoutListener
     decorView.viewTreeObserver.addOnGlobalLayoutListener(layoutListener)
+    decorView.viewTreeObserver.addOnScrollChangedListener(scrollListener)
     decorView.post { hideMetaAiViews(decorView) }
 }
 
@@ -991,6 +1001,45 @@ val StartFeedVideosWithSound = patch(
     }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: Start feed videos with sound hook skipped" } }
 }
 
+val HideOtherStoryRings = patch(
+    name = "Hide story rings outside stories tray",
+    description = "Hides unread story rings from profile pictures across posts, comments, reels, and profiles, keeping them only in the top stories row.",
+    use = false,
+) {
+    runCatching {
+        val spinnerClass = classLoader.loadClass("com.instagram.ui.widget.gradientspinner.GradientSpinner")
+        val onDrawMethod = spinnerClass.declaredMethods.firstOrNull {
+            it.name == "onDraw" && it.parameterTypes.size == 1 &&
+                it.parameterTypes[0] == android.graphics.Canvas::class.java
+        } ?: return@runCatching
+
+        var trayId = 0
+        XposedBridge.hookMethod(onDrawMethod, object : XC_MethodHook() {
+            override fun beforeHookedMethod(param: MethodHookParam) {
+                val ring = param.thisObject as? View ?: return
+                if (trayId == 0) {
+                    trayId = ring.context.resources.getIdentifier("reels_tray_container", "id", ring.context.packageName)
+                }
+                if (trayId == 0) return
+                var parent = ring.parent
+                var insideTray = false
+                var level = 0
+                while (parent is View && level < 12) {
+                    if ((parent as View).id == trayId) {
+                        insideTray = true
+                        break
+                    }
+                    parent = parent.parent
+                    level++
+                }
+                if (!insideTray) {
+                    param.result = null
+                }
+            }
+        })
+    }
+}
+
 val InstagramPatches = arrayOf(
     HideAds,
     HideSuggestedPosts,
@@ -1001,6 +1050,7 @@ val InstagramPatches = arrayOf(
     HideTypingStatus,
     HideStoryFollow,
     HideFeedFollow,
+    HideOtherStoryRings,
     TurnOffDoubleTapLike,
     TurnOffHdrBoosts,
     AllowScreenshots,

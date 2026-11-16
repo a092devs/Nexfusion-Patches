@@ -624,4 +624,18 @@ val inlineCommentSummaryPluginMethods = findMethodListDirect {
     }.distinctBy { it.descriptor }
 }
 
+/**
+ * Methods that publish a post's local visibility change to the consistency store.
+ * Ported from Hushfacebook HiddenPosts (issue #444).
+ */
+val localStoryVisibilityPublishMethods = findMethodListDirect {
+    findMethod {
+        matcher {
+            usingStrings(listOf("local_story_visibility"), StringMatchType.Equals)
+            returnType = "void"
+        }
+    }.distinctBy { it.descriptor }
+}
+
+
 
