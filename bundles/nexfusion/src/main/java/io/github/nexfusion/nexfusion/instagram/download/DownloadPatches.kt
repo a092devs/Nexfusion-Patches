@@ -23,6 +23,7 @@ import android.view.View
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.Toast
+import io.github.nexfusion.nexfusion.instagram.isMainProcess
 import io.github.nexfusion.compat.XC_MethodHook.MethodHookParam
 import io.github.nexfusion.HookDsl
 import io.github.nexfusion.IScopedHookCallback
@@ -746,6 +747,7 @@ val DownloadMedia = patch(
         "Files are saved to Download/NexFusion/Instagram by default; the download settings allow customizing " +
         "the folder path, save location, per-username subfolders and timestamp names.",
 ) {
+    if (!isMainProcess) return@patch
     val app = appContext as? Application ?: appContext.applicationContext as? Application
     app?.registerActivityLifecycleCallbacks(object : Application.ActivityLifecycleCallbacks {
         override fun onActivityResumed(activity: Activity) { lastResumedActivity = WeakReference(activity) }
@@ -867,14 +869,16 @@ val DownloadMedia = patch(
         val creatorClass = ::overflowMenuCreatorClass.clazz
 
         // addOption(style, option, creator, CharSequence label, ArrayList options, boolean), adding Instagram's own options.
-        val addOption = creatorClass.declaredMethods.single { method ->
+        val addOption = creatorClass.declaredMethods.firstOrNull { method ->
             val parameters = method.parameterTypes
             Modifier.isStatic(method.modifiers) && parameters.size == 6 && parameters[0].isEnum &&
                 parameters[1] == optionClass && parameters[2] == creatorClass &&
                 parameters[3] == CharSequence::class.java && parameters[4] == ArrayList::class.java &&
                 parameters[5] == Boolean::class.java
-        }.apply { isAccessible = true }
-        val style = addOption.parameterTypes[0].enumConstants!!.single { (it as Enum<*>).name == "NORMAL" }
+        }?.apply { isAccessible = true } ?: return@runCatching
+        val style = addOption.parameterTypes[0].enumConstants?.firstOrNull { (it as? Enum<*>)?.name == "NORMAL" }
+            ?: addOption.parameterTypes[0].enumConstants?.firstOrNull()
+            ?: return@runCatching
         val option = newMenuOption(optionClass, DOWNLOAD_OPTION, 500, icon)
 
         ::overflowMenuOptionsMethod.hookMethod {

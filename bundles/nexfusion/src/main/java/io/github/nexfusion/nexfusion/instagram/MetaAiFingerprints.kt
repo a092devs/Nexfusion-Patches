@@ -7,35 +7,37 @@ import org.luckypray.dexkit.query.enums.StringMatchType
 import org.luckypray.dexkit.result.MethodData
 
 /**
- * MobileConfig evaluation methods that resolve boolean feature gates (Bae, Baf, Bal, Bam).
+ * MobileConfig evaluation methods that resolve boolean feature gates on concrete manager classes.
  */
 val mobileConfigFlagMethods = findMethodListDirect {
     findMethod {
         matcher {
-            name = "Bae"
+            declaredClass("com.facebook.mobileconfig.MobileConfigManagerHolderImpl")
             paramTypes = listOf("long")
             returnType = "boolean"
         }
-    }.distinctBy { it.descriptor } +
+    } +
     findMethod {
         matcher {
-            name = "Baf"
+            declaredClass("com.facebook.mobileconfig.MobileConfigManagerHolderImpl")
             paramTypes = listOf("long", "boolean")
             returnType = "boolean"
         }
-    }.distinctBy { it.descriptor } +
+    } +
     findMethod {
         matcher {
-            name = "Bal"
+            declaredClass("com.facebook.mobileconfig.factory.MobileConfigSafeContext")
+            paramTypes = listOf("long")
             returnType = "boolean"
         }
-    }.distinctBy { it.descriptor } +
+    } +
     findMethod {
         matcher {
-            name = "Bam"
+            declaredClass("com.facebook.mobileconfig.factory.MobileConfigSafeContext")
+            paramTypes = listOf("long", "boolean")
             returnType = "boolean"
         }
-    }.distinctBy { it.descriptor }
+    }
 }
 
 /**
@@ -46,12 +48,9 @@ val metaAiGateMethods = findMethodListDirect {
     findMethod {
         matcher {
             usingNumbers(0x8103af00020eb4L)
+            returnType = "boolean"
         }
-    }.firstOrNull()?.let { sampleMethod ->
-        getClassData(sampleMethod.declaredClassName)?.methods?.filter {
-            it.returnTypeName == "boolean"
-        }
-    } ?: emptyList()
+    }.distinctBy { it.descriptor }
 }
 
 /**
@@ -84,5 +83,3 @@ val reelsAiDiscoveryMenuMethods = findMethodListDirect {
         }
     }.distinctBy { it.descriptor }
 }
-
-

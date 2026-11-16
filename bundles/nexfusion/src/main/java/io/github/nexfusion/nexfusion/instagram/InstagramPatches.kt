@@ -1,6 +1,7 @@
 package io.github.nexfusion.nexfusion.instagram
 
 import android.app.Activity
+import android.app.Application
 import android.app.Dialog
 import android.content.Intent
 import android.net.Uri
@@ -20,6 +21,7 @@ import io.github.nexfusion.compat.XC_MethodHook.MethodHookParam
 import io.github.nexfusion.compat.XC_MethodReplacement
 import io.github.nexfusion.compat.XposedBridge
 import io.github.nexfusion.PatcherLog
+import io.github.nexfusion.PatchExecutor
 import io.github.nexfusion.nexfusion.instagram.download.DownloadMedia
 import io.github.nexfusion.hookMethod
 import io.github.nexfusion.morphe.findMethodDirect
@@ -85,7 +87,30 @@ private const val ADS_CONTEXT_CLASS = "com.facebook.browser.iabcontext.IABAdsCon
  */
 private const val IN_APP_BROWSER_CLASS = "com.instagram.inappbrowser.fragments.BrowserLiteInMainProcessIGActivity"
 
-val HideAds = patch(
+internal val isMainProcess: Boolean by lazy {
+    val processName = runCatching {
+        if (Build.VERSION.SDK_INT >= 28) {
+            Application.getProcessName()
+        } else {
+            Class.forName("android.app.ActivityThread")
+                .getDeclaredMethod("currentProcessName")
+                .invoke(null) as? String
+        }
+    }.getOrNull()
+    processName == null || processName == "com.instagram.android"
+}
+
+private fun igPatch(
+    name: String,
+    description: String,
+    use: Boolean = true,
+    block: PatchExecutor.() -> Unit,
+) = patch(name, description, use) {
+    if (!isMainProcess) return@patch
+    block()
+}
+
+val HideAds = igPatch(
     name = "Hide ads",
     description = "Hides sponsored posts, reels, stories, and feed ad units without leaving gaps.",
 ) {
@@ -96,7 +121,7 @@ val HideAds = patch(
     PatcherLog.info { "NexFusion Instagram: ad endpoints are blocked and the ad injector is guarded" }
 }
 
-val HideSuggestedPosts = patch(
+val HideSuggestedPosts = igPatch(
     name = "Hide suggested posts",
     description = "Removes suggested posts, recommended accounts, and explore chaining suggestions from the feed.",
 ) {
@@ -105,7 +130,7 @@ val HideSuggestedPosts = patch(
     PatcherLog.info { "NexFusion Instagram: suggestion endpoints are blocked through the Tigon filter" }
 }
 
-val HideReelsAds = patch(
+val HideReelsAds = igPatch(
     name = "Hide reels ads",
     description = "Suppresses sponsored reels in the Reels tab and viewer.",
 ) {
@@ -115,7 +140,7 @@ val HideReelsAds = patch(
     PatcherLog.info { "NexFusion Instagram: reels ad endpoints are blocked and the ad injector is guarded" }
 }
 
-val ViewStoriesAnonymously = patch(
+val ViewStoriesAnonymously = igPatch(
     name = "View stories anonymously",
     description = "Prevents sending story seen receipts so you do not appear in story viewer lists.",
 ) {
@@ -124,7 +149,7 @@ val ViewStoriesAnonymously = patch(
     PatcherLog.info { "NexFusion Instagram: story seen receipts are blocked through the Tigon filter" }
 }
 
-val ViewLiveAnonymously = patch(
+val ViewLiveAnonymously = igPatch(
     name = "View live anonymously",
     description = "Suppresses live viewer heartbeat pings so you do not appear on live stream viewer lists.",
 ) {
@@ -132,7 +157,7 @@ val ViewLiveAnonymously = patch(
     InstagramRequestFilter.ensureHooks(classLoader)
 }
 
-val AllowScreenshots = patch(
+val AllowScreenshots = igPatch(
     name = "Allow screenshots",
     description = "Clears FLAG_SECURE so screenshots and screen recordings work everywhere, including disappearing media.",
 ) {
@@ -172,7 +197,7 @@ val AllowScreenshots = patch(
     PatcherLog.info { "NexFusion Instagram: FLAG_SECURE hooks installed" }
 }
 
-val BlockScreenshotDetection = patch(
+val BlockScreenshotDetection = igPatch(
     name = "Block screenshot detection",
     description = "Stops Instagram from notifying people when you take screenshots or screen recordings.",
 ) {
@@ -225,7 +250,7 @@ val BlockScreenshotDetection = patch(
     PatcherLog.info { "NexFusion Instagram: screenshot detection hooks installed (observer=$observerHooked, framework=$frameworkHooked)" }
 }
 
-val SanitizeShareLinks = patch(
+val SanitizeShareLinks = igPatch(
     name = "Sanitize share links",
     description = "Strips tracking parameters (igsh, utm, fbclid) from shared URLs.",
 ) {
@@ -244,7 +269,7 @@ val SanitizeShareLinks = patch(
     }
 }
 
-val OpenLinksExternally = patch(
+val OpenLinksExternally = igPatch(
     name = "Open links in external browser",
     description = "Opens web links directly in your default browser instead of Instagram's in-app browser. Instagram pages and links opened for an ad stay in the app.",
 ) {
@@ -346,7 +371,7 @@ private fun isAdLink(activity: Activity, intent: Intent): Boolean {
     }
 }
 
-val DisableAnalytics = patch(
+val DisableAnalytics = igPatch(
     name = "Disable analytics",
     description = "Stops sending usage reports, crash reports, and logging events to Meta.",
 ) {
@@ -354,7 +379,7 @@ val DisableAnalytics = patch(
     InstagramRequestFilter.ensureHooks(classLoader)
 }
 
-val StopStoryAutoAdvance = patch(
+val StopStoryAutoAdvance = igPatch(
     name = "Stop story auto-advance",
     description = "Keeps each story on screen until you tap or swipe, preventing stories from auto-advancing.",
 ) {
@@ -391,7 +416,7 @@ internal val typingStatusMethod = findMethodDirect {
     }.first()
 }
 
-val HideTypingStatus = patch(
+val HideTypingStatus = igPatch(
     name = "Hide typing status",
     description = "Stops people you are chatting with from seeing when you are typing in direct messages.",
 ) {
@@ -429,7 +454,7 @@ internal val reelsDoubleTapMethod = findMethodDirect {
     }.first()
 }
 
-val TurnOffDoubleTapLike = patch(
+val TurnOffDoubleTapLike = igPatch(
     name = "Turn off double tap to like",
     description = "Stops double-tapping posts and reels from liking them, preventing accidental likes while scrolling.",
 ) {
@@ -528,7 +553,7 @@ private fun hideStoryFollowButton(holder: Any) {
  * Takes the Follow button off the top of stories from accounts you don't follow, keeping the header clean.
  * Ported from SysAdminDoc/HushGram #237.
  */
-val HideStoryFollow = patch(
+val HideStoryFollow = igPatch(
     name = "Hide Follow on stories",
     description = "Takes the Follow button off the top of stories from accounts you don't follow. The name, time and menu stay.",
 ) {
@@ -603,7 +628,7 @@ private fun installFeedFollowHider(activity: Activity) {
  * Takes the Follow and Subscribe buttons off feed posts, keeping the post header clean.
  * Ported from SysAdminDoc/HushGram #248.
  */
-val HideFeedFollow = patch(
+val HideFeedFollow = igPatch(
     name = "Hide Follow on feed posts",
     description = "Takes the Follow and Subscribe buttons off feed posts, keeping the post header clean.",
     use = false,
@@ -628,7 +653,7 @@ val HideFeedFollow = patch(
  * Stops Instagram from saving recent search clicks to your search history.
  * Ported from SysAdminDoc/HushGram.
  */
-val DontSaveRecentSearches = patch(
+val DontSaveRecentSearches = igPatch(
     name = "Don't save recent searches",
     description = "Prevents searches from being added to your recent search history.",
     use = false,
@@ -642,7 +667,7 @@ val DontSaveRecentSearches = patch(
  * Stops Instagram from sending watched reels seen state to its servers.
  * Ported from SysAdminDoc/HushGram.
  */
-val DontSendReelWatchHistory = patch(
+val DontSendReelWatchHistory = igPatch(
     name = "Don't send reel watch history",
     description = "Stops Instagram from sending watched reel status to its servers, keeping your watch history private.",
     use = false,
@@ -817,7 +842,7 @@ private fun installMetaAiViewHiderOnDecor(decorView: View) {
  * reel summaries, and AI network requests.
  * Ported and adapted from SysAdminDoc/HushGram (GPL-3.0).
  */
-val HideMetaAi = patch(
+val HideMetaAi = igPatch(
     name = "Hide Meta AI",
     description = "Removes Meta AI from search, inbox, home top bar, reels menus, and blocks all Meta AI endpoints.",
     use = true,
@@ -945,7 +970,7 @@ val HideMetaAi = patch(
     }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: Hide Meta AI view hider skipped" } }
 }
 
-val TurnOffHdrBoosts = patch(
+val TurnOffHdrBoosts = igPatch(
     name = "Turn off HDR brightness boosts",
     description = "Prevents HDR reels and videos from boosting display brightness beyond SDR levels, and disables AV1 synthetic HDR tone mapping.",
     use = false,
@@ -991,7 +1016,7 @@ val TurnOffHdrBoosts = patch(
     PatcherLog.info { "NexFusion Instagram: Turn off HDR brightness boosts installed" }
 }
 
-val StartFeedVideosWithSound = patch(
+val StartFeedVideosWithSound = igPatch(
     name = "Start feed videos with sound",
     description = "Starts videos in the feed and reels with sound automatically, respecting phone ringer and media volume.",
     use = false,
@@ -1001,7 +1026,7 @@ val StartFeedVideosWithSound = patch(
     }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: Start feed videos with sound hook skipped" } }
 }
 
-val HideOtherStoryRings = patch(
+val HideOtherStoryRings = igPatch(
     name = "Hide story rings outside stories tray",
     description = "Hides unread story rings from profile pictures across posts, comments, reels, and profiles, keeping them only in the top stories row.",
     use = false,

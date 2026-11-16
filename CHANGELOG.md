@@ -7,13 +7,17 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
-## 4.3.19-beta4
+## 4.3.19
 
 - `Instagram`:
-  * Fixed force close when opening the story options menu to download a story by setting the augmented row list on the correct parameter index.
-
-## 4.3.19-beta3
-
+  * Resolved cold startup delays and main thread blocking during app initialization by restricting MobileConfig evaluation fingerprints to concrete manager classes and eliminating unconstrained DexKit scans.
+  * Isolated UI and DexKit patch execution to the main application process, preventing background services (such as `:fbns`) from competing for cache locks or triggering DexKit rescan freezes.
+  * Fixed force close when opening the story options menu to download a story by setting augmented row items to the correct method argument index.
+  * Resolved `NoSuchElementException` in post download options menu by safely looking up menu style enum constants.
+  * Suppressed Reels Meta AI Litho render pills (`ClipsMetaAiPillComponent_render`) and creation prompt chips.
+  * Suppressed Reels More menu AI Discovery ("Ask Meta AI") options gate.
+  * Extended view hider to scroll change events so views scrolled into view are hidden immediately without waiting for layout.
+  * Added patch to hide unread story rings from profile pictures outside the Home stories tray.
 - `Gboard`:
   * Added Gboard 18.6.3 native split readiness check for Advanced Voice Typing.
   * Added screen rotation grace window to Rambler voice typing, preventing session deactivation during orientation changes.
@@ -22,48 +26,46 @@ bundles after CI succeeds.
 - `Facebook`:
   * Retained user-hidden posts across pull-to-refresh feeds.
   * Filtered duplicate touch dispatches in Saved reels viewer.
-- `Instagram`:
-  * Extended view hider to scroll change events so views scrolled into view are hidden immediately without waiting for layout.
-  * Added patch to hide unread story rings from profile pictures outside the Home stories tray.
 - `Telegram`:
   * Added link preview redirection patch for embed-friendly services.
   * Hardened screenshot allowance by stripping secure window flags across view layout parameters.
-
-## 4.3.19-beta2
-
-- `Instagram`:
-  * Suppress Reels Meta AI Litho render pills (`ClipsMetaAiPillComponent_render`) and creation prompt chips.
-  * Suppress Reels More menu AI Discovery ("Ask Meta AI") options gate.
-  * Add updated "About this reel" summary server configuration flags.
-
-## 4.3.19-beta1
-
-- `NexFusion` 4.3.19-beta1:
-  * Upstream Patches Sync (v2.3.0-dev.9) & Extension Library (v2.3.0-dev.1):
-    - YouTube:
-      * Added setting to force 1440p and 4K downloads for low end or older devices.
-      * Added 1440p and 2160p (4k) video quality to in-app downloading.
-      * Added "Show download in video menus" setting for video menus that have no download item.
-      * DeArrow: added title and thumbnail submission and voting; display DeArrow icon on titles with thumbnail-only replacements.
-      * Added push notification debugging support.
-      * Added queue actions to video thumbnails.
-      * Enhanced Ambient Mode: added "Light smoothing" and "Light blur" settings; resolved fullscreen toggle interaction.
-      * Fixed "Stable volume" visibility in player flyout menu when disabled.
-      * Fixed auto-caption behavior on Shorts.
-      * Fixed feed card and Shorts card spacing and YouTube Premium promotion hiding for newer A/B tests.
-      * Fixed playlist drag handles and reorder behavior across non-English locales.
-      * Fixed Shorts playback advance after live streams with live chat.
-      * Fixed Explore menu item hiding in Home More tab.
-      * Resolved Mobile Web renderer crash recovery and PoToken initialization in video stream spoofing.
-      * Resolved segmented dislike button empty spacing when dislikes fail to load.
-      * Fixed download button localization in post image downloads.
-    - YouTube Music:
-      * Added experimental support for version 9.46.51.
-      * Fixed Jam queue sharing crash on version 9.46.
-      * Kept Play button of Liked music above glass navigation bar.
-    - Shared & Library:
-      * Updated CharSequence emptiness helpers and modernized StringRef handling.
-      * Memory leak cleanup, inspection modernizations, and string check optimizations.
+- `Upstream Sync`:
+  * Synchronized morphe-patches to v2.3.0 and morphe-patches-library to v2.3.0-dev.1.
+  * YouTube:
+    - Added setting to force 1440p and 4K downloads for low end or older devices.
+    - Added 1440p and 2160p (4k) video quality to in-app downloading.
+    - Added "Show download in video menus" setting for video menus that have no download item.
+    - DeArrow: added title and thumbnail submission and voting; display DeArrow icon on titles with thumbnail-only replacements.
+    - Added push notification debugging support.
+    - Added queue actions to video thumbnails.
+    - Enhanced Ambient Mode: added "Light smoothing" and "Light blur" settings; resolved fullscreen toggle interaction.
+    - Fixed "Stable volume" visibility in player flyout menu when disabled.
+    - Fixed auto-caption behavior on Shorts.
+    - Fixed feed card and Shorts card spacing and YouTube Premium promotion hiding for newer A/B tests.
+    - Fixed playlist drag handles and reorder behavior across non-English locales.
+    - Fixed Shorts playback advance after live streams with live chat.
+    - Fixed Explore menu item hiding in Home More tab.
+    - Resolved Mobile Web renderer crash recovery and PoToken initialization in video stream spoofing.
+    - Resolved segmented dislike button empty spacing when dislikes fail to load.
+    - Fixed download button localization in post image downloads.
+  * YouTube Music:
+    - Added third-party lyrics providers: Genius, LRCLIB, and Musixmatch support.
+    - Added setting to reload lyrics by tapping the lyrics panel header.
+    - Added real-time sync with offset adjustments for third-party lyrics.
+    - Added support for translate and romanize lyrics.
+    - Added "Remember video quality" patch for music videos.
+    - Added "Open system share sheet" patch.
+    - Fixed crash when third-party lyrics trim and update cache.
+    - Fixed background playback pause when connecting or disconnecting Bluetooth devices.
+    - Added experimental support for version 9.46.51.
+    - Fixed Jam queue sharing crash on version 9.46.
+    - Kept Play button of Liked music above glass navigation bar.
+  * Reddit:
+    - Added in-app Reddit app icon selector.
+    - Redesigned Morphe settings screen to match Reddit design language.
+  * Shared & Library:
+    - Updated CharSequence emptiness helpers and modernized StringRef handling.
+    - Memory leak cleanup, inspection modernizations, and string check optimizations.
 
 ## 4.3.18
 
