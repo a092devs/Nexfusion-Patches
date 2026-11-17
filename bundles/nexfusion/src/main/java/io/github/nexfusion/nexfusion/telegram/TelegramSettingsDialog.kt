@@ -142,13 +142,13 @@ object TelegramSettingsDialog {
             setPadding(dp(context, 12f), 0, dp(context, 8f), 0)
         }
         val titleView = TextView(context).apply {
-            text = "NexFusion Settings"
-            textSize = 19f
+            text = "NexFusion"
+            textSize = 20f
             setTextColor(onSurface)
             typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
         }
         val subtitleView = TextView(context).apply {
-            text = "Telegram Customizations"
+            text = "Patches & Features"
             textSize = 12f
             setTextColor(onSurfaceVariant)
         }

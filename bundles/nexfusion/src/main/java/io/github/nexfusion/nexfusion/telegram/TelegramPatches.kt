@@ -20,7 +20,7 @@ import io.github.nexfusion.patch
 
 val TelegramSettings = patch(
     name = "Telegram Settings",
-    description = "Adds NexFusion settings inside Telegram app to customize privacy, ads, downloads, and interface tweaks.",
+    description = "Adds NexFusion setting inside Telegram app to customize privacy, ads, downloads, and interface tweaks.",
 ) {
     TelegramSettingsHook.install(classLoader)
 }

@@ -7,6 +7,13 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.4.0-beta1
+
+- `Telegram`:
+  * Added dedicated NexFusion settings panel positioned directly above Settings > Accounts separating profile settings.
+  * Standardized branding to exact NexFusion casing across dialog headers, action pills, popup menu options, and shortcuts.
+  * Added top action pill, three-dots popup menu shortcut, and version footer integrations for quick in-app settings access.
+
 ## 4.3.21
 
 - `Telegram`:
