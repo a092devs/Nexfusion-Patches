@@ -39,4 +39,14 @@ class FlagOverrideTest {
         assertEquals(3L, force.applyTo(3L))
         assertEquals(false, force.applyTo(false))
     }
+
+    @Test
+    fun `force false replaces null or booleans with false`() {
+        val force = FlagOverride.forceFalse()
+        assertEquals(false, force.applyTo(true))
+        assertEquals(false, force.applyTo(false))
+        assertEquals(false, force.applyTo(null))
+        assertEquals("unchanged", force.applyTo("unchanged"))
+        assertEquals(1L, force.applyTo(1L))
+    }
 }

@@ -50,7 +50,7 @@ class FlagOverride private constructor(
  * `actb`, `actq`, and `actf` are the plain flag, metadata, and flag interface on Gboard 18.4.1.
  */
 private val KNOWN_FLAG_CLASS_NAMES = listOf(
-    "oki", "okj", "okl",                   // Gboard 18.5.3 & 18.5.4 release
+    "odo", "oki", "okj", "okl",           // Gboard 18.6.3, 18.5.9, 18.5.3 & 18.5.4 release
     "actb", "actq", "acug", "acul",         // Gboard 18.4.1 beta
     "odx", "ody",                           // Gboard 18.4.1 release
     "acps", "obw", "ntk", "nuw", "lhf", "lhg", "kgj", "acta", "actc", "jzp", "jzq"
@@ -75,6 +75,36 @@ private val dynamicBooleanPrefOverrides = ConcurrentHashMap<String, Boolean>()
 private val dynamicStringPrefOverrides = ConcurrentHashMap<String, String>()
 private var installed = false
 private var prefsHooked = false
+private var mFileField: Field? = null
+
+private fun isTargetPreferences(sp: Any?): Boolean {
+    if (sp == null) return false
+    val field = mFileField ?: run {
+        var clz: Class<*>? = sp.javaClass
+        var f: Field? = null
+        while (clz != null && clz != Any::class.java) {
+            f = runCatching { clz.getDeclaredField("mFile").apply { isAccessible = true } }.getOrNull()
+            if (f != null) break
+            clz = clz.superclass
+        }
+        if (f != null) {
+            mFileField = f
+            f
+        } else null
+    } ?: return true
+    val file = runCatching { field.get(sp) as? java.io.File }.getOrNull() ?: return true
+    val name = file.name
+    return name.contains("latin_preferences") || name.endsWith("_preferences.xml") || name == "com.google.android.inputmethod.latin_preferences.xml"
+}
+
+private fun isTargetEditor(editor: Any?): Boolean {
+    if (editor == null) return false
+    val outer = runCatching {
+        val f = editor.javaClass.getDeclaredField("this$0").apply { isAccessible = true }
+        f.get(editor)
+    }.getOrNull()
+    return if (outer != null) isTargetPreferences(outer) else true
+}
 
 fun PatchExecutor.enableGboardPreferences(
     booleans: Map<String, Boolean> = emptyMap(),
@@ -151,6 +181,7 @@ fun PatchExecutor.enableGboardPreferences(
                 Boolean::class.javaPrimitiveType,
                 object : XC_MethodHook() {
                     override fun beforeHookedMethod(param: MethodHookParam) {
+                        if (!isTargetPreferences(param.thisObject)) return
                         val key = param.args[0] as? String ?: return
                         val override = dynamicBooleanPrefOverrides[key]
                         if (override != null) {
@@ -171,6 +202,7 @@ fun PatchExecutor.enableGboardPreferences(
                 String::class.java,
                 object : XC_MethodHook() {
                     override fun beforeHookedMethod(param: MethodHookParam) {
+                        if (!isTargetPreferences(param.thisObject)) return
                         val key = param.args[0] as? String ?: return
                         val override = dynamicStringPrefOverrides[key]
                         if (override != null) {
@@ -190,6 +222,7 @@ fun PatchExecutor.enableGboardPreferences(
                 object : XC_MethodHook() {
                     @Suppress("UNCHECKED_CAST")
                     override fun afterHookedMethod(param: MethodHookParam) {
+                        if (!isTargetPreferences(param.thisObject)) return
                         val original = param.result as? Map<String, Any?> ?: return
                         val modified = HashMap(original)
                         dynamicBooleanPrefOverrides.forEach { (k, v) -> modified[k] = v }
@@ -204,6 +237,7 @@ fun PatchExecutor.enableGboardPreferences(
                 String::class.java,
                 object : XC_MethodHook() {
                     override fun beforeHookedMethod(param: MethodHookParam) {
+                        if (!isTargetPreferences(param.thisObject)) return
                         val key = param.args[0] as? String ?: return
                         if (dynamicBooleanPrefOverrides.containsKey(key) || dynamicStringPrefOverrides.containsKey(key)) {
                             param.result = true
@@ -223,6 +257,7 @@ fun PatchExecutor.enableGboardPreferences(
                     Boolean::class.javaPrimitiveType,
                     object : XC_MethodHook() {
                         override fun beforeHookedMethod(param: MethodHookParam) {
+                            if (!isTargetEditor(param.thisObject)) return
                             val key = param.args[0] as? String ?: return
                             val override = dynamicBooleanPrefOverrides[key]
                             if (override != null) {
@@ -238,6 +273,7 @@ fun PatchExecutor.enableGboardPreferences(
                     String::class.java,
                     object : XC_MethodHook() {
                         override fun beforeHookedMethod(param: MethodHookParam) {
+                            if (!isTargetEditor(param.thisObject)) return
                             val key = param.args[0] as? String ?: return
                             val override = dynamicStringPrefOverrides[key]
                             if (override != null) {
@@ -296,45 +332,12 @@ fun PatchExecutor.enableGboardRoundedKeysPreference() {
 }
 
 /**
- * Ensures Gboard's AI Writing Tools and Jarvis consent preferences are enabled in SharedPreferences
- * storage and runtime lookups without clobbering user-customized access points or suggestion strip order.
- */
-fun PatchExecutor.enableGboardWritingToolsPreference() {
-    enableGboardPreferences(
-        booleans = mapOf(
-            "pref_key_writing_tools_opt_in" to true,
-            "pref_key_writing_tools_screen_context_opt_in" to true,
-            "pref_key_writing_tools_screen_context_opt_in_v1" to true,
-            "pref_key_writing_tools_enable_pi_override" to true,
-            "pref_key_stop_dictation_after_sending_writing_tools_v2_prompts" to false,
-            "enable_jarvis" to true,
-            "jarvis_enabled" to true,
-            "pref_ai_writing_tools_v2_enabled" to false,
-            "pref_v2_force_disabled_v1" to true,
-            "pref_backend_force_server_v2" to true,
-        ),
-        strings = mapOf(
-            "jarvis_consent_history" to "Granted (Form)",
-            "pref_ai_writing_tools_backend_type" to "GBOARD_SERVER",
-        )
-    )
-}
-
-/**
  * Registers [entries] and installs the shared value-getter hook on first use. Called from each
  * Gboard patch while it runs, so a disabled patch never contributes its flags.
  */
 fun PatchExecutor.gboardFlagOverrides(vararg entries: Pair<String, FlagOverride>) {
-    val newBooleans = mutableMapOf<String, Boolean>()
     for ((name, override) in entries) {
         overrides.putIfAbsent(name, override)
-        val sample = override.applyTo(null)
-        if (sample is Boolean) {
-            newBooleans[name] = sample
-        }
-    }
-    if (newBooleans.isNotEmpty()) {
-        enableGboardPreferences(booleans = newBooleans)
     }
     if (installed) return
 
@@ -376,7 +379,7 @@ fun PatchExecutor.gboardFlagOverrides(vararg entries: Pair<String, FlagOverride>
     }
 }
 
-/** The flag's name, read from method h() or the name field of its class; null when the receiver is unexpected. */
+/** The flag's name, read from field 'a' or method h(); null when the receiver is unexpected. */
 private fun flagName(receiver: Any): String? {
     val id = System.identityHashCode(receiver)
     val cached = receiverNameCache[id]
@@ -385,14 +388,41 @@ private fun flagName(receiver: Any): String? {
     }
     val receiverClass = receiver.javaClass
 
-    // 1. Check for public method h() returning String (present in Gboard 18.4.1 actb, actq, etc.)
+    // 1. Primary: read field 'a' of type String (standard across Gboard releases: odo, oki, odx, obw, acps, etc.)
+    val field = nameFields[receiverClass] ?: run {
+        var resolved: Field? = runCatching {
+            receiverClass.getDeclaredField("a").apply { isAccessible = true }
+        }.getOrNull()?.takeIf { it.type == String::class.java }
+
+        if (resolved == null) {
+            var c: Class<*>? = receiverClass.superclass
+            while (c != null && c != Any::class.java) {
+                resolved = runCatching {
+                    c.getDeclaredField("a").apply { isAccessible = true }
+                }.getOrNull()?.takeIf { it.type == String::class.java }
+                if (resolved != null) break
+                c = c.superclass
+            }
+        }
+        if (resolved == null) {
+            resolved = runCatching {
+                receiverClass.declaredFields.firstOrNull { it.type == String::class.java }?.apply { isAccessible = true }
+            }.getOrNull()
+        }
+        if (resolved != null) {
+            nameFields.putIfAbsent(receiverClass, resolved) ?: resolved
+        } else null
+    }
+    val nameFromField = runCatching { field?.get(receiver) as? String }.getOrNull()
+    if (!nameFromField.isNullOrEmpty()) {
+        receiverNameCache[id] = nameFromField
+        return nameFromField
+    }
+
+    // 2. Fall back to method h() returning String (present in Gboard 18.4.1 actb, actq, etc.)
     val method = nameMethods[receiverClass] ?: run {
         val m = runCatching { receiverClass.getMethod("h") }.getOrNull()
-            ?: runCatching {
-                receiverClass.declaredMethods.firstOrNull {
-                    it.parameterTypes.isEmpty() && it.returnType == String::class.java
-                }?.apply { isAccessible = true }
-            }.getOrNull()
+            ?.takeIf { it.returnType == String::class.java && it.parameterTypes.isEmpty() }
         if (m != null) nameMethods.putIfAbsent(receiverClass, m) ?: m else null
     }
     if (method != null) {
@@ -403,24 +433,6 @@ private fun flagName(receiver: Any): String? {
         }
     }
 
-    // 2. Fall back to field 'a' or first String field
-    val field = nameFields[receiverClass] ?: run {
-        var resolved: Field? = null
-        var c: Class<*>? = receiverClass
-        while (c != null && c != Any::class.java) {
-            resolved = runCatching { c.getDeclaredField("a").apply { isAccessible = true } }.getOrNull()
-                ?: runCatching { c.declaredFields.firstOrNull { it.type == String::class.java }?.apply { isAccessible = true } }.getOrNull()
-            if (resolved != null) break
-            c = c.superclass
-        }
-        if (resolved == null) return null
-        nameFields.putIfAbsent(receiverClass, resolved) ?: resolved
-    }
-    val name = runCatching { field.get(receiver) as? String }.getOrNull()
-    if (!name.isNullOrEmpty()) {
-        receiverNameCache[id] = name
-        return name
-    }
     receiverNameCache[id] = ""
     return null
 }

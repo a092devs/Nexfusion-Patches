@@ -53,16 +53,12 @@ import kotlin.system.exitProcess
  */
 object GboardSettingsDialog {
 
-    const val PREF_KEY_AI_WRITING_TOOLS_ENABLED = "pref_ai_writing_tools_enabled"
-    const val PREF_KEY_ALL_KEYBOARDS_ENABLED = "pref_ai_writing_tools_all_keyboards_enabled"
     const val PREF_KEY_ADVANCED_VOICE_TYPING = "pref_advanced_voice_typing_enabled"
     const val PREF_KEY_ROUNDED_KEYS_ENABLED = "rounded_keys_enabled"
 
     // Official Gboard stock preference keys synchronized with our toggles
     const val GBOARD_PREF_ENABLE_ROUNDED_KEYS = "enable_rounded_keys"
     const val GBOARD_PREF_ENABLE_JETSON = "enable_jetson"
-    const val GBOARD_PREF_WRITING_TOOLS_OPT_IN = "pref_key_writing_tools_opt_in"
-    const val GBOARD_PREF_JARVIS_CONSENT = "jarvis_consent_history"
     const val GBOARD_PREF_AUTO_PUNCTUATION = "pref_key_auto_punctuation"
     const val GBOARD_PREF_ENABLE_AUTO_PUNCTUATION = "pref_key_enable_auto_punctuation"
 
@@ -309,60 +305,7 @@ object GboardSettingsDialog {
             }
         }
 
-        // Switch 1: Enable AI Writing Tools
-        val swWritingTools = addSwitchRow(
-            context = context,
-            container = card,
-            title = "Enable AI Writing Tools",
-            summary = "Force-show Corrections & suggestions > Writing tools > Show writing tools icon in suggestion strip while typing. Force-stop and restart Gboard for changes to take effect.",
-            initial = prefs.getBoolean(PREF_KEY_AI_WRITING_TOOLS_ENABLED, true),
-            primaryColor = primaryCol,
-            onSurface = onSurface,
-            onSurfaceVariant = onSurfaceVariant,
-            onToggle = { isChecked ->
-                prefs.edit()
-                    .putBoolean(PREF_KEY_AI_WRITING_TOOLS_ENABLED, isChecked)
-                    .putBoolean(GBOARD_PREF_WRITING_TOOLS_OPT_IN, isChecked)
-                    .putBoolean(GBOARD_PREF_JARVIS_CONSENT, isChecked)
-                    .commit()
-                // Mirror to credential storage if separate
-                runCatching {
-                    PreferenceManager.getDefaultSharedPreferences(context)
-                        .edit()
-                        .putBoolean(PREF_KEY_AI_WRITING_TOOLS_ENABLED, isChecked)
-                        .commit()
-                }
-            }
-        )
-
-        addDivider(context, card, dividerCol)
-
-        // Switch 2: Support All Keyboards
-        addSwitchRow(
-            context = context,
-            container = card,
-            title = "Support All Keyboards",
-            summary = "When enabled, force writing tools to work on every keyboard. Force-stop and restart Gboard for the change to take effect.",
-            initial = prefs.getBoolean(PREF_KEY_ALL_KEYBOARDS_ENABLED, true),
-            primaryColor = primaryCol,
-            onSurface = onSurface,
-            onSurfaceVariant = onSurfaceVariant,
-            onToggle = { isChecked ->
-                prefs.edit()
-                    .putBoolean(PREF_KEY_ALL_KEYBOARDS_ENABLED, isChecked)
-                    .commit()
-                runCatching {
-                    PreferenceManager.getDefaultSharedPreferences(context)
-                        .edit()
-                        .putBoolean(PREF_KEY_ALL_KEYBOARDS_ENABLED, isChecked)
-                        .commit()
-                }
-            }
-        )
-
-        addDivider(context, card, dividerCol)
-
-        // Switch 3: Enable Advanced Voice Typing (Rambler)
+        // Switch 1: Enable Advanced Voice Typing (Rambler)
         addSwitchRow(
             context = context,
             container = card,
@@ -391,7 +334,7 @@ object GboardSettingsDialog {
 
         addDivider(context, card, dividerCol)
 
-        // Switch 4: Material 3 Rounded Keys (Belka UI)
+        // Switch 2: Material 3 Rounded Keys (Belka UI)
         addSwitchRow(
             context = context,
             container = card,
@@ -427,7 +370,7 @@ object GboardSettingsDialog {
             onSurface = onSurface,
             onSurfaceVariant = onSurfaceVariant,
             onClick = {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/jasonwu1994/Gboard-patches/issues/68"))
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/jasonwu1994/Gboard-patches"))
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 runCatching { context.startActivity(intent) }
             }

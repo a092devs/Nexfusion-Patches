@@ -195,90 +195,6 @@ val GboardKeyShapeSelection = patch(
     gboardFlagOverrides("more_pill_keys" to FlagOverride.forceTrue())
 }
 
-val GboardAiWritingTools = patch(
-    name = "AI Writing Tools",
-    description = "Enables Gboard's Gemini-powered AI writing assistant, Proofread, and style rephrasing across apps.",
-) {
-    gboardFlagOverrides(
-        // Core writing tools & toolbar access point flags
-        "jarvis" to FlagOverride.forceTrue(),
-        "writing_tools" to FlagOverride.forceTrue(),
-        "writing_tools_v2" to FlagOverride.forceTrue(),
-        "enable_writing_tools_v2" to FlagOverride.forceTrue(),
-        "writing_tools_v2_on_toolbar" to FlagOverride.forceTrue(),
-        "enable_writing_tools_v2_on_toolbar" to FlagOverride.forceTrue(),
-        "writing_tools_cooperative_mode" to FlagOverride.forceTrue(),
-        "enable_writing_tools_cooperative_mode" to FlagOverride.forceTrue(),
-        "writing_tools_cooperative_mode_min_words_to_show_access_point" to FlagOverride.forceLong(0L),
-        "writing_tools_cooperative_mode_min_shown_times_before_triggering_tooltip" to FlagOverride.forceLong(0L),
-        "writing_tools_cooperative_mode_min_shown_cumulative_time_before_triggering_tooltip_secs" to FlagOverride.forceLong(0L),
-        "writing_tools_enable_stable_entrance" to FlagOverride.forceTrue(),
-        "enable_writing_tools_replace_button" to FlagOverride.forceTrue(),
-        "writing_tools_replace_button" to FlagOverride.forceTrue(),
-        "writing_tools_enable_streaming_ui" to FlagOverride.forceTrue(),
-        "writing_tools_suggest_style" to FlagOverride.forceTrue(),
-        "enable_writing_tools_suggest_style" to FlagOverride.forceTrue(),
-        "writing_tools_my_style" to FlagOverride.forceTrue(),
-        "enable_writing_tools_my_style" to FlagOverride.forceTrue(),
-        "writing_tools_my_style_plus" to FlagOverride.forceTrue(),
-        "enable_writing_tools_my_style_plus" to FlagOverride.forceTrue(),
-        "writing_tools_for_minors" to FlagOverride.forceTrue(),
-        "enable_writing_tools_for_minors" to FlagOverride.forceTrue(),
-        "writing_tools_voice_commands" to FlagOverride.forceTrue(),
-        "enable_writing_tools_voice_commands" to FlagOverride.forceTrue(),
-        "writing_tools_prompts" to FlagOverride.forceTrue(),
-        "writing_tools_suggestions" to FlagOverride.forceTrue(),
-        "writing_tools_4c" to FlagOverride.forceTrue(),
-        "writing_tools_context_opt_in" to FlagOverride.forceTrue(),
-        "writing_tools_backend_type" to FlagOverride.forceLong(1L),
-        "writing_tools_v2_backend_type" to FlagOverride.forceLong(1L),
-        "writing_tools_pi_override" to FlagOverride.forceTrue(),
-        "writing_tools_v2_allow_empty_user_instruction" to FlagOverride.forceTrue(),
-        "writing_tools_v2_show_predefined_prompts" to FlagOverride.forceTrue(),
-        "writing_tools_v2_display_instruction_suggestions_in_zero_state" to FlagOverride.forceTrue(),
-        "writing_tools_v2_enable_suggested_instructions" to FlagOverride.forceTrue(),
-        "writing_tools_v2_enable_suggested_instructions_in_draft_response" to FlagOverride.forceTrue(),
-
-        // Writing helper & stylization
-        "writing_helper" to FlagOverride.forceTrue(),
-        "writing_helper_on_selected_text" to FlagOverride.forceTrue(),
-        "writing_helper_enable_access_point_animation" to FlagOverride.forceTrue(),
-        "writing_helper_enable_text_stylization_internal" to FlagOverride.forceTrue(),
-        "writing_helper_chip_in_spellchecker" to FlagOverride.forceTrue(),
-        "writing_helper_server_target" to FlagOverride.forceString("staging-gboard-imagen-pa.sandbox.googleapis.com"),
-        "gboard_imagen_api_host" to FlagOverride.forceString("staging-gboard-imagen-pa.sandbox.googleapis.com"),
-        "writing_helper_model_version" to FlagOverride.forceString("IMAGE_AND_TEXT_GENERATION"),
-        "writing_helper_text_stylization_model_version" to FlagOverride.forceString("IMAGE_AND_TEXT_GENERATION"),
-        "writing_helper_supported_language_tags" to FlagOverride.forceString("*"),
-        "llm_pc_supported_language_tags" to FlagOverride.forceString("*"),
-        "writing_tools_supported_locales" to FlagOverride.forceString("*"),
-        "proofread_supported_locales" to FlagOverride.forceString("*"),
-        "proofread_supported_apps" to FlagOverride.forceString("*"),
-        "enable_device_intelligence" to FlagOverride.forceTrue(),
-        "enable_access_point_keyboard" to FlagOverride.forceTrue(),
-        "enable_nga_lab_modeless_smartedit" to FlagOverride.forceTrue(),
-        "enable_on_device_proofread" to FlagOverride.forceTrue(),
-        "writing_tools_enable_hybrid" to FlagOverride.forceTrue(),
-        "nga_lab_modeless_smartedit_regex_version" to FlagOverride.forceString("v3"),
-
-        // Proofread & Fix It flags
-        "config_proofread" to FlagOverride.forceTrue(),
-        "proofread" to FlagOverride.forceTrue(),
-        "proofread_config" to FlagOverride.forceTrue(),
-        "proofread_chip" to FlagOverride.forceTrue(),
-        "proofread_lock" to FlagOverride.forceTrue(),
-        "proofread_suggestion" to FlagOverride.forceTrue(),
-        "proofreader" to FlagOverride.forceTrue(),
-
-        // Access point order overrides ensuring jarvis (AI writing tools) appears on the keyboard toolbar
-        "config_access_points_order" to FlagOverride.forceString("jarvis;clipboard;translate;settings;gif_search;sticker;search;one_handed;textediting;floating_keyboard"),
-        "access_points_order" to FlagOverride.forceString("jarvis;clipboard;translate;settings;gif_search;sticker;search;one_handed;textediting;floating_keyboard"),
-        "access_points_order_for_new_user_on_phone" to FlagOverride.forceString("jarvis;clipboard;translate;settings;gif_search;sticker;search;one_handed;textediting;floating_keyboard"),
-        "config_default_access_points_num_on_bar" to FlagOverride.forceLong(6L),
-        "config_max_access_points" to FlagOverride.forceLong(6L),
-    )
-    enableGboardWritingToolsPreference()
-}
 
 val GboardRoundedKeycaps = patch(
     name = "Rounded keycaps (Belka UI)",
@@ -325,7 +241,6 @@ val GboardScreenshotChips = patch(
         "should_auto_enable_enable_screenshot_in_clipboard" to FlagOverride.forceTrue(),
         "enable_extended_clipboard_history" to FlagOverride.forceTrue(),
         "enable_system_clipboard_direct_paste_for_quick_paste" to FlagOverride.forceTrue(),
-        "writing_tools_v2_enable_screenshot_context" to FlagOverride.forceTrue(),
         "enable_auto_paste_chips" to FlagOverride.forceTrue(),
         "pref_key_enable_clipboard_suggestion" to FlagOverride.forceTrue(),
     )
@@ -608,7 +523,6 @@ val GboardBackupRestore = patch(
 val GboardPatches = arrayOf(
     GboardSettingsMenu,
     GboardRamblerVoiceTyping,
-    GboardAiWritingTools,
     GboardRoundedKeycaps,
     GboardSpellCheckerChips,
     GboardCandidateEmojiVibrancy,

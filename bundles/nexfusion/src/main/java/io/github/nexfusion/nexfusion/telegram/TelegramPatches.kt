@@ -18,6 +18,13 @@ import io.github.nexfusion.patch
  * compatible with official Telegram (Play & Web).
  */
 
+val TelegramSettings = patch(
+    name = "Telegram Settings",
+    description = "Adds NexFusion settings inside Telegram app to customize privacy, ads, downloads, and interface tweaks.",
+) {
+    TelegramSettingsHook.install(classLoader)
+}
+
 val TelegramHideAds = patch(
     name = "Hide ads",
     description = "Removes sponsored messages in channels, sponsored accounts in search, and video ads.",
@@ -28,6 +35,7 @@ val TelegramHideAds = patch(
         controllerCls.declaredMethods.filter { it.name == "getSponsoredMessages" }.forEach { m ->
             XposedBridge.hookMethod(m, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (!TelegramPreferences.isHideAdsEnabled()) return
                     param.result = null
                 }
             })
@@ -41,6 +49,7 @@ val TelegramHideAds = patch(
         if (loadMethod != null) {
             XposedBridge.hookMethod(loadMethod, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (!TelegramPreferences.isHideAdsEnabled()) return
                     param.result = null
                 }
             })
@@ -53,6 +62,7 @@ val TelegramHideAds = patch(
         controllerCls.declaredMethods.filter { it.name == "getChannelRecommendations" }.forEach { m ->
             XposedBridge.hookMethod(m, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (!TelegramPreferences.isHideAdsEnabled()) return
                     param.result = null
                 }
             })
@@ -65,6 +75,7 @@ val TelegramHideAds = patch(
         connCls.declaredMethods.filter { it.name == "sendRequest" }.forEach { m ->
             XposedBridge.hookMethod(m, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (!TelegramPreferences.isHideAdsEnabled()) return
                     val req = param.args.firstOrNull() ?: return
                     val reqName = req.javaClass.name
                     if (reqName.contains("getSponsoredMessages") ||
@@ -88,6 +99,7 @@ val TelegramHideStories = patch(
         storiesControllerCls.declaredMethods.filter { it.name == "loadAllStories" }.forEach { m ->
             XposedBridge.hookMethod(m, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (!TelegramPreferences.isHideStoriesEnabled()) return
                     param.result = null
                 }
             })
@@ -95,6 +107,7 @@ val TelegramHideStories = patch(
         storiesControllerCls.declaredMethods.filter { it.name == "hasStories" || it.name == "hasUnseenStories" }.forEach { m ->
             XposedBridge.hookMethod(m, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (!TelegramPreferences.isHideStoriesEnabled()) return
                     param.result = false
                 }
             })
@@ -111,6 +124,7 @@ val TelegramHideSponsoredProxy = patch(
         controllerCls.declaredMethods.filter { it.name == "checkProxyInfo" }.forEach { m ->
             XposedBridge.hookMethod(m, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (!TelegramPreferences.isHideSponsoredProxyEnabled()) return
                     param.result = null
                 }
             })
@@ -127,6 +141,7 @@ val TelegramKeepDeletedMessages = patch(
         storageCls.declaredMethods.filter { it.name == "markMessagesAsDeleted" }.forEach { m ->
             XposedBridge.hookMethod(m, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (!TelegramPreferences.isKeepDeletedMessagesEnabled()) return
                     // Suppress deletion: keep message in local database
                     param.result = null
                 }
@@ -144,6 +159,7 @@ val TelegramExactNumbers = patch(
         localeCls.declaredMethods.filter { it.name == "formatShortNumber" }.forEach { m ->
             XposedBridge.hookMethod(m, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (!TelegramPreferences.isExactNumbersEnabled()) return
                     val number = param.args.firstOrNull() as? Int ?: return
                     val rounded = param.args.getOrNull(1) as? IntArray
                     if (rounded != null && rounded.isNotEmpty()) {
@@ -161,17 +177,11 @@ val TelegramFasterDownloads = patch(
     description = "Downloads files in 512 KB chunks, 8 at a time, instead of 128 KB chunks 4 at a time.",
 ) {
     runCatching {
-        val controllerCls = classLoader.loadClass("org.telegram.messenger.MessagesController")
-        val field = controllerCls.declaredFields.firstOrNull { it.name == "getfileExperimentalParams" }
-        if (field != null) {
-            field.isAccessible = true
-            // Setting this static/instance flag instructs FileLoadOperation to use 512KB pieces & 8 concurrent requests
-        }
-
         val fileLoadOpCls = classLoader.loadClass("org.telegram.messenger.FileLoadOperation")
         fileLoadOpCls.declaredMethods.filter { it.name == "updateParams" }.forEach { m ->
             XposedBridge.hookMethod(m, object : XC_MethodHook() {
                 override fun afterHookedMethod(param: MethodHookParam) {
+                    if (!TelegramPreferences.isFasterDownloadsEnabled()) return
                     val instance = param.thisObject ?: return
                     runCatching {
                         val chunkSizeField = instance.javaClass.getDeclaredField("downloadChunkSizeBig")
@@ -201,7 +211,13 @@ val TelegramDisableUpdateChecks = patch(
     runCatching {
         val appLoaderCls = classLoader.loadClass("org.telegram.messenger.ApplicationLoader")
         appLoaderCls.declaredMethods.filter { it.name == "isStandaloneBuild" }.forEach { m ->
-            XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(false))
+            XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (TelegramPreferences.isDisableUpdateChecksEnabled()) {
+                        param.result = false
+                    }
+                }
+            })
         }
     }
     runCatching {
@@ -209,7 +225,9 @@ val TelegramDisableUpdateChecks = patch(
         val field = sharedConfigCls.declaredFields.firstOrNull { it.name == "isAppUpdateAvailable" }
         if (field != null) {
             field.isAccessible = true
-            field.set(null, false)
+            if (TelegramPreferences.isDisableUpdateChecksEnabled()) {
+                field.set(null, false)
+            }
         }
     }
 }
@@ -223,7 +241,9 @@ val TelegramDisableAnalytics = patch(
         voipCls.declaredMethods.filter { it.name.contains("uploadCallDiagnostics") || it.name.contains("uploadLogs") }.forEach { m ->
             XposedBridge.hookMethod(m, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
-                    param.result = null
+                    if (TelegramPreferences.isDisableAnalyticsEnabled()) {
+                        param.result = null
+                    }
                 }
             })
         }
@@ -239,6 +259,7 @@ val TelegramOpenExternalLinks = patch(
         browserCls.declaredMethods.filter { it.name == "openUrl" }.forEach { m ->
             XposedBridge.hookMethod(m, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (!TelegramPreferences.isOpenExternalLinksEnabled()) return
                     val context = param.args.firstOrNull() as? Context ?: return
                     val rawUrl = (param.args.getOrNull(1) as? String) ?: (param.args.getOrNull(1) as? Uri)?.toString() ?: return
                     val sanitized = TelegramLinkSanitizer.sanitize(rawUrl)
@@ -259,12 +280,12 @@ val TelegramStripLinkTracking = patch(
     name = "Strip link tracking",
     description = "Removes tracking parameters (utm_*, gclid, fbclid, igshid, si) from opened or copied links.",
 ) {
-    // Sanitize in Browser.openUrl if not intercepted by external links
     runCatching {
         val browserCls = classLoader.loadClass("org.telegram.messenger.browser.Browser")
         browserCls.declaredMethods.filter { it.name == "openUrl" }.forEach { m ->
             XposedBridge.hookMethod(m, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (!TelegramPreferences.isStripLinkTrackingEnabled()) return
                     val urlArg = param.args.getOrNull(1)
                     if (urlArg is String) {
                         param.args[1] = TelegramLinkSanitizer.sanitize(urlArg)
@@ -286,6 +307,7 @@ val TelegramRevealSpoilers = patch(
             spoilerCls.declaredMethods.filter { it.name.contains("setSpoilersRevealed") || it.name.contains("showSpoilers") }.forEach { m ->
                 XposedBridge.hookMethod(m, object : XC_MethodHook() {
                     override fun beforeHookedMethod(param: MethodHookParam) {
+                        if (!TelegramPreferences.isRevealSpoilersEnabled()) return
                         param.args[0] = true
                     }
                 })
@@ -303,6 +325,7 @@ val TelegramHidePhoneNumber = patch(
         localeCls.declaredMethods.filter { it.name == "formatPhoneNumber" }.forEach { m ->
             XposedBridge.hookMethod(m, object : XC_MethodHook() {
                 override fun afterHookedMethod(param: MethodHookParam) {
+                    if (!TelegramPreferences.isHidePhoneNumberEnabled()) return
                     val raw = param.result as? String ?: return
                     if (raw.length > 4) {
                         val prefix = raw.take(3)
@@ -324,6 +347,7 @@ val TelegramDisableDoubleTapReactions = patch(
         chatActivityCls.declaredMethods.filter { it.name.contains("selectReaction") || it.name.contains("onDoubleTap") }.forEach { m ->
             XposedBridge.hookMethod(m, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (!TelegramPreferences.isDisableDoubleTapReactionsEnabled()) return
                     param.result = null
                 }
             })
@@ -340,6 +364,7 @@ val TelegramHideKeyboardOnScroll = patch(
         chatActivityCls.declaredMethods.filter { it.name == "onScroll" || it.name.contains("hideKeyboardOnScroll") }.forEach { m ->
             XposedBridge.hookMethod(m, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (!TelegramPreferences.isHideKeyboardOnScrollEnabled()) return
                     val activity = param.thisObject ?: return
                     runCatching {
                         val enterViewField = activity.javaClass.getDeclaredField("chatActivityEnterView")
@@ -365,7 +390,7 @@ val TelegramHideCommerce = patch(
         userConfigCls.declaredMethods.filter { it.name == "hasPremiumOn" }.forEach { m ->
             XposedBridge.hookMethod(m, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
-                    // Suppress upsell prompts
+                    if (!TelegramPreferences.isHideCommerceEnabled()) return
                 }
             })
         }
@@ -381,6 +406,7 @@ val TelegramHideGreetingStickers = patch(
         chatActivityCls.declaredMethods.filter { it.name.contains("showGreetingSticker") || it.name.contains("createGreetingsView") }.forEach { m ->
             XposedBridge.hookMethod(m, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (!TelegramPreferences.isHideGreetingStickersEnabled()) return
                     param.result = null
                 }
             })
@@ -397,6 +423,7 @@ val TelegramHideTranslateBar = patch(
         chatActivityCls.declaredMethods.filter { it.name.contains("showTranslateBar") || it.name.contains("createTranslateView") }.forEach { m ->
             XposedBridge.hookMethod(m, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (!TelegramPreferences.isHideTranslateBarEnabled()) return
                     param.result = null
                 }
             })
@@ -411,7 +438,11 @@ val TelegramHideBlockedInGroups = patch(
     runCatching {
         val controllerCls = classLoader.loadClass("org.telegram.messenger.MessagesController")
         controllerCls.declaredMethods.filter { it.name == "isUserBlocked" }.forEach { m ->
-            // Keep filter active
+            XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (!TelegramPreferences.isHideBlockedInGroupsEnabled()) return
+                }
+            })
         }
     }
 }
@@ -425,6 +456,7 @@ val TelegramPlayVoiceOneAtATime = patch(
         mediaControllerCls.declaredMethods.filter { it.name.contains("playNextMessage") }.forEach { m ->
             XposedBridge.hookMethod(m, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (!TelegramPreferences.isPlayVoiceOneAtATimeEnabled()) return
                     param.result = false
                 }
             })
@@ -441,6 +473,7 @@ val TelegramKeepVideosMuted = patch(
         mediaControllerCls.declaredMethods.filter { it.name.contains("unmuteOnVolumeKey") }.forEach { m ->
             XposedBridge.hookMethod(m, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (!TelegramPreferences.isKeepVideosMutedEnabled()) return
                     param.result = null
                 }
             })
@@ -457,6 +490,7 @@ val TelegramDisableArchivePull = patch(
         dialogsActivityCls.declaredMethods.filter { it.name.contains("onPullToArchive") || it.name.contains("openArchive") }.forEach { m ->
             XposedBridge.hookMethod(m, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (!TelegramPreferences.isDisableArchivePullEnabled()) return
                     param.result = null
                 }
             })
@@ -473,6 +507,7 @@ val TelegramDisableChannelPull = patch(
         chatActivityCls.declaredMethods.filter { it.name.contains("pullToNextChannel") || it.name.contains("openNextChannel") }.forEach { m ->
             XposedBridge.hookMethod(m, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (!TelegramPreferences.isDisableChannelPullEnabled()) return
                     param.result = null
                 }
             })
@@ -489,6 +524,7 @@ val TelegramDisableChatSwipeActions = patch(
         dialogCellCls.declaredMethods.filter { it.name.contains("onSwipe") || it.name.contains("processSwipe") }.forEach { m ->
             XposedBridge.hookMethod(m, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (!TelegramPreferences.isDisableChatSwipeActionsEnabled()) return
                     param.result = false
                 }
             })
@@ -505,6 +541,7 @@ val TelegramDisableDraftPreviews = patch(
         controllerCls.declaredMethods.filter { it.name.contains("loadWebPagePreview") }.forEach { m ->
             XposedBridge.hookMethod(m, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (!TelegramPreferences.isDisableDraftPreviewsEnabled()) return
                     param.result = null
                 }
             })
@@ -522,6 +559,7 @@ val TelegramFixLinkPreviews = patch(
         controllerCls.declaredMethods.filter { it.name.contains("loadWebPagePreview") }.forEach { m ->
             XposedBridge.hookMethod(m, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (!TelegramPreferences.isFixLinkPreviewsEnabled()) return
                     val urlArgIndex = param.args.indexOfFirst { it is String }
                     if (urlArgIndex >= 0) {
                         val rawUrl = param.args[urlArgIndex] as String
@@ -545,6 +583,7 @@ val TelegramUseSystemFont = patch(
         utilsCls.declaredMethods.filter { it.name == "getTypeface" && it.parameterTypes.size == 1 && it.parameterTypes[0] == String::class.java }.forEach { m ->
             XposedBridge.hookMethod(m, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (!TelegramPreferences.isUseSystemFontEnabled()) return
                     val asset = param.args.firstOrNull() as? String ?: return
                     val font = when (asset) {
                         "fonts/rmedium.ttf" -> Typeface.create(null as Typeface?, 500, false)
@@ -573,10 +612,10 @@ val TelegramAmoledBlack = patch(
         themeCls.declaredMethods.filter { it.name.contains("setupTheme") || it.name.contains("loadThemeValues") }.forEach { m ->
             XposedBridge.hookMethod(m, object : XC_MethodHook() {
                 override fun afterHookedMethod(param: MethodHookParam) {
+                    if (!TelegramPreferences.isAmoledBlackEnabled()) return
                     val colors = param.args.firstOrNull { it is SparseIntArray } as? SparseIntArray ?: return
                     for (i in 0 until colors.size()) {
                         val color = colors.valueAt(i)
-                        // Dark backgrounds: darken near-black surfaces to true 0xFF000000
                         val r = (color shr 16) and 0xFF
                         val g = (color shr 8) and 0xFF
                         val b = color and 0xFF
@@ -596,26 +635,47 @@ val TelegramUnlockPremium = patch(
 ) {
     runCatching {
         val userConfigCls = classLoader.loadClass("org.telegram.messenger.UserConfig")
-        userConfigCls.declaredMethods.filter { it.name == "isPremium" }.forEach { m ->
-            XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
-        }
-        userConfigCls.declaredMethods.filter { it.name == "hasPremiumOnAccounts" }.forEach { m ->
-            XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
+        userConfigCls.declaredMethods.filter { it.name == "isPremium" || it.name == "hasPremiumOnAccounts" }.forEach { m ->
+            XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (TelegramPreferences.isUnlockPremiumEnabled()) {
+                        param.result = true
+                    }
+                }
+            })
         }
         userConfigCls.declaredMethods.filter { it.name == "getMaxAccountCount" }.forEach { m ->
-            XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(6))
+            XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (TelegramPreferences.isUnlockPremiumEnabled()) {
+                        param.result = 6
+                    }
+                }
+            })
         }
     }
     runCatching {
         val messagesControllerCls = classLoader.loadClass("org.telegram.messenger.MessagesController")
         messagesControllerCls.declaredMethods.filter { it.name == "isPremiumUser" }.forEach { m ->
-            XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
+            XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (TelegramPreferences.isUnlockPremiumEnabled()) {
+                        param.result = true
+                    }
+                }
+            })
         }
     }
     runCatching {
         val storiesControllerCls = classLoader.loadClass("org.telegram.ui.Stories.StoriesController")
         storiesControllerCls.declaredMethods.filter { it.name == "isPremium" }.forEach { m ->
-            XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
+            XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (TelegramPreferences.isUnlockPremiumEnabled()) {
+                        param.result = true
+                    }
+                }
+            })
         }
     }
 }
@@ -627,12 +687,24 @@ val TelegramBypassRestrictions = patch(
     runCatching {
         val messagesControllerCls = classLoader.loadClass("org.telegram.messenger.MessagesController")
         messagesControllerCls.declaredMethods.filter { it.name == "getRestrictionReason" }.forEach { m ->
-            XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(null))
+            XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (TelegramPreferences.isBypassRestrictionsEnabled()) {
+                        param.result = null
+                    }
+                }
+            })
         }
         messagesControllerCls.declaredMethods.filter {
             it.name == "isChatNoForwards" || it.name == "isPeerNoForwards"
         }.forEach { m ->
-            XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(false))
+            XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (TelegramPreferences.isBypassRestrictionsEnabled()) {
+                        param.result = false
+                    }
+                }
+            })
         }
     }
     runCatching {
@@ -640,16 +712,29 @@ val TelegramBypassRestrictions = patch(
         messageObjectCls.declaredMethods.filter {
             it.name == "isCopyProtectionEnabled" || it.name == "needDrawBluredPreview"
         }.forEach { m ->
-            XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(false))
+            XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (TelegramPreferences.isBypassRestrictionsEnabled()) {
+                        param.result = false
+                    }
+                }
+            })
         }
         messageObjectCls.declaredMethods.filter {
             it.name == "canForward" || it.name == "canShare" || it.name == "canForwardMessage"
         }.forEach { m ->
-            XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
+            XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (TelegramPreferences.isBypassRestrictionsEnabled()) {
+                        param.result = true
+                    }
+                }
+            })
         }
         messageObjectCls.declaredConstructors.forEach { ctor ->
             XposedBridge.hookMethod(ctor, object : XC_MethodHook() {
                 override fun afterHookedMethod(param: MethodHookParam) {
+                    if (!TelegramPreferences.isBypassRestrictionsEnabled()) return
                     val thisObj = param.thisObject ?: return
                     val msgOwner = runCatching { XposedHelpers.getObjectField(thisObj, "messageOwner") }.getOrNull()
                     if (msgOwner != null) {
@@ -669,7 +754,13 @@ val TelegramGhostTyping = patch(
     runCatching {
         val controllerCls = classLoader.loadClass("org.telegram.messenger.MessagesController")
         controllerCls.declaredMethods.filter { it.name == "sendTyping" }.forEach { m ->
-            XposedBridge.hookMethod(m, XC_MethodReplacement.DO_NOTHING)
+            XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (TelegramPreferences.isGhostTypingEnabled()) {
+                        param.result = null
+                    }
+                }
+            })
         }
     }
 }
@@ -682,7 +773,13 @@ val TelegramAntiDisappearingMedia = patch(
     runCatching {
         val messageObjectCls = classLoader.loadClass("org.telegram.messenger.MessageObject")
         messageObjectCls.declaredMethods.filter { it.name == "isExpiredVoiceMessage" || it.name == "isExpiredMedia" }.forEach { m ->
-            XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(false))
+            XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (TelegramPreferences.isAntiDisappearingMediaEnabled()) {
+                        param.result = false
+                    }
+                }
+            })
         }
     }
 }
@@ -695,7 +792,13 @@ val TelegramAntiScreenshotAlert = patch(
     runCatching {
         val secretChatHelperCls = classLoader.loadClass("org.telegram.messenger.SecretChatHelper")
         secretChatHelperCls.declaredMethods.filter { it.name.contains("sendScreenshotMessage", ignoreCase = true) }.forEach { m ->
-            XposedBridge.hookMethod(m, XC_MethodReplacement.DO_NOTHING)
+            XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (TelegramPreferences.isAntiScreenshotAlertEnabled()) {
+                        param.result = null
+                    }
+                }
+            })
         }
     }
 }
@@ -708,6 +811,7 @@ val TelegramAllowScreenshots = patch(
     // 1. Clear FLAG_SECURE from Window setFlags/addFlags
     val windowHook = object : XC_MethodHook() {
         override fun beforeHookedMethod(param: MethodHookParam) {
+            if (!TelegramPreferences.isAllowScreenshotsEnabled()) return
             when (param.method.name) {
                 "setFlags", "addFlags" -> {
                     val flags = param.args.getOrNull(0) as? Int ?: return
@@ -731,7 +835,9 @@ val TelegramAllowScreenshots = patch(
             if (m.name == "setSecure") {
                 XposedBridge.hookMethod(m, object : XC_MethodHook() {
                     override fun beforeHookedMethod(param: MethodHookParam) {
-                        param.args[0] = false
+                        if (TelegramPreferences.isAllowScreenshotsEnabled()) {
+                            param.args[0] = false
+                        }
                     }
                 })
             }
@@ -743,16 +849,24 @@ val TelegramAllowScreenshots = patch(
         messageObjectCls.declaredMethods.filter {
             it.name == "isCopyProtectionEnabled" || it.name == "needDrawBluredPreview"
         }.forEach { m ->
-            XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(false))
+            XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (TelegramPreferences.isAllowScreenshotsEnabled()) {
+                        param.result = false
+                    }
+                }
+            })
         }
     }
 
-    // 4. Strip FLAG_SECURE from WindowManager LayoutParams (issue #34)
+    // 4. Strip FLAG_SECURE from WindowManager LayoutParams
     runCatching {
         val clearSecureParams: (Any?) -> Unit = { params ->
-            val layoutParams = params as? android.view.WindowManager.LayoutParams
-            if (layoutParams != null) {
-                layoutParams.flags = layoutParams.flags and 0x2000.inv()
+            if (TelegramPreferences.isAllowScreenshotsEnabled()) {
+                val layoutParams = params as? android.view.WindowManager.LayoutParams
+                if (layoutParams != null) {
+                    layoutParams.flags = layoutParams.flags and 0x2000.inv()
+                }
             }
         }
         val windowClass = classLoader.loadClass("android.view.Window")
@@ -778,6 +892,7 @@ val TelegramAllowScreenshots = patch(
 }
 
 val TelegramPatches = arrayOf(
+    TelegramSettings,
     TelegramHideAds,
     TelegramUnlockPremium,
     TelegramBypassRestrictions,
@@ -812,4 +927,3 @@ val TelegramPatches = arrayOf(
     TelegramUseSystemFont,
     TelegramAmoledBlack,
 )
-

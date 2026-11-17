@@ -50,18 +50,40 @@ object TelegramLinkSanitizer {
         return builder.build().toString()
     }
 
-    private val PREVIEW_REDIRECT_HOSTS = mapOf(
-        "twitter.com" to "fxtwitter.com",
-        "mobile.twitter.com" to "fxtwitter.com",
-        "x.com" to "fixupx.com",
-        "instagram.com" to "ddinstagram.com",
-        "www.instagram.com" to "ddinstagram.com",
-        "tiktok.com" to "vxtiktok.com",
-        "www.tiktok.com" to "vxtiktok.com",
-        "reddit.com" to "rxddit.com",
-        "www.reddit.com" to "rxddit.com",
-        "threads.net" to "vxthreads.net",
-        "www.threads.net" to "vxthreads.net"
+    private data class PreviewRule(
+        val host: String,
+        val pathPrefix: List<String>?,
+        val targetHost: String
+    )
+
+    private val PREVIEW_RULES = listOf(
+        PreviewRule("twitter.com", listOf("*", "status"), "fixupx.com"),
+        PreviewRule("mobile.twitter.com", listOf("*", "status"), "fixupx.com"),
+        PreviewRule("x.com", listOf("*", "status"), "fixupx.com"),
+        PreviewRule("instagram.com", listOf("p"), "ddinstagram.com"),
+        PreviewRule("instagram.com", listOf("reel"), "ddinstagram.com"),
+        PreviewRule("instagram.com", listOf("reels"), "ddinstagram.com"),
+        PreviewRule("instagram.com", listOf("tv"), "ddinstagram.com"),
+        PreviewRule("www.instagram.com", listOf("p"), "ddinstagram.com"),
+        PreviewRule("www.instagram.com", listOf("reel"), "ddinstagram.com"),
+        PreviewRule("www.instagram.com", listOf("reels"), "ddinstagram.com"),
+        PreviewRule("www.instagram.com", listOf("tv"), "ddinstagram.com"),
+        PreviewRule("tiktok.com", listOf("*", "video"), "vxtiktok.com"),
+        PreviewRule("tiktok.com", listOf("*", "photo"), "vxtiktok.com"),
+        PreviewRule("tiktok.com", listOf("t"), "vxtiktok.com"),
+        PreviewRule("www.tiktok.com", listOf("*", "video"), "vxtiktok.com"),
+        PreviewRule("www.tiktok.com", listOf("*", "photo"), "vxtiktok.com"),
+        PreviewRule("www.tiktok.com", listOf("t"), "vxtiktok.com"),
+        PreviewRule("vm.tiktok.com", null, "vm.vxtiktok.com"),
+        PreviewRule("vt.tiktok.com", null, "vt.vxtiktok.com"),
+        PreviewRule("reddit.com", listOf("r", "*", "comments"), "rxddit.com"),
+        PreviewRule("reddit.com", listOf("r", "*", "s"), "rxddit.com"),
+        PreviewRule("www.reddit.com", listOf("r", "*", "comments"), "rxddit.com"),
+        PreviewRule("www.reddit.com", listOf("r", "*", "s"), "rxddit.com"),
+        PreviewRule("threads.net", listOf("*", "post"), "vxthreads.net"),
+        PreviewRule("www.threads.net", listOf("*", "post"), "vxthreads.net"),
+        PreviewRule("pixiv.net", null, "phixiv.net"),
+        PreviewRule("www.pixiv.net", null, "phixiv.net"),
     )
 
     fun rewritePreviewUrl(url: String): String {
@@ -70,8 +92,24 @@ object TelegramLinkSanitizer {
         }
         val uri = runCatching { Uri.parse(url) }.getOrNull() ?: return url
         val host = uri.host?.lowercase() ?: return url
-        val redirectHost = PREVIEW_REDIRECT_HOSTS[host] ?: return url
-        return uri.buildUpon().authority(redirectHost).build().toString()
+        val segments = uri.pathSegments.orEmpty()
+        for (rule in PREVIEW_RULES) {
+            if (rule.host != host) continue
+            val prefix = rule.pathPrefix
+            if (prefix != null) {
+                if (segments.size < prefix.size) continue
+                var matches = true
+                for (i in prefix.indices) {
+                    if (prefix[i] != "*" && !prefix[i].equals(segments[i], ignoreCase = true)) {
+                        matches = false
+                        break
+                    }
+                }
+                if (!matches) continue
+            }
+            return uri.buildUpon().authority(rule.targetHost).build().toString()
+        }
+        return url
     }
 
     fun formatNumber(number: Int): String {

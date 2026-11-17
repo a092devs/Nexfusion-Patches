@@ -725,6 +725,17 @@ private val META_AI_VIEW_IDS = listOf(
 private val META_AI_MOBILE_CONFIG_FLAGS = setOf(
     0x81067100111e9fL, // Search tab bar "Search with Meta AI", search results & answers
     0x81040c0006109dL, // Messages inbox "Search or ask Meta AI"
+    0x810ea5000051f8L, // Messages inbox threads section Meta AI row (456)
+    0x81104e00115b00L, // Reels Meta AI prompt (455)
+    0x81062e00111dfbL, // Reels Ask Meta AI (455)
+    0x8103db00061011L, // Search Meta AI (455)
+    0x8103d9001b1007L, // Inbox Meta AI ring (455)
+    0x8115fa00017601L, // Home top bar Meta AI (455)
+    0x81103000115aeaL, // Reels Meta AI prompt (456)
+    0x81062600111dbbL, // Reels Ask Meta AI (456)
+    0x8103d700060ff2L, // Search Meta AI (456)
+    0x8103d5001b0fe8L, // Inbox Meta AI ring (456)
+    0x8115d5000176efL, // Home top bar Meta AI (456)
     0x81040a001b1093L, // Messages search bar Meta AI ring
     0x81168700017258L, // Home top bar Meta AI chats / hatch button
     0x8110c200115a92L, // About this reel summary factory (450)
