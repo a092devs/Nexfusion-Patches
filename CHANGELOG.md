@@ -7,6 +7,23 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.4.0-beta2
+
+- `YouTube`:
+  * Split "Hide Chapters" and "In this video" button into separate toggleable settings.
+  * Resolved "Hide Gift button" visibility on experimental YouTube targets.
+  * Resolved fullscreen "Hide Ask button" behavior.
+  * Fixed miniplayer suppression behavior on the search results page.
+  * Inlined single-use methods and consolidated playback helpers.
+- `Reddit`:
+  * Fixed link sanitizer so shared links are cleanly shortened without injecting tracking share IDs.
+  * Resolved "Start as guest" login screen prompt on Reddit 2026.44.0 and newer versions.
+  * Added sidebar customization toggles to hide Popular, Latest, Discover communities, and Start a community.
+- `YouTube Music`:
+  * Updated glass navigation bar arrangement and lyrics search integration.
+- `Patches Library`:
+  * Upgraded patches library with bounded memory logging and CharSequence emptiness helpers.
+
 ## 4.4.0-beta1
 
 - `Telegram`:
