@@ -7,8 +7,12 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
-## 4.4.0-beta2
+## 4.4.0
 
+- `Telegram`:
+  * Added dedicated NexFusion settings panel positioned directly above Settings > Accounts separating profile settings.
+  * Standardized branding to exact NexFusion casing across dialog headers, action pills, popup menu options, and shortcuts.
+  * Added top action pill, three-dots popup menu shortcut, and version footer integrations for quick in-app settings access.
 - `YouTube`:
   * Split "Hide Chapters" and "In this video" button into separate toggleable settings.
   * Resolved "Hide Gift button" visibility on experimental YouTube targets.
@@ -23,13 +27,6 @@ bundles after CI succeeds.
   * Updated glass navigation bar arrangement and lyrics search integration.
 - `Patches Library`:
   * Upgraded patches library with bounded memory logging and CharSequence emptiness helpers.
-
-## 4.4.0-beta1
-
-- `Telegram`:
-  * Added dedicated NexFusion settings panel positioned directly above Settings > Accounts separating profile settings.
-  * Standardized branding to exact NexFusion casing across dialog headers, action pills, popup menu options, and shortcuts.
-  * Added top action pill, three-dots popup menu shortcut, and version footer integrations for quick in-app settings access.
 
 ## 4.3.21
 

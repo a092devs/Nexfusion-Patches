@@ -29,7 +29,7 @@ android {
         val patchVersion = Properties().apply {
             rootProject.file("morphe-patches/gradle.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
         }["version"]
-        versionName = "4.4.0-beta2"
+        versionName = "4.4.0"
         buildConfigField("String", "PATCH_VERSION", "\"$patchVersion\"")
     }
     packaging {
