@@ -7,6 +7,17 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.3.21
+
+- `Telegram`:
+  * Added native in-app NexFusion Settings dialog accessible from chat list title long-press, native Settings screen entry row, bottom navigation tab, version footer, and launcher shortcut.
+  * Added persistent toggles and preference guards across all Telegram patches (privacy, ad blocking, media downloads, interface customizations, and look & feel tweaks).
+- `Gboard`:
+  * Removed AI writing tools patch and Phenotype flag overrides.
+  * Guarded preference interception against non-target preference files to protect internal Gboard data stores.
+- `Instagram`:
+  * Updated Meta AI MobileConfig flags for Instagram v455 and v456 compatibility.
+
 ## 4.3.20
 
 - `Instagram`:
