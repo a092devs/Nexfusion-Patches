@@ -7,6 +7,14 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.4.2-beta1
+
+- `Facebook`:
+  * Ported `Hide reactor names` from upstream to hide the friend summary line naming who reacted under posts while preserving the plain reaction count.
+  * Synchronized news feed and reels media filters with latest upstream updates.
+- `Upstream Sync`:
+  * Synchronized all companion patch models and dependencies across upstream sources.
+
 ## 4.4.1
 
 - `Facebook`:

@@ -1049,6 +1049,29 @@ val HideReactionBubbles = patch(
     }.onFailure { PatcherLog.info(it) { "NexFusion Facebook: Hide reaction bubbles hook skipped" } }
 }
 
+val HideReactorNames = patch(
+    name = "Hide reactor names",
+    description = "Hides the line naming who reacted under posts and keeps the plain reaction count.",
+    use = false,
+) {
+    runCatching {
+        val pluginNames = listOf(
+            "com.facebook.feedback.reactions.plugins.blingbar.compactsocialcontext.CompactSocialContextBlingBarReactionCountPlugin",
+            "com.facebook.feedback.reactions.plugins.blingbar.socialsentence.SocialSentenceBlingBarReactionCountPlugin",
+        )
+        pluginNames.forEach { className ->
+            val cls = runCatching { classLoader.loadClass(className) }.getOrNull() ?: return@forEach
+            cls.declaredMethods.filter { it.returnType == java.lang.Boolean.TYPE }.forEach { m ->
+                XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        param.result = false
+                    }
+                })
+            }
+        }
+    }.onFailure { PatcherLog.info(it) { "NexFusion Facebook: Hide reactor names hook skipped" } }
+}
+
 val FacebookPatches = arrayOf(
     AllowScreenshots,
     BlockScreenshotDetection,
@@ -1057,6 +1080,7 @@ val FacebookPatches = arrayOf(
     HideReposts,
     HideRepostButton,
     HideReactionBubbles,
+    HideReactorNames,
     HideSponsoredStories,
     HideSponsoredReels,
     HideFeedReels,
