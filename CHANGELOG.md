@@ -7,6 +7,12 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.4.1-beta1
+
+- `Telegram`:
+  * Direct patch execution: all Telegram patches (sponsored message blocking, video ads, ghost typing, anti-disappearing media, anti-screenshot notifications, unrestricted saving, external links, and spoiler reveal) apply immediately when enabled in NexFusion.
+  * Clean stock UI: eliminated in-app settings injection and UI overhead so official Telegram stays completely native and untouched.
+
 ## 4.4.0
 
 - `Telegram`:
