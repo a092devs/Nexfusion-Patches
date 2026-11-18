@@ -97,7 +97,8 @@ private fun DexKitBridge.pendragonRequests(requestClass: String) = findMethod {
 }
 
 val pendragonRequestMethods = findMethodListDirect {
-    pendragonRequests(".FetchMessageRequest") + pendragonRequests(".FetchMessageListRequest")
+    pendragonRequests(".FetchMessageRequest") + pendragonRequests(".FetchMessageListRequest") +
+        pendragonRequests(".FetchMessageForPreviewRequest")
 }
 
 val embeddedAdPlaylistPropertiesConstructor = findMethodDirect {

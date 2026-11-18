@@ -12,10 +12,14 @@ import io.github.nexfusion.nexfusion.extension.shared.Reflection;
 @SuppressWarnings("unused")
 public final class HideAdSectionsPatch {
     /**
-     * {@code Section.VIDEO_BRAND_AD_FIELD_NUMBER} and {@code Section.IMAGE_BRAND_AD_FIELD_NUMBER}
-     * of the home page protobuf.
+     * {@code Section.VIDEO_BRAND_AD_FIELD_NUMBER}, {@code Section.IMAGE_BRAND_AD_FIELD_NUMBER},
+     * {@code Section.PROMOTION_V1_FIELD_NUMBER}, {@code Section.PROMOTION_V3_FIELD_NUMBER},
+     * {@code Section.BANNER_FIELD_NUMBER}, {@code Section.BANNER_WITH_ANIMATIONS_FIELD_NUMBER},
+     * {@code Section.FULL_BLEED_BANNER_FIELD_NUMBER}, {@code Section.PREVIEW_PROMOTION_CAROUSEL_FIELD_NUMBER},
+     * {@code Section.CAMPAIGN_LINK_CAROUSEL_FIELD_NUMBER}, {@code Section.AUDIO_PROMO_FIELD_NUMBER},
+     * {@code Section.VIDEO_PROMO_FIELD_NUMBER} of the home page protobuf.
      */
-    private static final int[] HOME_AD_FEATURE_TYPES = {20, 21};
+    private static final int[] HOME_AD_FEATURE_TYPES = {4, 13, 18, 19, 20, 21, 23, 28, 32, 33, 40};
 
     /**
      * {@code Section.BRAND_ADS_FIELD_NUMBER} of the browse page protobuf.
@@ -38,10 +42,12 @@ public final class HideAdSectionsPatch {
         Object featureType = Reflection.getField(section, "featureType_");
         if (featureType == null) return false;
         try {
-            return Reflection.getField(featureType, "adMetadata_") != null;
+            if (Reflection.getField(featureType, "adMetadata_") != null) return true;
         } catch (NoSuchFieldException ignored) {
-            return false;
         }
+        String name = featureType.getClass().getSimpleName().toLowerCase(java.util.Locale.ROOT);
+        return name.contains("promo") || name.contains("banner") || name.contains("upsell") ||
+                name.contains("ad") || name.contains("campaign");
     }
 
     /**

@@ -7,6 +7,18 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.4.3
+
+- `Spotify`:
+  * Suppressed all premium upsell banners, cards, promotional nudges, and upgrade dialogs without affecting playback or existing features.
+  * Enabled `Hide ad views` by default and expanded view/layout markers to target all modern upsell widgets (`upsell`, `nudge`, `promo_v1`, `promo_v3`, `live_upsell`, `premiumbenefitslist`, `premiumofferplan`, `now_playing_bar_promo_indicator`).
+  * Intercepted dynamic visibility toggles on ad and upsell components to prevent promotional cards from appearing after feed loading.
+  * Expanded home feed structure filters in `Hide ad sections` to remove promotional banners, campaign carousels, and full-bleed banner elements.
+  * Enabled `Hide context menu upsells` by default to strip Premium menu entries across tracks, albums, and playlists.
+  * Added preview message interception to `Block popup ads` to block promotional bottom sheets and modal popups.
+- `Upstream Verification`:
+  * Checked all supported applications (Reddit, YouTube, YouTube Music, Facebook, Instagram, Gboard, Discord, Twitter, LinkedIn, Proton VPN, Gmail, Google Discover, Kick, Twitch, Stremio, and VLC) against upstream repositories.
+
 ## 4.4.2
 
 - `Reddit`:

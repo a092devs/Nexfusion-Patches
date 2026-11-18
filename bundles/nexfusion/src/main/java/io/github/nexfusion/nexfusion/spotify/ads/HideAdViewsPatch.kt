@@ -14,6 +14,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 private val adClassMarkers = listOf(
     "adsinternal", "brandad", "videoad", "audioad", "adslot", "countdownbar", "displayad",
+    "upsell", "liveupsell", "downloadupsell", "fmaupsell", "standardupsell", "timecapupsell",
+    "premiumdestination", "promoindicator", "promosection", "pendragon",
 )
 
 /**
@@ -28,9 +30,14 @@ private val adClassMarkers = listOf(
 private val adResourceMarkers = listOf(
     "ad_container", "ad_info_row", "ad_context_header_stub", "ad_context_header_text",
     "audio_ad", "video_ad", "banner_ad", "ad_nudge", "brand_ad",
+    "upsell", "nudge", "simple_nudge", "promo_v1", "promo_v3", "live_upsell",
+    "google_meet_upsell", "now_playing_bar_promo_indicator", "premium_offer_cta_button",
+    "premiumbenefitslist", "premiumofferplan", "premiumsectionheader", "premium_destination",
+    "premium_grouped_items_row", "premium_offer_legal_text_row", "activity_premium_checkout",
+    "banner_upsell", "party_upsell", "skip_upsell",
 )
 
-private val adDescriptionMarkers = listOf("advertisement", "werbung")
+private val adDescriptionMarkers = listOf("advertisement", "werbung", "ad", "upsell", "get premium", "try premium")
 
 /** Caches the per-class marker check, since the class name of a view never changes. */
 private val adClassNameCache = ConcurrentHashMap<Class<*>, Boolean>()
@@ -75,8 +82,7 @@ private fun hideAdViewsInTree(view: View) {
 
 val HideAdViews = patch(
     name = "Hide ad views",
-    description = "Hides ad banners, display ads and the ad player.",
-    use = false,
+    description = "Hides ad banners, display ads, premium upsell cards, and promotional nudges.",
 ) {
     HideAdViewsPatch.AD_VIEW_CLASSES.forEach { className ->
         val adView = XposedHelpers.findClassIfExists(className, classLoader)
@@ -93,6 +99,15 @@ val HideAdViews = patch(
         }
         XposedHelpers.findMethodExactIfExists(adView, "onAttachedToWindow")?.hookMethod {
             after { param -> HideAdViewsPatch.hideView(param.thisObject as View) }
+        }
+    }
+
+    // Suppress dynamic visibility toggles on ad/upsell views
+    View::class.java.getDeclaredMethod("setVisibility", Int::class.javaPrimitiveType).hookMethod {
+        before { param ->
+            if (param.args[0] == View.VISIBLE && isAdView(param.thisObject as View)) {
+                param.args[0] = View.GONE
+            }
         }
     }
 

@@ -70,7 +70,6 @@ val HideAdSections = patch(
 val HideContextMenuUpsells = patch(
     name = "Hide context menu upsells",
     description = "Removes \"Premium\" entries from the context menus of songs, albums and playlists.",
-    use = false,
 ) {
     val isPremiumUpsell = runCatching { ::premiumUpsellField.field }.getOrNull()
     if (isPremiumUpsell == null) {

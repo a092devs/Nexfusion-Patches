@@ -27,15 +27,26 @@ public final class HideAdViewsPatch {
             "com.spotify.adsdisplay.uiusecases.adtag.AdTagView",
             "com.spotify.adsdisplay.uiusecases.videocontrolsoverlay.VideoControlsOverlayView",
             "com.spotify.nowplayingmodes.adsmode.ui.overlay.AdsOverlayControlsLayout",
+            // Upsell and Promo views
+            "com.spotify.reinventfree.upsellui.standardupsell.StandardUpsellView",
+            "com.spotify.liveroom.liveupsellscrollcard.LiveUpsellCardView",
+            "com.spotify.premiumdestination.upsell.activity.upsell.PremiumUpsellView",
     };
 
     private static final String[] AD_CLASS_NAME_MARKERS = {
-            "adsinternal", "brandad", "videoad", "audioad", "adslot", "countdownbar", "displayad"
+            "adsinternal", "brandad", "videoad", "audioad", "adslot", "countdownbar", "displayad",
+            "upsell", "liveupsell", "downloadupsell", "fmaupsell", "standardupsell", "timecapupsell",
+            "premiumdestination", "promoindicator", "promosection", "pendragon"
     };
     private static final String[] AD_RESOURCE_NAME_MARKERS = {
-            "audio_ad", "video_ad", "banner_ad", "ad_nudge", "brand_ad"
+            "audio_ad", "video_ad", "banner_ad", "ad_nudge", "brand_ad",
+            "upsell", "nudge", "simple_nudge", "promo_v1", "promo_v3", "live_upsell",
+            "google_meet_upsell", "now_playing_bar_promo_indicator", "premium_offer_cta_button",
+            "premiumbenefitslist", "premiumofferplan", "premiumsectionheader", "premium_destination",
+            "premium_grouped_items_row", "premium_offer_legal_text_row", "activity_premium_checkout",
+            "banner_upsell", "party_upsell", "skip_upsell"
     };
-    private static final String[] AD_DESCRIPTION_MARKERS = {"advertisement", "werbung"};
+    private static final String[] AD_DESCRIPTION_MARKERS = {"advertisement", "werbung", "ad", "upsell", "get premium", "try premium"};
 
     private static final View.OnAttachStateChangeListener HIDE_ON_ATTACH = new View.OnAttachStateChangeListener() {
         @Override
