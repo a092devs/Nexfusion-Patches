@@ -113,15 +113,13 @@ A `.nxb` file is a signed APK container loaded directly into process memory by N
 ### Supported Applications Matrix
 
 <details>
-<summary><b>🎥 Video, Audio & Streaming (7 Targets)</b> — <i>YouTube, YouTube Music, Kick, Twitch, Crunchyroll, VLC, Stremio</i></summary>
+<summary><b>🎥 Video, Audio & Streaming (5 Targets)</b> — <i>YouTube, YouTube Music, Crunchyroll, VLC, Stremio</i></summary>
 <br>
 
 | Application | Package Identifier | Key Patch Capabilities |
 |---|---|---|
 | **YouTube** | `com.google.android.youtube` | Remove video and feed ads, SponsorBlock integration, background playback, link sanitization, custom playback speeds & quality selector, swipe volume/brightness controls, layout component filtering, DeArrow title/thumbnail replacement, Litho node bypass, Shorts resuming, Ambient mode, Miniplayer, PiP seek buttons, disable playlist autoplay, channel search fingerprint fix, guarded navigation bar hook against abstract methods. |
 | **YouTube Music** | `com.google.android.apps.youtube.music` | Background audio playback, audio ad removal, exclusive audio stream playback, hide upgrade buttons, suppress promotional banners, SoundProof AI blocker, Playlist tags, offline fullscreen player, mark downloaded songs, third-party lyrics enhancement. |
-| **Kick** | `com.kick.mobile` | Live stream & VOD ad blocking, background audio playback, custom chat emotes (7TV, BTTV, FFZ), telemetry suppression, AMOLED black theme. |
-| **Twitch** | `tv.twitch.android.app` | Stream and display ad blocking, 7TV / BTTV / FFZ third-party chat emotes, background audio playback, telemetry suppression, AMOLED black theme. |
 | **Crunchyroll** | `com.crunchyroll.crunchyroid` | Native Picture-in-Picture mode with contextual Skip Intro and Skip Credits controls; remove titles from Continue Watching feed. Verified targets: 3.126.0, 3.117.0. |
 | **VLC** | `org.videolan.vlc` | AMOLED pure black theme; suppress What's New changelog dialog on updates; unlock experimental feature flags; force bitstream audio passthrough (digital output); force AAudio low-latency output; raise network cache to 3000ms; disable audio time-stretch for artifact-free 1x speed playback; force ReplayGain track normalization with peak protection; verbose libVLC logging. |
 | **Stremio** | `com.stremio.one` | Auto & manual intro/credits skipping using embedded chapters and stream metadata; auto-pick best stream (resolves 4K/cached stream on tap); hide episode spoilers (synopses & thumbnails); avoid SDH subtitles; audio & subtitle track language memory; smoother playback buffer expansion (120s); seamless binge watching; external player progress & subtitle hand-off (VLC, Vimu). |
@@ -129,13 +127,12 @@ A `.nxb` file is a signed APK container loaded directly into process memory by N
 </details>
 
 <details>
-<summary><b>💬 Social Networks & Messaging (6 Targets)</b> — <i>Instagram, Facebook, X (Twitter), Reddit, Discord, LinkedIn</i></summary>
+<summary><b>💬 Social Networks & Messaging (5 Targets)</b> — <i>Instagram, X (Twitter), Reddit, Discord, LinkedIn</i></summary>
 <br>
 
 | Application | Package Identifier | Key Patch Capabilities |
 |---|---|---|
-| **Instagram** | `com.instagram.android` | Media downloader (posts, multi-photo carousels, Reels, Stories, Highlights, profile pictures) with custom save directory, per-username subfolders, and timestamp naming; sponsored post, Reels, and Story ad removal; anonymous Story and Live stream viewing; tracking link sanitizer; ghost mode; optimized non-blocking layout listener for fluid typing and instant keyboard pop-up. Verified targets: 454.0.0.54.77, 453.0.0.57.79, 453.0.0.55.79, 452.1.0.53.64, 452.0.0.48.64, 451.0.0.53.80, 450.0.0.46.79, 447.0.0.55.81. |
-| **Facebook** | `com.facebook.katana` | Media downloader for photos, videos, Reels, and Stories with DASH stream and audio extraction; hide sponsored posts, Reels, Stories, and floating comment CTA pills; screenshot restriction bypass; telemetry blocking. Verified targets: 586.0.0.52.53, 585.0.0.47.54, 584.0.0.51.56, 583.0.0.39.55, 582.0.0.50.54, 581.0.0.45.54. |
+| **Instagram** | `com.instagram.android` | Media downloader (posts, multi-photo carousels, Reels, Stories, Highlights, profile pictures) with custom save directory, per-username subfolders, and timestamp naming; sponsored post, Reels, and Story ad removal; anonymous Story and Live stream viewing; tracking link sanitizer; ghost mode; optimized non-blocking layout listener for fluid typing and instant keyboard pop-up. Verified targets: 456.0.0.53.78, 454.0.0.54.77, 453.0.0.57.79, 453.0.0.55.79, 452.1.0.53.64, 452.0.0.48.64, 451.0.0.53.80, 450.0.0.46.79, 447.0.0.55.81. |
 | **X (Twitter)** | `com.twitter.android` | Promoted post and ad removal; video and GIF download unlock; sanitize share links (strip tracking query parameters); disable timeline auto-refresh; bypass Compose sensitive media blur interstitials without tap-to-reveal; outdated-app warning and forced in-app update block; telemetry and analytics blackholing; Premium upsell removal; tracking link sanitizer. Verified targets: 12.38.1-prod.01, 12.38.0-prod.01, 12.37.2-prod.01, 12.36.1-prod.01, 12.35.0-prod.01. |
 | **Reddit** | `com.reddit.frontpage` | Unlock local Premium UI perks (custom app icons, avatar styling, premium badges); block AutoMod comments at top of threads; feed and comment ad removal; start as guest mode; sanitize sharing URLs; suppress screenshot banner; transparent navigation bar; colorize comment indent lines; custom feed sorting; Redgifs audio unmuting. Verified targets: 2026.43.1, 2026.43.0, 2026.42.0, 2026.41.0, 2026.38.0, 2026.37.0, 2026.36.0, 2026.24.0, 2026.14.0. |
 | **Discord** | `com.discord` | Background audio playback (voice messages & media continue playing when switching apps); passkey & security key clarification hint; suppress crash telemetry, analytics, touch logging, install attribution, and advertising identifiers; native phone font support. Verified targets: 351.11, 350.8, 349.9, 348.10. |

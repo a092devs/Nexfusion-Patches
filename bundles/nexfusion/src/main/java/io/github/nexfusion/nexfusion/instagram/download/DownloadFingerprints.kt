@@ -194,9 +194,13 @@ val sheetMenuAddItemMethod = findMethodDirect {
  * download label is added there.
  */
 val storyMenuLabelsMethod = findMethodDirect {
-    findMethodWithStrings(listOf("[INTERNAL] Pause Playback")) {
+    val matches = findMethodWithStrings(listOf("[INTERNAL] Pause Playback")) {
         returnType = "java.lang.CharSequence[]"
-    }.single()
+    }
+    matches.firstOrNull { m ->
+        val clazz = m.declaredClass
+        clazz != null && clazz.fields.any { it.typeName == "android.app.Activity" }
+    } ?: matches.single()
 }
 
 /**

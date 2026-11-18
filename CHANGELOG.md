@@ -7,6 +7,24 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.4.4
+
+- `Instagram`:
+  * Updated patch suite compatibility for Instagram 456.0.0.53.78.
+  * Restored story download options by updating the story menu label fingerprint to target the active ReelOptionsOverflowHelper with Activity context.
+  * Fixed story menu row construction by providing non-null default empty strings for text parameters.
+  * Restored double-tap-to-like disable hook on Reels by adding gesture listener fallback for purged debug strings.
+  * Modernized Meta AI hiding for Instagram 456 by evaluating and intercepting MobileConfig flags across concrete unsafe context evaluators.
+  * Updated Reels Meta AI Litho render component and AI Discovery menu hooks to anchor on modern bytecode resource IDs and summary flags.
+  * Refined view hider traversal to properly inspect Litho view hierarchies for Meta AI elements without prematurely skipping component hosts.
+- `Gboard`:
+  * Ported AI Writing Tools patch enabling proofread, rewrite stylization, cooperative mode, and smart edit voice commands.
+  * Added Advanced Voice Typing patch enabling Next Generation Assistant consolidated dictation stack and longform speech input.
+  * Added Accessibility Layout patch supporting physical keyboard simulation.
+- `Maintenance`:
+  * Dropped Facebook, Kick, and Twitch patches to streamline bundle maintenance overhead.
+  * Synchronized all retained supported apps (YouTube, YouTube Music, Reddit, Spotify, Proton VPN, Gboard, Discord, LinkedIn, Google Maps, Stremio) with upstream developments.
+
 ## 4.4.3
 
 - `Spotify`:

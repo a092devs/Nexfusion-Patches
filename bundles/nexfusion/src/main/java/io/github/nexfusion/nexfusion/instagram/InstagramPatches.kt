@@ -445,13 +445,27 @@ internal val feedDoubleTapMethod = findMethodDirect {
 }
 
 internal val reelsDoubleTapMethod = findMethodDirect {
-    findMethod {
+    val matches = findMethod {
         matcher {
             usingStrings(listOf("ClipsItemGestureDetector_onDoubleTap"), StringMatchType.Contains)
             returnType = "boolean"
             name = "onDoubleTap"
         }
-    }.first()
+    }
+    if (matches.isNotEmpty()) {
+        matches.first()
+    } else {
+        findMethod {
+            matcher {
+                name = "onDoubleTap"
+                returnType = "boolean"
+                usingStrings(listOf("double_tap"), StringMatchType.Equals)
+            }
+        }.filter { m ->
+            val strings = m.instructions.mapNotNull { it.string }
+            !strings.contains("tab_bar") && !strings.contains("fb_comment")
+        }.first()
+    }
 }
 
 val TurnOffDoubleTapLike = igPatch(
@@ -810,11 +824,9 @@ private fun installMetaAiViewHiderOnDecor(decorView: View) {
             }
         }
         if (root is ViewGroup && root.visibility != View.GONE) {
-            // Never recurse into chat bubbles, direct message threads, or recycler views
+            // Never recurse into chat bubbles or direct message threads
             val cls = root.javaClass.name
-            if (cls.contains("Message") || cls.contains("Chat") || cls.contains("Thread") ||
-                cls.contains("LithoView") || cls.contains("ComponentHost")
-            ) {
+            if (cls.contains("Message") || cls.contains("Chat") || cls.contains("Thread")) {
                 return changed
             }
             for (i in 0 until root.childCount) {
@@ -937,6 +949,12 @@ val HideMetaAi = igPatch(
             "com.facebook.mobileconfig.MobileConfigOverridesTableHolder",
             "com.facebook.mobileconfig.MobileConfigContext",
             "com.facebook.mobileconfig.factory.MobileConfigUnsafeContext",
+            "X.0UZ6",
+            "X.02fr",
+            "X.02jx",
+            "X.02mj",
+            "X.06QU",
+            "X.06Ty",
         )
         val hook = object : XC_MethodHook() {
             override fun beforeHookedMethod(param: MethodHookParam) {

@@ -1131,7 +1131,7 @@ val DownloadMedia = patch(
                             else -> "Download"
                         }
                     }
-                    // Fill primitives with their defaults and leave nullable values null, then place the
+                    // Fill primitives with their defaults, empty strings for text parameters, and leave nullable objects null, then place the
                     // title, subtitle, click handler and icon where this release expects them.
                     val args = arrayOfNulls<Any?>(rowParameterTypes.size)
                     for (i in rowParameterTypes.indices) {
@@ -1144,6 +1144,7 @@ val DownloadMedia = patch(
                             java.lang.Character.TYPE -> '\u0000'
                             java.lang.Byte.TYPE -> 0.toByte()
                             java.lang.Short.TYPE -> 0.toShort()
+                            String::class.java, CharSequence::class.java -> ""
                             else -> null
                         }
                     }

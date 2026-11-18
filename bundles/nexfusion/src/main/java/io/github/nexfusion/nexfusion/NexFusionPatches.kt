@@ -11,12 +11,10 @@ import io.github.nexfusion.patches.ExtensionResourceHook
 import io.github.nexfusion.revanced.googlephotos.GooglePhotosPatches
 import io.github.nexfusion.nexfusion.crunchyroll.CrunchyrollPatches
 import io.github.nexfusion.nexfusion.discord.DiscordPatches
-import io.github.nexfusion.nexfusion.facebook.FacebookPatches
 import io.github.nexfusion.nexfusion.gboard.GboardPatches
 import io.github.nexfusion.nexfusion.gmail.GmailPatches
 import io.github.nexfusion.nexfusion.google.GoogleDiscoverPatches
 import io.github.nexfusion.nexfusion.instagram.InstagramPatches
-import io.github.nexfusion.nexfusion.kick.KickPatches
 import io.github.nexfusion.nexfusion.linkedin.LinkedInPatches
 import io.github.nexfusion.nexfusion.maps.GoogleMapsPatches
 import io.github.nexfusion.nexfusion.vlc.VlcPatches
@@ -24,7 +22,6 @@ import io.github.nexfusion.nexfusion.protonvpn.ProtonVpnPatches
 import io.github.nexfusion.nexfusion.reddit.RedditPatches
 import io.github.nexfusion.nexfusion.stremio.StremioPatches
 import io.github.nexfusion.nexfusion.spotify.SpotifyPatches
-import io.github.nexfusion.nexfusion.twitch.TwitchPatches
 import io.github.nexfusion.nexfusion.twitter.TwitterPatches
 
 /** Entry point of the NexFusion Patches bundle, named in its manifest. */
@@ -58,12 +55,6 @@ object NexFusionPatches : PatchBundle {
             packageName = "com.discord",
             patches = DiscordPatches,
             appIconColor = 0x5865F2,
-        ),
-        AppPatchInfo(
-            appName = "Facebook",
-            packageName = "com.facebook.katana",
-            patches = FacebookPatches,
-            appIconColor = 0x0866FF,
         ),
         AppPatchInfo(
             appName = "Instagram",
@@ -119,18 +110,6 @@ object NexFusionPatches : PatchBundle {
             packageName = "com.twitter.android",
             patches = TwitterPatches,
             appIconColor = 0x000000,
-        ),
-        AppPatchInfo(
-            appName = "Kick",
-            packageName = "com.kick.mobile",
-            patches = KickPatches,
-            appIconColor = 0x53FC18,
-        ),
-        AppPatchInfo(
-            appName = "Twitch",
-            packageName = "tv.twitch.android.app",
-            patches = TwitchPatches,
-            appIconColor = 0x9146FF,
         ),
         AppPatchInfo(
             appName = "VLC",

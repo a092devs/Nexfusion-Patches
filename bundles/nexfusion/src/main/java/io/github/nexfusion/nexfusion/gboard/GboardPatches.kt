@@ -520,6 +520,53 @@ val GboardBackupRestore = patch(
     )
 }
 
+val GboardWritingTools = patch(
+    name = "AI Writing Tools",
+    description = "Enables AI Writing Tools proofread, rewrite stylization, cooperative mode, and smart edit commands.",
+) {
+    gboardFlagOverrides(
+        "writing_tools" to FlagOverride.forceTrue(),
+        "writing_helper" to FlagOverride.forceTrue(),
+        "config_proofread" to FlagOverride.forceTrue(),
+        "writing_helper_on_selected_text" to FlagOverride.forceTrue(),
+        "writing_helper_enable_text_stylization_internal" to FlagOverride.forceTrue(),
+        "enable_writing_tools_cooperative_mode" to FlagOverride.forceTrue(),
+        "enable_writing_tools_for_minors" to FlagOverride.forceTrue(),
+        "enable_nga_lab_modeless_smartedit" to FlagOverride.forceTrue(),
+        "enable_writing_tools_voice_commands" to FlagOverride.forceTrue(),
+        "writing_tools_enable_hybrid" to FlagOverride.forceTrue(),
+        "enable_on_device_proofread" to FlagOverride.forceTrue(),
+        "writing_tools_v2_backend_type" to FlagOverride.forceLong(1L),
+        "writing_helper_supported_language_tags" to FlagOverride.forceString("*"),
+        "llm_pc_supported_language_tags" to FlagOverride.forceString("*"),
+        "nga_lab_modeless_smartedit_regex_version" to FlagOverride.forceString("v3"),
+    )
+}
+
+val GboardAdvancedVoiceTyping = patch(
+    name = "Advanced voice typing (NGA)",
+    description = "Enables Next Generation Assistant consolidated speech dictation stack and longform voice input.",
+) {
+    gboardFlagOverrides(
+        "enable_nga" to FlagOverride.forceTrue(),
+        "enable_advanced_features_in_consolidated_sd_stack" to FlagOverride.forceTrue(),
+        "enable_dictation_feature_split_install" to FlagOverride.forceTrue(),
+        "handle_fallback_inside_sd_stack" to FlagOverride.forceTrue(),
+        "enable_sticky_mic_background" to FlagOverride.forceTrue(),
+        "enable_soda_longform_experiment" to FlagOverride.forceTrue(),
+    )
+}
+
+val GboardAccessibilityLayout = patch(
+    name = "Accessibility layout",
+    description = "Enables physical keyboard simulator and accessibility keyboard layout mode.",
+    use = false,
+) {
+    gboardFlagOverrides(
+        "enable_pk_simulator" to FlagOverride.forceTrue(),
+    )
+}
+
 val GboardPatches = arrayOf(
     GboardSettingsMenu,
     GboardRamblerVoiceTyping,
@@ -538,6 +585,9 @@ val GboardPatches = arrayOf(
     GboardSpacebarLogo,
     GboardDeveloperOptions,
     GboardBackupRestore,
+    GboardWritingTools,
+    GboardAdvancedVoiceTyping,
+    GboardAccessibilityLayout,
     GboardCursorTrackpad,
     GboardQuickInsert,
     GboardEmojiSize,

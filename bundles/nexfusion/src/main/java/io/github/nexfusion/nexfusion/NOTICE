@@ -73,21 +73,6 @@ requests (OCR module plumbing, AI writing tools backend selection, Rambler toolb
 homepage policy, split keyboard, custom layout editor, symbol picker, manual incognito and the
 other custom resources), and the accessibility-layout flag, which no longer exists in 18.4.1.
 ================================================================================
-SysAdminDoc/Hushfacebook
-https://github.com/SysAdminDoc/Hushfacebook
-License: GPL-3.0
-Ported material: Facebook 582.0.0.50.54 and 581.0.0.45.54 — AllowScreenshots and
-BlockScreenshotDetection (patches/src/main/kotlin/app/morphe/patches/facebook/misc/screenshots/),
-HideSponsoredPosts, HideSponsoredReels, BlockTelemetry, and OpenLinksExternally. Clears
-FLAG_SECURE on Window/PhoneWindow/WindowManagerImpl calls, suppresses
-ScreenshotContentObserver.onChange and Android 14+ screen-capture callbacks, drops sponsored and
-promotional feed edges at addNewEdgeToCollection, holds the Reels and Watch ad pool and answers the
-reels, ad-break, profile and splice fetches (the ad-break queries with a failed future, as
-upstream), blocks ad telemetry, prefetch jobs and advertising identifier reporting, and routes
-external links to the default system browser. Not ported: "Hide marketplace ads" and "Download any
-media", whose upstream implementations resolve tens of build-specific anchors each, and the Reels
-page filtering and ad-pill hold, which need build-time rewrites of page construction.
-================================================================================
 SysAdminDoc/HushGram
 https://github.com/SysAdminDoc/HushGram
 License: GPL-3.0
