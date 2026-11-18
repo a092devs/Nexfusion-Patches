@@ -637,5 +637,20 @@ val localStoryVisibilityPublishMethods = findMethodListDirect {
     }.distinctBy { it.descriptor }
 }
 
+/**
+ * Render method for friend reaction bubbles on feed media.
+ * Ported from Hushfacebook ReactionBubbles.
+ */
+val reactionBubblesRenderMethod = findMethodDirect {
+    val matches = findMethod {
+        matcher {
+            usingStrings(listOf("_collapse_repost_bubble_row"), StringMatchType.Equals)
+            name = "render"
+        }
+    }.distinctBy { it.descriptor }
+    matches.firstOrNull() ?: throw IllegalStateException("reactionBubblesRenderMethod not found")
+}
+
+
 
 

@@ -1035,6 +1035,20 @@ val HideRepostButton = patch(
     }.onFailure { PatcherLog.info(it) { "NexFusion Facebook: Hide repost button hook skipped" } }
 }
 
+val HideReactionBubbles = patch(
+    name = "Hide reaction bubbles",
+    description = "Hides friends' reaction bubbles and profile overlays on news feed photos and videos.",
+    use = false,
+) {
+    runCatching {
+        ::reactionBubblesRenderMethod.hookMethod {
+            before { param ->
+                param.result = null
+            }
+        }
+    }.onFailure { PatcherLog.info(it) { "NexFusion Facebook: Hide reaction bubbles hook skipped" } }
+}
+
 val FacebookPatches = arrayOf(
     AllowScreenshots,
     BlockScreenshotDetection,
@@ -1042,6 +1056,7 @@ val FacebookPatches = arrayOf(
     HideSuggestedGroups,
     HideReposts,
     HideRepostButton,
+    HideReactionBubbles,
     HideSponsoredStories,
     HideSponsoredReels,
     HideFeedReels,

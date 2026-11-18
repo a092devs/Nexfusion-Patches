@@ -12,6 +12,8 @@ bundles after CI succeeds.
 - `Telegram`:
   * Direct patch execution: all Telegram patches (sponsored message blocking, video ads, ghost typing, anti-disappearing media, anti-screenshot notifications, unrestricted saving, external links, and spoiler reveal) apply immediately when enabled in NexFusion.
   * Clean stock UI: eliminated in-app settings injection and UI overhead so official Telegram stays completely native and untouched.
+- `Facebook`:
+  * Ported `Hide reaction bubbles` to remove friend reaction overlays on news feed media.
 
 ## 4.4.0
 
