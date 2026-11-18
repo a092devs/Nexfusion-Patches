@@ -7,13 +7,26 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
-## 4.4.2-beta1
+## 4.4.2
 
+- `Reddit`:
+  * Added feed auto-scroll with configurable delay and auto-skip.
+  * Added tablet grid feed enabling responsive multi-column layout on larger screens.
+  * Added share post content feature to easily export post text and markdown.
+  * Added post flair filters and keyword filtering support.
+- `YouTube Music`:
+  * Added queue likes filter to sort and manage liked tracks directly within the active playback queue.
+  * Enhanced third-party lyrics support with smoother sweeping animations, duet line alignment, and refined timing precision.
+- `YouTube`:
+  * Added Android Auto parked mode playback support.
+  * Enhanced DeArrow title formatting and cleanup.
+  * Added configurable glass navigation bar margin and floating room settings.
+  * Added support for opening post images in full-screen viewer.
 - `Facebook`:
   * Ported `Hide reactor names` from upstream to hide the friend summary line naming who reacted under posts while preserving the plain reaction count.
   * Synchronized news feed and reels media filters with latest upstream updates.
 - `Upstream Sync`:
-  * Synchronized all companion patch models and dependencies across upstream sources.
+  * Merged upstream dev updates across Reddit, YouTube Music, and YouTube extensions.
 
 ## 4.4.1
 
