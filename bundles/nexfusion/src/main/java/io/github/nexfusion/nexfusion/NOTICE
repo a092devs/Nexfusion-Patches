@@ -7,17 +7,6 @@ were re-implemented against the NexFusion runtime patcher API; the target tables
 transcribed from the sources below so they can be diffed against them.
 
 ================================================================================
-SysAdminDoc/HushTelegram
-https://github.com/SysAdminDoc/HushTelegram
-License: GPL-3.0
-Ported material: Telegram patches for hiding channel sponsored messages, video ads,
-sponsored accounts, proxy promotions, stories; keeping deleted messages; exact unrounded member
-and view numbers; faster parallel chunk downloads; disabling update checks, analytics, draft
-previews, pull to archive, channel pull up, chat swipe actions, and double-tap reactions; opening
-links externally; stripping link tracking; revealing spoilers; hiding phone numbers, commerce/gifts/stars
-sales entry points, greeting stickers, and translate bars; voice note playback controls; system font;
-and AMOLED pure black theme.
-================================================================================
 VenusIsJaded/Venus-Patches
 https://github.com/VenusIsJaded/Venus-Patches
 License: GPL-3.0
