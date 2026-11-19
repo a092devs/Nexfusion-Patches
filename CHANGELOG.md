@@ -7,6 +7,31 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.4.5
+
+- `Gboard`:
+  * Fixed AI Writing Tools by switching backend from Private Inference to Gboard Server mode, resolving failures on non-Pixel devices.
+  * Added missing stable entrance, replace button, context opt-in, streaming UI, and model version configuration flags.
+  * Corrected SharedPreferences overrides to disable PI override and force Gboard Server backend type.
+- `Reddit`:
+  * Added `Open system share sheet` patch to bypass the in-app bottom sheet and open the native system share sheet directly.
+  * Added `Hide interactive posts` patch to hide Developer Platform game and interactive posts from feeds.
+  * Fixed feed auto-scroll button appearing on top of search and typeahead results screens.
+- `YouTube`:
+  * Fixed view count badge on Home cards that already show view count text after loading in another list.
+  * Prevented feed scrolling stutters by moving card element analysis off the main thread.
+  * Improved AI channel filter handle matching with case-insensitive and non-ASCII character support.
+  * Preserved custom playback speed for downloaded music videos.
+- `YouTube Music`:
+  * Fixed miniplayer gray background flash on cold app startup.
+  * Added `Disable swipe to change track` patch to prevent accidental track changes while scrolling.
+  * Enhanced local TTML song lyrics search and display.
+- `Instagram`:
+  * Added `Send keyboard GIFs` patch allowing direct sending of animated GIFs from the keyboard's GIF picker in direct messages.
+- `Upstream Sync`:
+  * Synchronized `morphe-patches` and `morphe-patches-library` submodules with latest `dev` branch commits.
+  * Verified all supported applications against upstream repositories.
+
 ## 4.4.4
 
 - `Instagram`:

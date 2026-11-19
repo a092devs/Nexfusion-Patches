@@ -8,7 +8,7 @@
 package io.github.nexfusion.morphe.youtube.interaction.channelsearch
 
 import android.widget.ImageView
-import app.morphe.extension.youtube.innertube.GuideResponseOuterClass.NavigationEndpoint
+import app.morphe.extension.shared.innertube.GuideResponseOuterClass.NavigationEndpoint
 import app.morphe.extension.youtube.patches.ChannelSearchPatch as ChannelSearchExtension
 import app.morphe.extension.youtube.patches.ToolBarPatch
 import io.github.nexfusion.morphe.shared.misc.settings.preference.SwitchPreference

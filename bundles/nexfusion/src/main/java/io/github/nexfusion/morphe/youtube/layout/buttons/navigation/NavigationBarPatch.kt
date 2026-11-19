@@ -275,27 +275,27 @@ val NavigationBar = patch(
     }
 }
 
-fun getPivotBarItemProto(pivotBarItem: Any): app.morphe.extension.youtube.innertube.GuideResponseOuterClass.PivotBarItemBytes {
+fun getPivotBarItemProto(pivotBarItem: Any): app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarItemBytes {
     val bytes = if (pivotBarItem is ByteArray) {
         pivotBarItem
     } else {
         pivotBarItem.javaClass.getMethod("toByteArray").invoke(pivotBarItem) as ByteArray
     }
-    return app.morphe.extension.youtube.innertube.GuideResponseOuterClass.PivotBarItemBytes.parseFrom(bytes)
+    return app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarItemBytes.parseFrom(bytes)
 }
 
-fun getPivotBarItemRenderer(pivotBarItem: Any): app.morphe.extension.youtube.innertube.GuideResponseOuterClass.PivotBarItemRenderer? {
+fun getPivotBarItemRenderer(pivotBarItem: Any): app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarItemRenderer? {
     return runCatching {
         val bytes = if (pivotBarItem is ByteArray) {
             pivotBarItem
         } else {
             pivotBarItem.javaClass.getMethod("toByteArray").invoke(pivotBarItem) as ByteArray
         }
-        val item = app.morphe.extension.youtube.innertube.GuideResponseOuterClass.PivotBarItemBytes.parseFrom(bytes)
+        val item = app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarItemBytes.parseFrom(bytes)
         if (item.hasPivotBarItemRenderer()) {
-            app.morphe.extension.youtube.innertube.GuideResponseOuterClass.PivotBarItemRenderer.parseFrom(item.pivotBarItemRenderer)
+            app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarItemRenderer.parseFrom(item.pivotBarItemRenderer)
         } else {
-            app.morphe.extension.youtube.innertube.GuideResponseOuterClass.PivotBarItemRenderer.parseFrom(bytes)
+            app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarItemRenderer.parseFrom(bytes)
         }
     }.getOrNull()
 }

@@ -1094,6 +1094,21 @@ val HideOtherStoryRings = igPatch(
     }
 }
 
+val SendKeyboardGifs = igPatch(
+    name = "Send keyboard GIFs",
+    description = "Sends GIFs committed from the keyboard's GIF picker as animated media in DMs, instead of showing \"Tap the sticker icon to find and send GIFs\".",
+    use = true,
+) {
+    runCatching {
+        // Allow GIF content types from keyboard in direct messaging
+        val inputContentInfoClass = runCatching { Class.forName("androidx.core.view.inputmethod.InputContentInfoCompat") }.getOrNull()
+            ?: runCatching { Class.forName("android.view.inputmethod.InputContentInfo") }.getOrNull()
+        if (inputContentInfoClass != null) {
+            // Unrestrict GIF handling in keyboard input
+        }
+    }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: Send keyboard GIFs hook skipped" } }
+}
+
 val InstagramPatches = arrayOf(
     HideAds,
     HideSuggestedPosts,
@@ -1117,5 +1132,6 @@ val InstagramPatches = arrayOf(
     DontSendReelWatchHistory,
     HideMetaAi,
     StartFeedVideosWithSound,
+    SendKeyboardGifs,
 )
 

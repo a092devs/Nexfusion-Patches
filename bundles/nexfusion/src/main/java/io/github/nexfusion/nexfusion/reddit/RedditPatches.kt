@@ -771,6 +771,89 @@ val HideVideosForYou = patch(
     }.onFailure { PatcherLog.info(it) { "NexFusion Reddit: Hide videos for you hook skipped" } }
 }
 
+val OpenSystemShareSheet = patch(
+    name = "Open system share sheet",
+    description = "Opens the Android system share sheet instead of the in-app bottom sheet when sharing content.",
+    use = false,
+) {
+    runCatching {
+        val actionClass = runCatching { classLoader.loadClass("com.reddit.actionsheet.ActionSheetAction") }.getOrNull()
+        val openShareClass = runCatching { classLoader.loadClass("com.reddit.actionsheet.ActionSheetAction\$OpenShareSheet") }.getOrNull()
+        val shareViaClass = runCatching { classLoader.loadClass("com.reddit.actionsheet.ActionSheetAction\$ShareVia") }.getOrNull()
+        if (actionClass != null && openShareClass != null && shareViaClass != null) {
+            val shareViaInstance = runCatching {
+                shareViaClass.getField("INSTANCE").get(null)
+            }.getOrNull() ?: runCatching {
+                val ctor = shareViaClass.declaredConstructors.firstOrNull { it.parameterCount == 0 }
+                ctor?.isAccessible = true
+                ctor?.newInstance()
+            }.getOrNull()
+
+            if (shareViaInstance != null) {
+                val dispatcherClass = runCatching { classLoader.loadClass("com.reddit.actionsheet.ActionSheetActionHandler") }.getOrNull()
+                    ?: runCatching { classLoader.loadClass("com.reddit.actionsheet.ActionSheetEventHandler") }.getOrNull()
+                if (dispatcherClass != null) {
+                    dispatcherClass.declaredMethods.filter { m ->
+                        m.parameterTypes.any { it.isAssignableFrom(openShareClass) }
+                    }.forEach { method ->
+                        XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                            override fun beforeHookedMethod(param: MethodHookParam) {
+                                for (i in param.args.indices) {
+                                    if (openShareClass.isInstance(param.args[i])) {
+                                        param.args[i] = shareViaInstance
+                                    }
+                                }
+                            }
+                        })
+                    }
+                }
+            }
+        }
+    }.onFailure { PatcherLog.info(it) { "NexFusion Reddit: Open system share sheet hook skipped" } }
+}
+
+val HideInteractivePosts = patch(
+    name = "Hide interactive posts",
+    description = "Hides game and other interactive app posts from the home feed and other recommended feeds.",
+    use = false,
+) {
+    runCatching {
+        val linkClass = runCatching { classLoader.loadClass("com.reddit.domain.model.Link") }.getOrNull()
+        if (linkClass != null) {
+            val isCustomMethod = linkClass.declaredMethods.firstOrNull {
+                it.name == "isDevPlatformCustomPost" || it.name == "patch_isDevPlatformCustomPost"
+            }
+            if (isCustomMethod != null) {
+                val adapterClass = runCatching { classLoader.loadClass("androidx.recyclerview.widget.RecyclerView\$Adapter") }.getOrNull()
+                if (adapterClass != null) {
+                    XposedBridge.hookAllMethods(adapterClass, "onBindViewHolder", object : XC_MethodHook() {
+                        override fun afterHookedMethod(param: MethodHookParam) {
+                            val holder = param.args.firstOrNull() ?: return
+                            val itemView = runCatching {
+                                XposedHelpers.getObjectField(holder, "itemView") as? View
+                            }.getOrNull() ?: return
+                            val item = runCatching {
+                                holder.javaClass.getMethod("getItem").invoke(holder)
+                            }.getOrNull() ?: runCatching {
+                                val field = holder.javaClass.declaredFields.firstOrNull { it.type == linkClass }
+                                field?.isAccessible = true
+                                field?.get(holder)
+                            }.getOrNull()
+                            if (item != null && linkClass.isInstance(item)) {
+                                val isDev = runCatching { isCustomMethod.invoke(item) as? Boolean }.getOrNull() ?: false
+                                if (isDev) {
+                                    itemView.visibility = View.GONE
+                                    itemView.layoutParams?.height = 0
+                                }
+                            }
+                        }
+                    })
+                }
+            }
+        }
+    }.onFailure { PatcherLog.info(it) { "NexFusion Reddit: Hide interactive posts hook skipped" } }
+}
+
 val RedditPatches = arrayOf(
     RedditSettings,
     DisableScreenshotBanner,
@@ -801,6 +884,8 @@ val RedditPatches = arrayOf(
     RememberCollapsedComments,
     HideSearchAnswersPreview,
     HideVideosForYou,
+    OpenSystemShareSheet,
+    HideInteractivePosts,
 )
 
 
