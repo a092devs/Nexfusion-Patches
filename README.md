@@ -141,7 +141,7 @@ A `.nxb` file is a signed APK container loaded directly into process memory by N
 </details>
 
 <details>
-<summary><b>🛠️ System, Productivity & Utilities (6 Targets)</b> — <i>Google Photos, Google Maps, Gboard, Gmail, Google App (Discover), Proton VPN</i></summary>
+<summary><b>🛠️ System, Productivity & Utilities (7 Targets)</b> — <i>Google Photos, Google Maps, Gboard, Gmail, Google App (Discover), Proton VPN, 1.1.1.1</i></summary>
 <br>
 
 | Application | Package Identifier | Key Patch Capabilities |
@@ -152,6 +152,7 @@ A `.nxb` file is a signed APK container loaded directly into process memory by N
 | **Gmail** | `com.google.android.gm` | Suppress sponsored promotional and advertising cards in personal inboxes. |
 | **Google App (Discover)** | `com.google.android.googlequicksearchbox` | Filter sponsored cards, shopping ads, and promotional content in the Discover feed. |
 | **Proton VPN** | `ch.protonvpn.android` | Suppress upgrade prompts, unlock NetShield UI toggles, disable telemetry and observability background workers. |
+| **1.1.1.1** | `com.cloudflare.onedotonedotonedotone` | Spoof WARP+ Unlimited account tier in UI, disable telemetry, and optionally bypass SSL certificate pinning. |
 
 </details>
 

@@ -9,6 +9,7 @@ import io.github.nexfusion.morphe.youtube.YouTubePatches
 import io.github.nexfusion.patches.ExtensionContextHook
 import io.github.nexfusion.patches.ExtensionResourceHook
 import io.github.nexfusion.revanced.googlephotos.GooglePhotosPatches
+import io.github.nexfusion.nexfusion.cloudflare.CloudflareWarpPatches
 import io.github.nexfusion.nexfusion.crunchyroll.CrunchyrollPatches
 import io.github.nexfusion.nexfusion.discord.DiscordPatches
 import io.github.nexfusion.nexfusion.gboard.GboardPatches
@@ -98,6 +99,12 @@ object NexFusionPatches : PatchBundle {
             packageName = "ch.protonvpn.android",
             patches = ProtonVpnPatches,
             appIconColor = 0x6D4AFF,
+        ),
+        AppPatchInfo(
+            appName = "1.1.1.1",
+            packageName = "com.cloudflare.onedotonedotonedotone",
+            patches = CloudflareWarpPatches,
+            appIconColor = 0xF48120,
         ),
         morpheApp(
             appName = "Reddit",

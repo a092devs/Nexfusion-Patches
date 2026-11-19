@@ -216,35 +216,46 @@ val ProtonVpnUnlockSettings = patch(
         }
     }
 
-    // Hook VpnUser tier & free status to unlock client-side settings
+    // Hook VpnUser tier & free status to unlock client-side settings (supports both unobfuscated & 5.21+ obfuscated hi.a)
     runCatching {
-        val userClass = classLoader.loadClass("com.protonvpn.android.auth.data.VpnUser")
-        XposedHelpers.findAndHookMethod(userClass, "getUserTier", object : XC_MethodHook() {
-            override fun beforeHookedMethod(param: MethodHookParam) {
-                param.result = 2
-            }
-        })
-        XposedHelpers.findAndHookMethod(userClass, "isUserPlusOrAbove", object : XC_MethodHook() {
-            override fun beforeHookedMethod(param: MethodHookParam) {
-                param.result = true
-            }
-        })
-        XposedHelpers.findAndHookMethod(userClass, "isFreeUser", object : XC_MethodHook() {
-            override fun beforeHookedMethod(param: MethodHookParam) {
-                param.result = false
-            }
-        })
-        XposedHelpers.findAndHookMethod(userClass, "getUserTierName", object : XC_MethodHook() {
-            override fun beforeHookedMethod(param: MethodHookParam) {
-                param.result = "vpn2022"
-            }
-        })
-        runCatching {
-            XposedHelpers.findAndHookMethod(userClass, "getMaxTier", object : XC_MethodHook() {
-                override fun beforeHookedMethod(param: MethodHookParam) {
-                    param.result = java.lang.Integer.valueOf(2)
+        val userCandidates = listOf("com.protonvpn.android.auth.data.VpnUser", "hi.a")
+        for (className in userCandidates) {
+            val userClass = runCatching { classLoader.loadClass(className) }.getOrNull() ?: continue
+            userClass.declaredMethods.forEach { method ->
+                val name = method.name
+                val returnType = method.returnType
+                if (returnType == java.lang.Boolean.TYPE || returnType == java.lang.Boolean::class.java) {
+                    if (name == "isUserPlusOrAbove" || name == "c") {
+                        XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                            override fun beforeHookedMethod(param: MethodHookParam) {
+                                param.result = true
+                            }
+                        })
+                    } else if (name == "isFreeUser" || name == "d") {
+                        XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                            override fun beforeHookedMethod(param: MethodHookParam) {
+                                param.result = false
+                            }
+                        })
+                    }
+                } else if (returnType == java.lang.Integer.TYPE || returnType == java.lang.Integer::class.java) {
+                    if (name == "getUserTier" || name == "getMaxTier" || name == "a") {
+                        XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                            override fun beforeHookedMethod(param: MethodHookParam) {
+                                param.result = 2
+                            }
+                        })
+                    }
+                } else if (returnType == String::class.java) {
+                    if (name == "getUserTierName" || name == "b") {
+                        XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                            override fun beforeHookedMethod(param: MethodHookParam) {
+                                param.result = "vpn2022"
+                            }
+                        })
+                    }
                 }
-            })
+            }
         }
     }
 }
@@ -253,25 +264,156 @@ val ProtonVpnHidePromotions = patch(
     name = "Hide upgrade promotions",
     description = "Hides upgrade dialogs, onboarding prompts, and account upgrade banners.",
 ) {
-    // Skip upgrade onboarding dialog after login
+    // 1. Skip upgrade onboarding dialog after login
     runCatching {
-        val launcherClass = classLoader.loadClass("com.protonvpn.android.ui.planupgrade.UpgradeDialogLauncherVM")
-        launcherClass.declaredMethods.filter { it.name.startsWith("launch") }.forEach { method ->
+        val launcherClasses = listOf(
+            "com.protonvpn.android.ui.planupgrade.UpgradeDialogLauncherVM",
+        )
+        for (className in launcherClasses) {
+            val launcherClass = runCatching { classLoader.loadClass(className) }.getOrNull() ?: continue
+            launcherClass.declaredMethods.filter { it.name.startsWith("launch") }.forEach { method ->
+                XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        param.result = null
+                    }
+                })
+            }
+        }
+    }
+
+    // 2. Suppress upgrade banners in AccountSettingsViewState (unobfuscated & 5.21+ il.v1)
+    runCatching {
+        val accountStateClasses = listOf(
+            "com.protonvpn.android.settings.AccountSettingsViewState",
+            "il.v1",
+        )
+        for (className in accountStateClasses) {
+            val accountStateClass = runCatching { classLoader.loadClass(className) }.getOrNull() ?: continue
+            accountStateClass.declaredConstructors.forEach { constructor ->
+                XposedBridge.hookMethod(constructor, object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        for (i in param.args.indices) {
+                            if (param.args[i] is Boolean) {
+                                param.args[i] = false
+                            }
+                        }
+                    }
+                    override fun afterHookedMethod(param: MethodHookParam) {
+                        accountStateClass.declaredFields.filter { it.type == java.lang.Boolean.TYPE }.forEach { field ->
+                            field.isAccessible = true
+                            field.setBoolean(param.thisObject, false)
+                        }
+                    }
+                })
+            }
+            accountStateClass.declaredMethods.filter { it.returnType == java.lang.Boolean.TYPE }.forEach { method ->
+                if (method.name == "getUpgradeToPlusBanner" || method.name == "f" || method.name == "g") {
+                    XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                        override fun beforeHookedMethod(param: MethodHookParam) {
+                            param.result = false
+                        }
+                    })
+                }
+            }
+        }
+    }
+
+    // 3. Suppress promo notifications (popups, badges, padlock banners) from ApiNotificationsResponse
+    runCatching {
+        val notifClass = classLoader.loadClass("com.protonvpn.android.promooffers.data.ApiNotificationsResponse")
+        notifClass.declaredMethods.filter {
+            (it.name == "getNotifications" || it.name == "component1") &&
+            java.util.List::class.java.isAssignableFrom(it.returnType)
+        }.forEach { method ->
             XposedBridge.hookMethod(method, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
-                    param.result = null
+                    param.result = emptyList<Any>()
                 }
             })
         }
     }
 
-    // Suppress upgrade banners in AccountSettingsViewState
+    // 4. Suppress upgrade banners from ServerGroupsMainScreenState (items list containing Banner)
     runCatching {
-        val accountStateClass = classLoader.loadClass("com.protonvpn.android.settings.AccountSettingsViewState")
-        accountStateClass.declaredMethods.filter { it.name == "getUpgradeToPlusBanner" && it.returnType == java.lang.Boolean.TYPE }.forEach { method ->
+        val serverGroupClasses = listOf(
+            "com.protonvpn.android.servers.ServerGroupsMainScreenState",
+            "xk.u0",
+        )
+        for (className in serverGroupClasses) {
+            val serverGroupClass = runCatching { classLoader.loadClass(className) }.getOrNull() ?: continue
+            serverGroupClass.declaredConstructors.forEach { constructor ->
+                XposedBridge.hookMethod(constructor, object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        for (i in param.args.indices) {
+                            val arg = param.args[i]
+                            if (arg is List<*>) {
+                                val filtered = arg.filterNot { item ->
+                                    item != null && (
+                                        item.javaClass.name == "xk.f0" ||
+                                        item.toString().contains("Banner(type=")
+                                    )
+                                }
+                                param.args[i] = filtered
+                            }
+                        }
+                    }
+                })
+            }
+        }
+    }
+
+    // 5. Hide Discover VPN Plus carousel in Compose LazyColumn builder (el.f0)
+    runCatching {
+        val lazyColumnClass = classLoader.loadClass("el.f0")
+        lazyColumnClass.declaredConstructors.forEach { constructor ->
+            XposedBridge.hookMethod(constructor, object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    for (i in param.args.indices) {
+                        val arg = param.args[i]
+                        if (arg != null && arg.javaClass.name == "el.v") {
+                            param.args[i] = null
+                        }
+                    }
+                }
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    runCatching {
+                        val fieldF = lazyColumnClass.getDeclaredField("F")
+                        fieldF.isAccessible = true
+                        fieldF.set(param.thisObject, null)
+                    }
+                }
+            })
+        }
+    }
+
+    // 6. Suppress in-app upgrade checks
+    runCatching {
+        val upgradeUseCase = classLoader.loadClass("com.protonvpn.android.ui.planupgrade.IsInAppUpgradeAllowedUseCase")
+        upgradeUseCase.declaredMethods.filter {
+            it.name == "invoke" && (it.returnType == java.lang.Boolean.TYPE || it.returnType == java.lang.Boolean::class.java)
+        }.forEach { method ->
             XposedBridge.hookMethod(method, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
                     param.result = false
+                }
+            })
+        }
+    }
+
+    // 7. Auto-dismiss upgrade and promo activities if opened
+    runCatching {
+        val promoActivities = listOf(
+            "com.protonvpn.android.promooffers.ui.PromoOfferActivity",
+            "com.protonvpn.android.promooffers.ui.PromoOfferIapActivity",
+            "com.protonvpn.android.ui.planupgrade.comparison_table.UpgradeDialogActivityV2",
+            "com.protonvpn.android.ui.planupgrade.UpgradeOnboardingDialogActivity",
+        )
+        for (activityName in promoActivities) {
+            val actClass = runCatching { classLoader.loadClass(activityName) }.getOrNull() ?: continue
+            XposedBridge.hookAllMethods(actClass, "onCreate", object : XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    val activity = param.thisObject as? android.app.Activity
+                    activity?.finish()
                 }
             })
         }
@@ -282,14 +424,20 @@ val ProtonVpnPremiumUi = patch(
     name = "Plus UI badge",
     description = "Displays Plus plan UI indicators.",
 ) {
-    // Ensure Plus tier presentation in client headers
     runCatching {
-        val userClass = classLoader.loadClass("com.protonvpn.android.auth.data.VpnUser")
-        XposedHelpers.findAndHookMethod(userClass, "getUserTierName", object : XC_MethodHook() {
-            override fun beforeHookedMethod(param: MethodHookParam) {
-                param.result = "vpn2022"
+        val userCandidates = listOf("com.protonvpn.android.auth.data.VpnUser", "hi.a")
+        for (className in userCandidates) {
+            val userClass = runCatching { classLoader.loadClass(className) }.getOrNull() ?: continue
+            userClass.declaredMethods.filter {
+                it.returnType == String::class.java && (it.name == "getUserTierName" || it.name == "b")
+            }.forEach { method ->
+                XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        param.result = "vpn2022"
+                    }
+                })
             }
-        })
+        }
     }
 }
 
