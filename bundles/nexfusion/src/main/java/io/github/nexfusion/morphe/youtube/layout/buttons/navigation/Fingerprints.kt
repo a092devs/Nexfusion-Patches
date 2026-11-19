@@ -129,6 +129,23 @@ internal object AutoHideNavigationBarOnDismissMiniplayerFingerprint : Fingerprin
 
 internal object PageBottomMarginFingerprint : Fingerprint(
     returnType = "V",
+    parameters = listOf("Landroid/graphics/Rect;", "Z"),
+    filters = listOf(
+        methodCall(smali = "Landroid/view/View;->findFocus()Landroid/view/View;"),
+        methodCall(
+            smali = "Landroid/view/View;->onCheckIsTextEditor()Z",
+            location = MatchAfterWithin(5)
+        ),
+        fieldAccess(
+            opcode = Opcode.IGET,
+            definingClass = "Landroid/graphics/Rect;",
+            name = "bottom"
+        )
+    )
+)
+
+internal object PageBottomMarginLegacyFingerprint : Fingerprint(
+    returnType = "V",
     parameters = listOf("Landroid/graphics/Rect;"),
     filters = listOf(
         methodCall(smali = "Landroid/view/View;->findFocus()Landroid/view/View;"),
@@ -191,7 +208,8 @@ internal val shortsBottomRoomConstructor = findMethodDirect {
 }
 
 internal val pageBottomMarginConstructor = findMethodDirect {
-    val match = PageBottomMarginFingerprint.match()
+    val match = runCatching { PageBottomMarginFingerprint.match() }.getOrNull()
+        ?: PageBottomMarginLegacyFingerprint.match()
     match.method.instructions.drop(match.instructionMatches.last().index + 1).first {
         it.methodRef?.name == "<init>" &&
                 it.methodRef?.paramTypes?.map { it.descriptor } == listOf("I", "I", "[B")
@@ -199,7 +217,8 @@ internal val pageBottomMarginConstructor = findMethodDirect {
 }
 
 internal val pageKeyboardInsetsMethod = findMethodDirect {
-    val match = PageBottomMarginFingerprint.match()
+    val match = runCatching { PageBottomMarginFingerprint.match() }.getOrNull()
+        ?: PageBottomMarginLegacyFingerprint.match()
     val instructions = match.method.instructions
     // Newer targets read the keyboard inset through a helper without calling getRootView.
     // Both forms occur only on the keyboard branch, immediately before the Rect.bottom fallback.

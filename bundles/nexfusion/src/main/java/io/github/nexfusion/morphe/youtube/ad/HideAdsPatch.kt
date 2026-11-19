@@ -1,16 +1,15 @@
 package io.github.nexfusion.morphe.youtube.ad
 
 import android.view.View
+import android.view.ViewGroup
 import app.morphe.extension.shared.Logger
 import app.morphe.extension.shared.ResourceUtils
 import app.morphe.extension.youtube.patches.components.AdsFilter
-import app.morphe.extension.youtube.settings.preference.ChannelWhitelistPreference
 import io.github.nexfusion.compat.XC_MethodHook
 import io.github.nexfusion.compat.XposedHelpers
 import io.github.nexfusion.morphe.shared.ad.HideFullscreenAds
 import io.github.nexfusion.morphe.shared.misc.litho.filter.addLithoFilter
 import io.github.nexfusion.morphe.shared.misc.proto.hookElement
-import io.github.nexfusion.morphe.shared.misc.settings.preference.NonInteractivePreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.SwitchPreference
 import io.github.nexfusion.morphe.youtube.layout.hide.general.HideHorizontalShelves
 import io.github.nexfusion.morphe.youtube.misc.contexthook.Endpoint
@@ -23,7 +22,6 @@ import io.github.nexfusion.morphe.youtube.misc.playservice.VersionCheck
 import io.github.nexfusion.morphe.youtube.misc.proto.elementProtoParserHookPatch
 import io.github.nexfusion.morphe.youtube.misc.settings.PreferenceScreen
 import io.github.nexfusion.patch
-import io.github.nexfusion.scopedHook
 
 val HideAds = patch(
     name = "Hide ads",
@@ -124,6 +122,81 @@ val HideAds = patch(
                 }
             }
         })
+
+    // Dynamic feed sponsored card and ad view suppressor
+    fun isSponsoredText(text: CharSequence?): Boolean {
+        if (text == null) return false
+        val s = text.toString()
+        return s.startsWith("Sponsored", ignoreCase = true) ||
+            s.contains("Sponsored ·", ignoreCase = true) ||
+            s.contains("Sponsored -", ignoreCase = true)
+    }
+
+    fun hideSponsoredCardTree(view: View) {
+        val cd = view.contentDescription
+        if (isSponsoredText(cd)) {
+            view.visibility = View.GONE
+            val lp = view.layoutParams
+            if (lp != null && lp.height != 0) {
+                lp.height = 0
+                view.layoutParams = lp
+            }
+            var parent = view.parent
+            while (parent is View) {
+                val pName = parent.javaClass.name
+                if (pName.contains("RecyclerView") || pName.contains("ViewPager")) {
+                    break
+                }
+                parent.visibility = View.GONE
+                val plp = parent.layoutParams
+                if (plp != null && plp.height != 0) {
+                    plp.height = 0
+                    parent.layoutParams = plp
+                }
+                parent = parent.parent
+            }
+        }
+    }
+
+    runCatching {
+        XposedHelpers.findAndHookMethod(
+            View::class.java.name,
+            lpparam.classLoader,
+            "setContentDescription",
+            CharSequence::class.java.name,
+            object : XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    if (!AdsFilter.hideAds()) return
+                    val view = param.thisObject as? View ?: return
+                    hideSponsoredCardTree(view)
+                }
+            }
+        )
+    }
+
+    runCatching {
+        XposedHelpers.findAndHookMethod(
+            ViewGroup::class.java.name,
+            lpparam.classLoader,
+            "addView",
+            View::class.java.name,
+            Int::class.javaPrimitiveType,
+            ViewGroup.LayoutParams::class.java.name,
+            object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (!AdsFilter.hideAds()) return
+                    val child = param.args[0] as? View ?: return
+                    if (isSponsoredText(child.contentDescription)) {
+                        child.visibility = View.GONE
+                        val lp = param.args[2] as? ViewGroup.LayoutParams
+                        if (lp != null) {
+                            lp.height = 0
+                        }
+                    }
+                }
+            }
+        )
+    }
 
     // TODO Hide paid promotion label in miniplayer
 

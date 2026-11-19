@@ -1,15 +1,12 @@
 package io.github.nexfusion.nexfusion.linkedin
 
-import android.app.Activity
 import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Rect
 import android.graphics.pdf.PdfDocument
 import android.graphics.pdf.PdfRenderer
-import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.os.Handler
@@ -29,7 +26,6 @@ import io.github.nexfusion.patch
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
-import java.io.InputStream
 import java.io.OutputStream
 import java.net.HttpURLConnection
 import java.net.URI

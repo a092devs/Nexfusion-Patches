@@ -2,7 +2,6 @@ package io.github.nexfusion.nexfusion.instagram
 
 import android.app.Activity
 import android.app.Application
-import android.app.Dialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -15,7 +14,6 @@ import android.view.ViewStub
 import android.view.ViewTreeObserver
 import android.view.Window
 import android.view.WindowManager
-import android.widget.TextView
 import io.github.nexfusion.compat.XC_MethodHook
 import io.github.nexfusion.compat.XC_MethodHook.MethodHookParam
 import io.github.nexfusion.compat.XC_MethodReplacement
@@ -27,7 +25,6 @@ import io.github.nexfusion.hookMethod
 import io.github.nexfusion.morphe.findMethodDirect
 import io.github.nexfusion.patch
 import org.luckypray.dexkit.query.enums.StringMatchType
-import java.lang.reflect.Modifier
 import java.util.Collections
 import java.util.Locale
 import java.util.WeakHashMap
@@ -565,7 +562,7 @@ private fun hideStoryFollowButton(holder: Any) {
 
 /**
  * Takes the Follow button off the top of stories from accounts you don't follow, keeping the header clean.
- * Ported from SysAdminDoc/HushGram #237.
+ * Ported from SysAdminDoc/HushGram.
  */
 val HideStoryFollow = igPatch(
     name = "Hide Follow on stories",
@@ -640,7 +637,7 @@ private fun installFeedFollowHider(activity: Activity) {
 
 /**
  * Takes the Follow and Subscribe buttons off feed posts, keeping the post header clean.
- * Ported from SysAdminDoc/HushGram #248.
+ * Ported from SysAdminDoc/HushGram.
  */
 val HideFeedFollow = igPatch(
     name = "Hide Follow on feed posts",
@@ -689,314 +686,6 @@ val DontSendReelWatchHistory = igPatch(
     InstagramRequestFilter.enable(InstagramRequestFilter.Rule.REEL_WATCH_HISTORY)
     InstagramRequestFilter.ensureHooks(classLoader)
     PatcherLog.info { "NexFusion Instagram: reel watch history Tigon filter enabled" }
-}
-
-private val metaAiHiderSessions = Collections.synchronizedMap(WeakHashMap<View, ViewTreeObserver.OnGlobalLayoutListener>())
-
-private val META_AI_VIEW_IDS = listOf(
-    "meta_ai",
-    "meta_ai_ring",
-    "meta_ai_button",
-    "meta_ai_pill",
-    "meta_ai_badge",
-    "meta_ai_inbox_row",
-    "ask_meta_ai",
-    "meta_ai_summary",
-    "meta_ai_sources",
-    "bottomSearchSuggestionPillsHelper",
-    "row_thread_composer_meta_ai_discover",
-    "row_thread_composer_meta_ai_invocation",
-    "row_thread_composer_meta_ai_voice",
-    "layout_meta_ai_large_ask_pill",
-    "layout_meta_ai_prompt_pill",
-    "meta_ai_pill_keyword",
-    "meta_ai_hcm_prompt_pills",
-    "meta_ai_actionbar_button",
-    "biz_ai_agent_pills_on_media_stub",
-    "biz_ai_agent_pills_toolbar_stub",
-    "direct_composer_meta_ai_composer_upsell",
-    "direct_composer_meta_ai_discovery_button",
-    "direct_composer_meta_ai_invocation_button",
-    "direct_composer_meta_ai_nux_disclaimer",
-    "direct_composer_meta_ai_voice_button",
-    "direct_composer_meta_ai_voice_button_v2",
-    "direct_composer_overflow_button_meta_ai_v2",
-    "restyleplus_create_with_ai_pill",
-    "reel_netego_meta_ai_stories_overlay",
-    "reel_netego_meta_ai_stories_stub",
-    "ai_rewrite_bottom_sheet_meta_ai_icon_view",
-    "ai_rewrite_nux_meta_ai_icon_view",
-    "ai_rewrite_nux_meta_ai_text",
-    "clips_meta_ai_pill",
-    "clips_meta_ai_pill_stub",
-    "reel_meta_ai_pill",
-    "reel_meta_ai_pill_stub",
-    "clips_ai_summary",
-    "meta_ai_reel_prompt",
-    "meta_ai_blend",
-)
-
-private val META_AI_MOBILE_CONFIG_FLAGS = setOf(
-    0x81067100111e9fL, // Search tab bar "Search with Meta AI", search results & answers
-    0x81040c0006109dL, // Messages inbox "Search or ask Meta AI"
-    0x810ea5000051f8L, // Messages inbox threads section Meta AI row (456)
-    0x81104e00115b00L, // Reels Meta AI prompt (455)
-    0x81062e00111dfbL, // Reels Ask Meta AI (455)
-    0x8103db00061011L, // Search Meta AI (455)
-    0x8103d9001b1007L, // Inbox Meta AI ring (455)
-    0x8115fa00017601L, // Home top bar Meta AI (455)
-    0x81103000115aeaL, // Reels Meta AI prompt (456)
-    0x81062600111dbbL, // Reels Ask Meta AI (456)
-    0x8103d700060ff2L, // Search Meta AI (456)
-    0x8103d5001b0fe8L, // Inbox Meta AI ring (456)
-    0x8115d5000176efL, // Home top bar Meta AI (456)
-    0x81040a001b1093L, // Messages search bar Meta AI ring
-    0x81168700017258L, // Home top bar Meta AI chats / hatch button
-    0x8110c200115a92L, // About this reel summary factory (450)
-    0x8110a600115abdL, // About this reel summary flag (453)
-    0x81106500115afcL, // About this reel summary flag (454/455)
-    0x810ba900064043L, // Reels / post ask meta ai upsell
-    0x8103A800000EB2L, // Direct tap & hold ask meta ai
-    0x81061700032BF3L, // Regenerate ai message
-    0x81061700052BF5L, // Direct ai feedback
-    0x810f6600074387L, // Sidechat meta ai
-    0x82061300050e2dL, // Ask meta ai mustache pill
-    0x82061300040e2cL, // Imagine mustache pill
-    0x8103af00020eb4L, // Meta AI gate in X.02SH
-    0x8203bd00630a20L, // Reels Meta AI
-    0x81062100001c31L, // Reels / comments AI prompt
-    0x81062100061c37L,
-    0x81062100051c36L,
-    0x81062100071c38L,
-    0x81062100081c39L,
-    0x810621000a1c3bL,
-    0x81062100011c32L,
-    0x81062100021c33L,
-    0x81062100031c34L,
-    0x81062100041c35L,
-    0x81062100091c3aL,
-    0x810621000b1c3cL,
-    0x810621000c1c3dL,
-    0x810621000d1c3eL,
-    0x810621000e1c3fL,
-    0x810621000f1c40L,
-)
-
-private fun isMetaAiText(text: CharSequence?): Boolean {
-    if (text == null) return false
-    val s = text.toString().lowercase(Locale.ROOT)
-    return s.contains("meta ai") || s.contains("ask meta") || s.contains("meta_ai") ||
-        s.contains("ask_meta_ai") || s.contains("create with ai") || s.contains("create_with_ai") ||
-        s.contains("imagine") || (s.contains("summarize") && s.contains("ai")) ||
-        s.contains("biz_ai_agent") || s.contains("prompt meta ai")
-}
-
-private fun installMetaAiViewHiderOnDecor(decorView: View) {
-    if (metaAiHiderSessions.containsKey(decorView)) return
-    val context = decorView.context ?: return
-
-    val targetIds = META_AI_VIEW_IDS.mapNotNull { name ->
-        val id = context.resources.getIdentifier(name, "id", context.packageName)
-        if (id != 0) id else null
-    }.toSet()
-
-    fun hideMetaAiViews(root: View, budget: IntArray = intArrayOf(500)): Boolean {
-        if (budget[0]-- <= 0) return false
-        var changed = false
-        if (root !is ViewStub) {
-            val id = root.id
-            val contentDesc = root.contentDescription
-            val clsName = root.javaClass.simpleName
-
-            val shouldHide = (targetIds.isNotEmpty() && id != View.NO_ID && id in targetIds) ||
-                (contentDesc != null && isMetaAiText(contentDesc)) ||
-                (clsName.contains("MetaAi", ignoreCase = true) || clsName.contains("AskMetaAi", ignoreCase = true))
-
-            if (shouldHide && root.visibility != View.GONE) {
-                val parent = root.parent as? ViewGroup
-                val isPillContainer = parent != null && parent.childCount in 1..5 && parent.isClickable
-                if (isPillContainer) {
-                    parent!!.visibility = View.GONE
-                } else {
-                    root.visibility = View.GONE
-                }
-                changed = true
-            }
-        }
-        if (root is ViewGroup && root.visibility != View.GONE) {
-            // Never recurse into chat bubbles or direct message threads
-            val cls = root.javaClass.name
-            if (cls.contains("Message") || cls.contains("Chat") || cls.contains("Thread")) {
-                return changed
-            }
-            for (i in 0 until root.childCount) {
-                changed = hideMetaAiViews(root.getChildAt(i), budget) || changed
-            }
-        }
-        return changed
-    }
-
-    var lastScanTime = 0L
-    val layoutListener = ViewTreeObserver.OnGlobalLayoutListener {
-        val now = android.os.SystemClock.uptimeMillis()
-        if (now - lastScanTime > 2000L) {
-            lastScanTime = now
-            hideMetaAiViews(decorView)
-        }
-    }
-    val scrollListener = ViewTreeObserver.OnScrollChangedListener {
-        val now = android.os.SystemClock.uptimeMillis()
-        if (now - lastScanTime > 500L) {
-            lastScanTime = now
-            if (hideMetaAiViews(decorView)) {
-                decorView.postInvalidateOnAnimation()
-            }
-        }
-    }
-
-    metaAiHiderSessions[decorView] = layoutListener
-    decorView.viewTreeObserver.addOnGlobalLayoutListener(layoutListener)
-    decorView.viewTreeObserver.addOnScrollChangedListener(scrollListener)
-    decorView.post { hideMetaAiViews(decorView) }
-}
-
-/**
- * Removes Meta AI from Instagram: search bar and results, direct messages inbox, home top bar,
- * reel summaries, and AI network requests.
- * Ported and adapted from SysAdminDoc/HushGram (GPL-3.0).
- */
-val HideMetaAi = igPatch(
-    name = "Hide Meta AI",
-    description = "Removes Meta AI from search, inbox, home top bar, reels menus, and blocks all Meta AI endpoints.",
-    use = true,
-) {
-    // 1. Enable network filter
-    InstagramRequestFilter.enable(InstagramRequestFilter.Rule.META_AI)
-    InstagramRequestFilter.ensureHooks(classLoader)
-
-    // 2. MobileConfig flags interceptor via DexKit fingerprints
-    runCatching {
-        val hook = object : XC_MethodHook() {
-            override fun beforeHookedMethod(param: MethodHookParam) {
-                val paramId = param.args.firstOrNull { it is Long } as? Long ?: return
-                if (paramId in META_AI_MOBILE_CONFIG_FLAGS) {
-                    param.result = false
-                }
-            }
-        }
-        var hooked = 0
-        for (dex in ::mobileConfigFlagMethods.dexMethodList) {
-            runCatching {
-                dex.hookMethod(hook)
-                hooked++
-            }
-        }
-        PatcherLog.info { "NexFusion Instagram: MobileConfig Meta AI flags hooked on $hooked methods" }
-    }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: MobileConfig fingerprint hook skipped" } }
-
-    // 2b. Meta AI gate methods (e.g. X.02SH gate methods for reels and feed AI)
-    runCatching {
-        var gateHooked = 0
-        for (dex in ::metaAiGateMethods.dexMethodList) {
-            runCatching {
-                dex.hookMethod(object : XC_MethodHook() {
-                    override fun beforeHookedMethod(param: MethodHookParam) {
-                        param.result = false
-                    }
-                })
-                gateHooked++
-            }
-        }
-        PatcherLog.info { "NexFusion Instagram: Meta AI gate methods hooked on $gateHooked methods" }
-    }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: Meta AI gate hook skipped" } }
-
-    // 2c. Reels Meta AI Litho render component hooks (e.g. ClipsMetaAiPillComponent_render)
-    runCatching {
-        var pillHooked = 0
-        val nullReplacer = object : XC_MethodReplacement() {
-            override fun replaceHookedMethod(param: MethodHookParam): Any? = null
-        }
-        for (dex in ::reelsMetaAiRenderMethods.dexMethodList) {
-            runCatching {
-                dex.hookMethod(nullReplacer)
-                pillHooked++
-            }
-        }
-        PatcherLog.info { "NexFusion Instagram: Reels Meta AI Litho render hooked on $pillHooked methods" }
-    }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: Reels Meta AI render hook skipped" } }
-
-    // 2d. Reels More menu AI Discovery ("Ask Meta AI") options gate (hasAiDiscoveryMenu)
-    runCatching {
-        var menuHooked = 0
-        val falseReplacer = object : XC_MethodReplacement() {
-            override fun replaceHookedMethod(param: MethodHookParam): Any = false
-        }
-        for (dex in ::reelsAiDiscoveryMenuMethods.dexMethodList) {
-            runCatching {
-                dex.hookMethod(falseReplacer)
-                menuHooked++
-            }
-        }
-        PatcherLog.info { "NexFusion Instagram: Reels AI Discovery menu hooked on $menuHooked methods" }
-    }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: Reels AI Discovery hook skipped" } }
-
-    // 2e. MobileConfig reflection fallback on known manager classes
-    runCatching {
-        val candidateClasses = listOf(
-            "com.facebook.mobileconfig.MobileConfigManagerHolderImpl",
-            "com.facebook.mobileconfig.factory.MobileConfigSafeContext",
-            "com.facebook.mobileconfig.MobileConfigDependenciesInFBApps",
-            "com.facebook.mobileconfig.MobileConfigOverridesTableHolder",
-            "com.facebook.mobileconfig.MobileConfigContext",
-            "com.facebook.mobileconfig.factory.MobileConfigUnsafeContext",
-            "X.0UZ6",
-            "X.02fr",
-            "X.02jx",
-            "X.02mj",
-            "X.06QU",
-            "X.06Ty",
-        )
-        val hook = object : XC_MethodHook() {
-            override fun beforeHookedMethod(param: MethodHookParam) {
-                val paramId = param.args.firstOrNull { it is Long } as? Long ?: return
-                if (paramId in META_AI_MOBILE_CONFIG_FLAGS) {
-                    param.result = false
-                }
-            }
-        }
-        var hooked = 0
-        for (clsName in candidateClasses) {
-            val clazz = runCatching { classLoader.loadClass(clsName) }.getOrNull() ?: continue
-            for (method in clazz.declaredMethods) {
-                if (!Modifier.isAbstract(method.modifiers) &&
-                    method.returnType == java.lang.Boolean.TYPE &&
-                    method.parameterTypes.any { it == java.lang.Long.TYPE }) {
-                    runCatching {
-                        XposedBridge.hookMethod(method, hook)
-                        hooked++
-                    }
-                }
-            }
-        }
-        PatcherLog.info { "NexFusion Instagram: MobileConfig reflection fallback hooked on $hooked methods" }
-    }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: MobileConfig reflection hook skipped" } }
-
-    // 3. View hider in onResume
-    runCatching {
-        val activityClass = classLoader.loadClass("android.app.Activity")
-        for (method in activityClass.declaredMethods) {
-            if (method.name == "onResume" && method.parameterTypes.isEmpty()) {
-                XposedBridge.hookMethod(method, object : XC_MethodHook() {
-                    override fun afterHookedMethod(param: MethodHookParam) {
-                        val activity = param.thisObject as? Activity ?: return
-                        val decor = activity.window?.decorView ?: return
-                        installMetaAiViewHiderOnDecor(decor)
-                    }
-                })
-            }
-        }
-        PatcherLog.info { "NexFusion Instagram: Hide Meta AI activity view hider installed" }
-    }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: Hide Meta AI view hider skipped" } }
 }
 
 val TurnOffHdrBoosts = igPatch(
@@ -1130,7 +819,6 @@ val InstagramPatches = arrayOf(
     DisableAnalytics,
     DontSaveRecentSearches,
     DontSendReelWatchHistory,
-    HideMetaAi,
     StartFeedVideosWithSound,
     SendKeyboardGifs,
 )

@@ -6,7 +6,6 @@ import app.morphe.extension.youtube.patches.components.ShortsFilter
 import io.github.nexfusion.compat.XC_MethodReplacement
 import io.github.nexfusion.morphe.shared.misc.litho.filter.addLithoFilter
 import io.github.nexfusion.morphe.shared.misc.settings.preference.PreferenceCategory
-import io.github.nexfusion.morphe.shared.misc.settings.preference.PreferenceScreenPreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.SwitchPreference
 import io.github.nexfusion.morphe.youtube.layout.buttons.navigation.NavigationBar
 import io.github.nexfusion.morphe.youtube.misc.engagement.EngagementPanelHook

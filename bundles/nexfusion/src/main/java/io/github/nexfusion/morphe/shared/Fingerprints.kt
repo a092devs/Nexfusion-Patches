@@ -4,7 +4,6 @@ import io.github.nexfusion.morphe.AccessFlags
 import io.github.nexfusion.morphe.Fingerprint
 import io.github.nexfusion.morphe.Opcode
 import io.github.nexfusion.morphe.StringComparisonType
-import io.github.nexfusion.morphe.fieldAccess
 import io.github.nexfusion.morphe.findMethodDirect
 import io.github.nexfusion.morphe.methodCall
 import io.github.nexfusion.morphe.string

@@ -4,7 +4,6 @@ import io.github.nexfusion.morphe.shared.misc.litho.context.conversionContextPat
 import io.github.nexfusion.morphe.shared.misc.litho.filter.sharedLithoFilterPatch
 import io.github.nexfusion.morphe.youtube.misc.litho.rendernext.disableRenderNextPatch
 import io.github.nexfusion.morphe.youtube.misc.playservice.VersionCheck
-import io.github.nexfusion.morphe.youtube.misc.playservice.is_20_22_or_greater
 import io.github.nexfusion.morphe.youtube.misc.playservice.is_21_15_or_greater
 import io.github.nexfusion.morphe.youtube.misc.verticalscroll.FixVerticalScroll
 

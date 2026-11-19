@@ -11,7 +11,6 @@ import io.github.nexfusion.morphe.findMethodDirect
 import io.github.nexfusion.morphe.opcode
 import io.github.nexfusion.morphe.resourceLiteral
 import io.github.nexfusion.morphe.string
-import org.luckypray.dexkit.query.enums.StringMatchType
 import org.luckypray.dexkit.result.FieldUsingType
 
 internal object ReelWatchPagerFingerprint : Fingerprint(

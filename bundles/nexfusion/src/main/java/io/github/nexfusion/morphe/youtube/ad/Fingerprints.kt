@@ -11,7 +11,6 @@ import io.github.nexfusion.morphe.ResourceType
 import io.github.nexfusion.morphe.fieldAccess
 import io.github.nexfusion.morphe.findClassDirect
 import io.github.nexfusion.morphe.findFieldDirect
-import io.github.nexfusion.morphe.findMethodDirect
 import io.github.nexfusion.morphe.methodCall
 import io.github.nexfusion.morphe.opcode
 import io.github.nexfusion.morphe.resourceLiteral

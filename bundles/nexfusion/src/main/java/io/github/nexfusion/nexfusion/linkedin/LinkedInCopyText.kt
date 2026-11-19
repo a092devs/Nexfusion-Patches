@@ -14,7 +14,6 @@ import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
-import android.view.accessibility.AccessibilityNodeInfo
 import android.view.accessibility.AccessibilityNodeProvider
 import android.widget.ScrollView
 import android.widget.TextView
@@ -22,7 +21,6 @@ import android.widget.Toast
 import io.github.nexfusion.compat.XC_MethodHook
 import io.github.nexfusion.compat.XC_MethodHook.MethodHookParam
 import io.github.nexfusion.compat.XposedBridge
-import io.github.nexfusion.IHook
 import io.github.nexfusion.PatcherLog
 import io.github.nexfusion.patch
 

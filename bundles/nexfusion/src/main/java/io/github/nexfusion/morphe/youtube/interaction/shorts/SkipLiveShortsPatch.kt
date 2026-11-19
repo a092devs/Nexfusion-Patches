@@ -2,7 +2,6 @@ package io.github.nexfusion.morphe.youtube.interaction.shorts
 
 import android.content.Context
 
-import io.github.nexfusion.compat.XposedHelpers
 import io.github.nexfusion.FindMethodFunc
 import io.github.nexfusion.PatchExecutor
 import io.github.nexfusion.PatcherLog

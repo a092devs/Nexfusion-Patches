@@ -1,12 +1,10 @@
 package io.github.nexfusion.nexfusion.gboard
 
-import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.inputmethodservice.InputMethodService
 import android.text.InputType
 import android.util.Log
-import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
 import io.github.nexfusion.compat.XC_MethodHook
 import io.github.nexfusion.compat.XposedBridge

@@ -4,7 +4,6 @@ import io.github.nexfusion.morphe.AccessFlags
 import io.github.nexfusion.morphe.Fingerprint
 import io.github.nexfusion.morphe.Opcode
 import io.github.nexfusion.morphe.OpcodesFilter
-import io.github.nexfusion.morphe.fingerprint
 import io.github.nexfusion.morphe.literal
 
 internal object BackgroundPlaybackDisableFingerprint : Fingerprint(

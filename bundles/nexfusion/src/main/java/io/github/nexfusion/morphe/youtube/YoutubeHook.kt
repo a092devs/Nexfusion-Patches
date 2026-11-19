@@ -5,7 +5,6 @@ import app.morphe.extension.shared.Utils
 import io.github.libxposed.api.XposedInterface
 import io.github.nexfusion.patches.ExtensionResourceHook
 import io.github.nexfusion.addModuleAssets
-import io.github.nexfusion.atLast
 import io.github.nexfusion.injectHostClassLoaderToSelf
 import io.github.nexfusion.hookExtensionClassLoading
 import io.github.nexfusion.morphe.shared.misc.debugging.experimentalIndexedBooleanFeatureFlagFingerprint
@@ -20,7 +19,6 @@ import io.github.nexfusion.morphe.youtube.interaction.downloads.Downloads
 import io.github.nexfusion.morphe.youtube.interaction.doubletap.disableChapterSkipDoubleTapPatch
 import io.github.nexfusion.morphe.youtube.interaction.onthego.onTheGoPatch
 import io.github.nexfusion.morphe.youtube.interaction.playlistpanel.PlaylistPanelButton
-import io.github.nexfusion.morphe.youtube.interaction.seekbar.customSeekbarThumbPatch
 import io.github.nexfusion.morphe.youtube.interaction.seekbar.seekbarPatch
 import io.github.nexfusion.morphe.youtube.interaction.shorts.SkipLiveShorts
 import io.github.nexfusion.morphe.youtube.interaction.swipecontrols.SwipeControls
@@ -117,7 +115,7 @@ val FeatureOverride = patch {
         }
     }
     if (is_21_42_or_greater) {
-        insertLiteralOverride(45857115L, true) // Media session owner check (#4762)
+        insertLiteralOverride(45857115L, true) // Media session owner check
         runCatching {
             ::experimentalIndexedBooleanFeatureFlagFingerprint.hookMethod {
                 priority = XposedInterface.PRIORITY_DEFAULT - 1

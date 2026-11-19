@@ -11,7 +11,6 @@ import io.github.nexfusion.morphe.findMethodDirect
 import io.github.nexfusion.morphe.opcode
 import io.github.nexfusion.morphe.resourceMappings
 import io.github.nexfusion.morphe.youtube.shared.seekbarFingerprint
-import io.github.nexfusion.morphe.youtube.shared.seekbarOnDrawFingerprint
 
 internal object AppendTimeFingerprint : Fingerprint(
     accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.FINAL),

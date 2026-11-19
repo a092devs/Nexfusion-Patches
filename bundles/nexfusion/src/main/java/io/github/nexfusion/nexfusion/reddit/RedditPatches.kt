@@ -12,11 +12,9 @@ import io.github.nexfusion.compat.XC_MethodHook.MethodHookParam
 import io.github.nexfusion.compat.XC_MethodReplacement
 import io.github.nexfusion.compat.XposedBridge
 import io.github.nexfusion.compat.XposedHelpers
-import io.github.nexfusion.IHook
 import io.github.nexfusion.PatcherLog
 import io.github.nexfusion.patch
 import java.lang.reflect.Method
-import java.lang.reflect.Proxy
 import java.util.concurrent.Executor
 
 // Ported from jkennethcarino/adobo (GPL-3.0),

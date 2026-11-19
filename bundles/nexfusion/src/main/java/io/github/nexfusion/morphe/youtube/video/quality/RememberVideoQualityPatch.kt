@@ -10,7 +10,6 @@ import io.github.nexfusion.morphe.youtube.misc.playertype.PlayerTypeHook
 import io.github.nexfusion.morphe.youtube.shared.VideoQualityReceiver
 import io.github.nexfusion.morphe.youtube.shared.videoQualityChangedFingerprint
 import io.github.nexfusion.morphe.youtube.video.information.VideoInformationPatch
-import io.github.nexfusion.morphe.youtube.video.information.onCreateHook
 import io.github.nexfusion.patch
 import io.github.nexfusion.scopedHook
 import `j$`.util.Optional

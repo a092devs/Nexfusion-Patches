@@ -1,6 +1,5 @@
 package io.github.nexfusion.nexfusion.gboard
 
-import android.util.Log
 import io.github.nexfusion.compat.XC_MethodHook
 import io.github.nexfusion.compat.XposedBridge
 import io.github.nexfusion.compat.XposedHelpers

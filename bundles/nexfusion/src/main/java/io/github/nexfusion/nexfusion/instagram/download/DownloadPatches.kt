@@ -952,48 +952,9 @@ val DownloadMedia = patch(
                     val activity = owners.firstNotNullOfOrNull(::activityIn) ?: lastResumedActivity?.get()
                         ?: return@after log("no activity for $module")
 
-                    val items = runCatching { extractor.items(media) }.getOrNull().orEmpty()
-                    val username = usernameOf(media)
-                    val currentPos = if (items.size > 1) position(owners) else 0
-                    val current = items.getOrNull(currentPos) ?: items.firstOrNull()
-
-                    if (current != null) {
-                        if (current.isVideo) {
-                            addSheetRow(param.thisObject, activity, "Download reel", icon) {
-                                log("tapped Download reel in $module")
-                                enqueue(activity, listOf(current), username)
-                            }
-                            addSheetRow(param.thisObject, activity, "Download audio", audioIcon) {
-                                log("tapped Download audio in $module")
-                                downloadAudio(activity, current, username)
-                            }
-                        } else {
-                            addSheetRow(param.thisObject, activity, "Download photo", icon) {
-                                log("tapped Download photo in $module")
-                                enqueue(activity, listOf(current), username)
-                            }
-                            if (items.size > 1) {
-                                addSheetRow(param.thisObject, activity, "Download all (${items.size})", icon) {
-                                    log("tapped Download all in $module")
-                                    enqueue(activity, items, username)
-                                }
-                            }
-                            if (current.audioUrl != null) {
-                                addSheetRow(param.thisObject, activity, "Download audio", audioIcon) {
-                                    log("tapped Download audio in $module")
-                                    downloadAudio(activity, current, username)
-                                }
-                            }
-                        }
-                        addSheetRow(param.thisObject, activity, DOWNLOAD_LABEL, moreIcon) {
-                            log("tapped Download options in $module")
-                            downloadMedia(activity, media, owners)
-                        }
-                    } else {
-                        addSheetRow(param.thisObject, activity, DOWNLOAD_LABEL, icon) {
-                            log("tapped $DOWNLOAD_LABEL in $module")
-                            downloadMedia(activity, media, owners)
-                        }
+                    addSheetRow(param.thisObject, activity, DOWNLOAD_LABEL, moreIcon) {
+                        log("tapped $DOWNLOAD_LABEL in $module")
+                        downloadMedia(activity, media, owners)
                     }
                     log("added download rows to $module")
                 } catch (e: Exception) {
@@ -1074,9 +1035,9 @@ val DownloadMedia = patch(
     // also added to the rows the sheet is shown with, for the story on screen.
     menus["story menu rows"] = runCatching {
         val viewerClass = classLoader.loadClass("instagram.features.stories.fragment.ReelViewerFragment")
-        val currentItem = viewerClass.declaredMethods.single {
+        val currentItem = viewerClass.declaredMethods.firstOrNull {
             it.parameterCount == 0 && it.returnType == reelItemClass
-        }.apply { isAccessible = true }
+        }?.apply { isAccessible = true } ?: throw Exception("Current ReelItem method not found")
         var resumedViewer = WeakReference<Any>(null)
         viewerClass.getDeclaredMethod("onResume").hookMethod {
             after { param -> resumedViewer = WeakReference(param.thisObject) }

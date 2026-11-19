@@ -6,10 +6,6 @@ import io.github.nexfusion.IHook
 import io.github.nexfusion.IHookCallback
 import io.github.nexfusion.PatcherLog
 import io.github.nexfusion.hookMethod
-import io.github.nexfusion.compat.XC_MethodHook
-import io.github.nexfusion.compat.XC_MethodReplacement
-import io.github.nexfusion.compat.XposedBridge
-import java.lang.reflect.Method
 import java.util.concurrent.locks.ReentrantLock
 
 // Ported from kveld9/kveld-extra-morphe-patches (GPL-3.0), TwitterBlockTelemetryPatch.kt (the

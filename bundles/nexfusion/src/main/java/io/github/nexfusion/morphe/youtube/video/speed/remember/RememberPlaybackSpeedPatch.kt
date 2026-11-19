@@ -1,10 +1,8 @@
 package io.github.nexfusion.morphe.youtube.video.speed.remember
 
 import app.morphe.extension.youtube.patches.playback.speed.RememberPlaybackSpeedPatch
-import app.morphe.extension.youtube.settings.preference.ChannelWhitelistPreference
 import app.morphe.extension.youtube.settings.preference.CustomVideoSpeedListPreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.ListPreference
-import io.github.nexfusion.morphe.shared.misc.settings.preference.NonInteractivePreference
 import io.github.nexfusion.morphe.shared.misc.settings.preference.SwitchPreference
 import io.github.nexfusion.morphe.youtube.misc.settings.PreferenceScreen
 import io.github.nexfusion.morphe.youtube.shared.InitializePlaybackSpeedValuesFingerprint

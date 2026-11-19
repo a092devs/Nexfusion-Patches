@@ -337,7 +337,7 @@ val AmbientMode = patch(
     insertLiteralOverride(45372814L) { _ -> ExtensionAmbientModePatch.disableAmbientMode(true) }
 
     // The /next response can have no CinematicContainerRenderer, a static color style
-    // (the background does not change with the video, issue #3783) or ambient mode off by
+    // (the background does not change with the video, issue) or ambient mode off by
     // default. Override what the server decides.
     runCatching {
         if (!CinematicContainerForceAnchors.load(appContext)) {

@@ -1,6 +1,5 @@
 package io.github.nexfusion.morphe.youtube.interaction.doubletap
 
-import app.morphe.extension.youtube.patches.DisableDoubleTapActionsPatch
 import io.github.nexfusion.morphe.shared.misc.settings.preference.SwitchPreference
 import io.github.nexfusion.morphe.youtube.misc.settings.PreferenceScreen
 import io.github.nexfusion.patch

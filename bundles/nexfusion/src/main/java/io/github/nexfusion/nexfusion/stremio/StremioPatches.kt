@@ -1,13 +1,10 @@
 package io.github.nexfusion.nexfusion.stremio
 
-import android.content.Context
-import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import io.github.nexfusion.compat.XC_MethodHook
 import io.github.nexfusion.compat.XC_MethodHook.MethodHookParam
-import io.github.nexfusion.compat.XC_MethodReplacement
 import io.github.nexfusion.compat.XposedBridge
 import io.github.nexfusion.compat.XposedHelpers
 import io.github.nexfusion.PatcherLog

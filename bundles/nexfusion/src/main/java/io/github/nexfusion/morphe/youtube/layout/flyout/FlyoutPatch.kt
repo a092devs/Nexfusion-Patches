@@ -4,9 +4,6 @@ import android.app.Dialog
 import android.widget.PopupWindow
 import android.widget.TextView
 import app.morphe.extension.youtube.patches.utils.FlyoutUtils
-import io.github.nexfusion.morphe.shared.misc.litho.filter.addLithoFilter
-import io.github.nexfusion.morphe.shared.misc.proto.hookElement
-import io.github.nexfusion.morphe.youtube.layout.captions.StartVideoInformerFingerprint
 import io.github.nexfusion.morphe.youtube.layout.hide.general.ContextualMenuItemBuilderFingerprint
 import io.github.nexfusion.morphe.youtube.layout.hide.general.contextualMenuItemTextFingerprint
 import io.github.nexfusion.morphe.youtube.layout.hide.general.contextualMenuItemTextViewField

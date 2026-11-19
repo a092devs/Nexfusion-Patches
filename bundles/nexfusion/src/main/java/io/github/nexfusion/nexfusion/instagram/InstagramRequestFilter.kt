@@ -3,7 +3,6 @@ package io.github.nexfusion.nexfusion.instagram
 import io.github.nexfusion.compat.XC_MethodHook
 import io.github.nexfusion.compat.XposedBridge
 import io.github.nexfusion.PatcherLog
-import java.io.IOException
 import java.lang.reflect.Field
 import java.net.URI
 import java.util.concurrent.ConcurrentHashMap

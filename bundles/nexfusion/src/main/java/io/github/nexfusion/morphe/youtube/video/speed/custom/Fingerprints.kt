@@ -3,7 +3,6 @@ package io.github.nexfusion.morphe.youtube.video.speed.custom
 import io.github.nexfusion.RequireAppVersion
 import io.github.nexfusion.morphe.AccessFlags
 import io.github.nexfusion.morphe.Fingerprint
-import io.github.nexfusion.morphe.Opcode
 import io.github.nexfusion.morphe.findFieldDirect
 import io.github.nexfusion.morphe.findMethodDirect
 import io.github.nexfusion.morphe.fingerprint

@@ -1,7 +1,6 @@
 package io.github.nexfusion.nexfusion.maps
 
 import android.app.Activity
-import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
@@ -15,7 +14,6 @@ import io.github.nexfusion.compat.XC_MethodHook
 import io.github.nexfusion.compat.XC_MethodReplacement
 import io.github.nexfusion.compat.XposedBridge
 import io.github.nexfusion.compat.XposedHelpers
-import io.github.nexfusion.PatcherLog
 import io.github.nexfusion.patch
 
 val MapsHideAds = patch(

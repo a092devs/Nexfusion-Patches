@@ -3,7 +3,6 @@ package io.github.nexfusion.nexfusion.protonvpn
 import io.github.nexfusion.compat.XC_MethodHook
 import io.github.nexfusion.compat.XposedBridge
 import io.github.nexfusion.compat.XposedHelpers
-import io.github.nexfusion.PatcherLog
 import io.github.nexfusion.patch
 
 // Ported from hxreborn/morphe-patches (GPL-3.0), hoo-dles/morphe-patches (GPL-3.0),

@@ -2,7 +2,6 @@ package io.github.nexfusion.nexfusion.spotify
 
 import io.github.nexfusion.SkipTest
 import io.github.nexfusion.morphe.AccessFlags
-import io.github.nexfusion.morphe.Opcode
 import io.github.nexfusion.morphe.fingerprint
 import io.github.nexfusion.morphe.findClassDirect
 import io.github.nexfusion.morphe.findFieldDirect

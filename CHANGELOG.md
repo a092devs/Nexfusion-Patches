@@ -7,6 +7,25 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.4.6
+
+- `YouTube`:
+  * Suppressed sponsored feed ad cards and promoted app install posts on Home screen in YouTube 21.46+.
+  * Added dynamic View and ViewGroup hooks to collapse any feed card with sponsored attribution.
+  * Updated Litho ad filter to detect and filter sponsored elements via accessibility description.
+  * Fixed Navigation bar patch failure on YouTube 21.46+ by supporting updated page bottom margin method parameters.
+  * Added long press on navigation bar Settings button to toggle between Morphe and YouTube settings.
+  * Updated availability of Create and Notifications button settings when swapped.
+- `YouTube Music`:
+  * Disabled crossfade settings if the spoof client does not support crossfade, indicating compatible clients.
+  * Fixed Android Auto phone thumbnail renderer fingerprint validation.
+- `Instagram`:
+  * Fixed story menu sheet and row constructor fingerprints for Instagram 456+.
+  * Streamlined download integration across reels, stories, and posts to consistently provide the single "Download options" entry with full media, audio, and variant actions.
+  * Removed Meta AI hiding patch to retain native Meta AI functionality.
+- `General`:
+  * Cleaned up unused imports, dead functions, and obsolete references across all modules.
+
 ## 4.4.5
 
 - `Gboard`:

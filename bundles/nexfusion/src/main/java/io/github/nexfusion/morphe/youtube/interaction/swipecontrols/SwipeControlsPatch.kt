@@ -16,7 +16,6 @@ import io.github.nexfusion.morphe.youtube.misc.playertype.PlayerTypeHook
 import io.github.nexfusion.morphe.youtube.misc.playservice.VersionCheck
 import io.github.nexfusion.morphe.youtube.misc.playservice.is_20_34_or_greater
 import io.github.nexfusion.morphe.youtube.misc.settings.PreferenceScreen
-import io.github.nexfusion.morphe.youtube.shared.mainActivityClass
 import io.github.nexfusion.morphe.youtube.video.audio.soundBoostPatch
 import io.github.nexfusion.morphe.youtube.video.information.VideoInformationPatch
 import io.github.nexfusion.patch

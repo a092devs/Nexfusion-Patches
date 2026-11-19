@@ -6,7 +6,6 @@ import android.preference.PreferenceManager
 import android.util.Log
 import io.github.nexfusion.compat.XC_MethodHook
 import io.github.nexfusion.compat.XposedBridge
-import io.github.nexfusion.compat.XposedHelpers
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 

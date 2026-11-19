@@ -44,7 +44,6 @@ import io.github.nexfusion.morphe.youtube.misc.playertype.PlayerTypeHook
 import io.github.nexfusion.morphe.youtube.misc.playservice.VersionCheck
 import io.github.nexfusion.morphe.youtube.misc.playservice.is_20_26_or_greater
 import io.github.nexfusion.morphe.youtube.misc.playservice.is_20_31_or_greater
-import io.github.nexfusion.morphe.youtube.misc.playservice.is_21_07_or_greater
 import io.github.nexfusion.morphe.youtube.misc.proto.elementProtoParserHookPatch
 import io.github.nexfusion.morphe.youtube.misc.settings.PreferenceScreen
 import io.github.nexfusion.new

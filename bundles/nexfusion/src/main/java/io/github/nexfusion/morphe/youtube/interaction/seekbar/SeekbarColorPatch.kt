@@ -2,7 +2,6 @@ package io.github.nexfusion.morphe.youtube.interaction.seekbar
 
 import android.content.Context
 import android.content.res.Resources
-import android.graphics.Color
 import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Shader

@@ -11,8 +11,8 @@ import java.util.Locale
  *
  * Handles:
  * 1. Restoring verbatim transcripts for AI prompt/question answers (INTENT_COMPOSE = 4).
- * 2. Preventing dropping of repeated phrases (Issue #134, Test 1).
- * 3. Preventing diff-replacement from overwriting existing text when dictating similar phrases (Issue #134, Test 2).
+ * 2. Preventing dropping of repeated phrases.
+ * 3. Preventing diff-replacement from overwriting existing text when dictating similar phrases.
  * 4. Preserving genuine voice editing commands ("make it all caps", "translate to...", "clear that", "undo").
  */
 object GboardRamblerDictationRuntime {

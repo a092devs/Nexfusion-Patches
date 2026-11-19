@@ -220,16 +220,30 @@ val NavigationBar = patch(
 
     // The keyboard branch reads its insets before constructing the bottom-margin update.
     // Replace that margin where it is consumed, while leaving the other margins unchanged.
-    PageBottomMarginFingerprint.hookMethod(scopedHook(::pageKeyboardInsetsMethod.method) {
-        before { outerParam.setObjectExtra("navigationKeyboardMargin", true) }
-    })
-    PageBottomMarginFingerprint.hookMethod(scopedHook(::pageBottomMarginConstructor.constructor) {
-        before {
-            if (it.args[1] == 1 && outerParam.getObjectExtra("navigationKeyboardMargin") == true) {
-                it.args[0] = 0
+    runCatching {
+        PageBottomMarginFingerprint.hookMethod(scopedHook(::pageKeyboardInsetsMethod.method) {
+            before { outerParam.setObjectExtra("navigationKeyboardMargin", true) }
+        })
+        PageBottomMarginFingerprint.hookMethod(scopedHook(::pageBottomMarginConstructor.constructor) {
+            before {
+                if (it.args[1] == 1 && outerParam.getObjectExtra("navigationKeyboardMargin") == true) {
+                    it.args[0] = 0
+                }
             }
-        }
-    })
+        })
+    }
+    runCatching {
+        PageBottomMarginLegacyFingerprint.hookMethod(scopedHook(::pageKeyboardInsetsMethod.method) {
+            before { outerParam.setObjectExtra("navigationKeyboardMargin", true) }
+        })
+        PageBottomMarginLegacyFingerprint.hookMethod(scopedHook(::pageBottomMarginConstructor.constructor) {
+            before {
+                if (it.args[1] == 1 && outerParam.getObjectExtra("navigationKeyboardMargin") == true) {
+                    it.args[0] = 0
+                }
+            }
+        })
+    }
 
     // A feed behind the navigation bar includes the keyboard in its bottom padding.
     if (is_20_26_or_greater && Build.VERSION.SDK_INT >= 30) {

@@ -1,8 +1,5 @@
 package io.github.nexfusion.nexfusion.gboard
 
-import android.content.Context
-import android.graphics.Color
-import android.graphics.drawable.Drawable
 import android.util.Log
 import android.view.Gravity
 import android.view.View
@@ -11,8 +8,6 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import io.github.nexfusion.compat.XC_MethodHook
 import io.github.nexfusion.compat.XposedBridge
-import java.lang.reflect.Field
-import java.lang.reflect.Method
 import java.util.WeakHashMap
 
 /**
