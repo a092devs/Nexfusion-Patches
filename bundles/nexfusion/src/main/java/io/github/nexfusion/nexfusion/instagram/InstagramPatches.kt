@@ -798,6 +798,45 @@ val SendKeyboardGifs = igPatch(
     }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: Send keyboard GIFs hook skipped" } }
 }
 
+/**
+ * Enables Android chat bubbles for Instagram direct message notifications.
+ * Ported from SysAdminDoc/HushGram.
+ */
+val DirectChatBubbles = igPatch(
+    name = "Direct chat bubbles",
+    description = "Allows Instagram direct message notifications to open as floating Android chat bubbles.",
+    use = false,
+) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        runCatching {
+            val notificationManagerClass = classLoader.loadClass("android.app.NotificationManager")
+            notificationManagerClass.declaredMethods.filter {
+                it.name == "notify" && it.parameterTypes.any { param -> param == android.app.Notification::class.java }
+            }.forEach { method ->
+                XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        val notification = param.args.filterIsInstance<android.app.Notification>().firstOrNull() ?: return
+                        val shortcutId = notification.shortcutId ?: return
+                        if (shortcutId.isNotEmpty() && notification.bubbleMetadata == null) {
+                            runCatching {
+                                val bubble = android.app.Notification.BubbleMetadata.Builder(shortcutId)
+                                    .setDesiredHeight(600)
+                                    .setAutoExpandBubble(false)
+                                    .setSuppressNotification(false)
+                                    .build()
+                                val field = android.app.Notification::class.java.getDeclaredField("mBubbleMetadata")
+                                field.isAccessible = true
+                                field.set(notification, bubble)
+                            }
+                        }
+                    }
+                })
+            }
+            PatcherLog.info { "NexFusion Instagram: Direct chat bubbles hook installed" }
+        }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: Direct chat bubbles hook skipped" } }
+    }
+}
+
 val InstagramPatches = arrayOf(
     HideAds,
     HideSuggestedPosts,
@@ -821,5 +860,6 @@ val InstagramPatches = arrayOf(
     DontSendReelWatchHistory,
     StartFeedVideosWithSound,
     SendKeyboardGifs,
+    DirectChatBubbles,
 )
 

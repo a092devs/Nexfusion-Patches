@@ -23,6 +23,7 @@ import io.github.nexfusion.nexfusion.protonvpn.ProtonVpnPatches
 import io.github.nexfusion.nexfusion.reddit.RedditPatches
 import io.github.nexfusion.nexfusion.stremio.StremioPatches
 import io.github.nexfusion.nexfusion.spotify.SpotifyPatches
+import io.github.nexfusion.nexfusion.telegram.TelegramPatches
 import io.github.nexfusion.nexfusion.twitter.TwitterPatches
 
 /** Entry point of the NexFusion Patches bundle, named in its manifest. */
@@ -135,6 +136,18 @@ object NexFusionPatches : PatchBundle {
             packageName = "com.spotify.music",
             patches = SpotifyPatches,
             appIconColor = 0x1ED760,
+        ),
+        AppPatchInfo(
+            appName = "Telegram",
+            packageName = "org.telegram.messenger",
+            patches = TelegramPatches,
+            appIconColor = 0x2AABEE,
+        ),
+        AppPatchInfo(
+            appName = "Telegram Web",
+            packageName = "org.telegram.messenger.web",
+            patches = TelegramPatches,
+            appIconColor = 0x2AABEE,
         ),
     )
 }
