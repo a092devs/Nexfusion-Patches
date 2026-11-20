@@ -185,6 +185,20 @@ val TwitterDisableAutoRefresh = patch(
     )
 }
 
+val TwitterHideGrok = patch(
+    name = "Hide Grok",
+    description = "Hides Grok tab, drawer entry, and related AI shortcuts.",
+) {
+    neutralizeTwitterFlags(
+        "grok_enabled",
+        "grok_tab_enabled",
+        "grok_drawer_enabled",
+        "grok_button_enabled",
+        "grok_share_sheet_enabled",
+        "grok_chat_enabled",
+    )
+}
+
 val TwitterPatches = arrayOf(
     TwitterRemoveAds,
     TwitterUnlockVideoDownloads,
@@ -200,6 +214,7 @@ val TwitterPatches = arrayOf(
     TwitterDisableImmersivePlayer,
     TwitterSanitizeShareLinks,
     TwitterDisableAutoRefresh,
+    TwitterHideGrok,
 )
 
 // ---- Remove Ads ---------------------------------------------------------------------------------

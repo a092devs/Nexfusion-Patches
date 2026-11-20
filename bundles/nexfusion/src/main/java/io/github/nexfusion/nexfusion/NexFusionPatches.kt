@@ -138,13 +138,13 @@ object NexFusionPatches : PatchBundle {
             appIconColor = 0x1ED760,
         ),
         AppPatchInfo(
-            appName = "Telegram",
+            appName = "Telegram (Experimental)",
             packageName = "org.telegram.messenger",
             patches = TelegramPatches,
             appIconColor = 0x2AABEE,
         ),
         AppPatchInfo(
-            appName = "Telegram Web",
+            appName = "Telegram Web (Experimental)",
             packageName = "org.telegram.messenger.web",
             patches = TelegramPatches,
             appIconColor = 0x2AABEE,

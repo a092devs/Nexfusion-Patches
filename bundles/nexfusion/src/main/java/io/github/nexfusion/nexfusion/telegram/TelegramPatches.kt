@@ -20,7 +20,7 @@ import java.util.ArrayList
 
 val TelegramMorpheSettings = patch(
     name = "Morphe Settings",
-    description = "Adds unified Morphe settings to Telegram and initializes message forwarding at startup.",
+    description = "Experimental: Adds unified Morphe settings to Telegram and initializes message forwarding at startup.",
 ) {
     // 1. Initialize forwarding runtime on ApplicationLoader.postInitApplication
     runCatching {

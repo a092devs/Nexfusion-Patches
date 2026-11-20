@@ -7,6 +7,30 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.4.7
+
+- `Telegram (Experimental)`:
+  * Added experimental preview support for Telegram and Telegram Web.
+  * Added dedicated Morphe Settings dialog integration and automated message forwarding engine.
+  * Added client-side Premium perks unlock, sponsored ads and video ads suppression, anti-delete, anti-disappearing media preservation, content restriction bypass, and download boost.
+  * Added ghost and privacy features: silent stories read receipts, hidden typing indicator, anti-screenshot notifications, normal rich HTML paste, and voice notes playback through music player.
+- `Instagram`:
+  * Added `Direct chat bubbles` patch allowing direct message notifications to open as native Android floating bubbles.
+- `Twitter / X`:
+  * Added `Hide Grok` patch to hide Grok navigation tabs, drawer entries, and AI shortcuts across the app.
+- `YouTube`:
+  * Fixed feed scroll stutter by moving element hooks and thumbnail layout calculations off the main thread.
+  * Updated tab selected fingerprint for broader app version compatibility.
+  * Restored toolbar Cast button and added dedicated Cast and Companion button visibility toggles.
+- `YouTube Music`:
+  * Included album artwork in exported music downloads.
+  * Fixed language name array parsing for localized interface strings.
+- `Reddit`:
+  * Added `Hide post buttons` patch to hide Award, Share, and action buttons on posts and comments.
+  * Added `Hide home tabs` patch and expanded version compatibility for `Disable modern home`.
+- `Cloudflare 1.1.1.1 & Proton VPN`:
+  * Added WARP client support and updated VPN upsell suppression.
+
 ## 4.4.6
 
 - `YouTube`:
