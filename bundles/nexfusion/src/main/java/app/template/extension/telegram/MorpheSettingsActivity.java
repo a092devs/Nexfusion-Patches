@@ -2,19 +2,29 @@ package app.template.extension.telegram;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
-import android.content.Intent;
+import android.content.DialogInterface;
+import android.content.res.ColorStateList;
+import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.RippleDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Spinner;
@@ -26,744 +36,492 @@ import app.template.extension.forwarding.ForwardingRule;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.Map;
-import java.util.HashMap;
+import java.util.Set;
 import java.util.UUID;
 
-/** Dedicated in-app Morphe settings screen, opened from Telegram's Settings list. */
+/**
+ * Native-styled Morphe Settings Screen for Telegram.
+ * Implements NagramXF's N-settings architecture with categories for:
+ * General, Ghost Mode & Privacy, Media & Downloads, Chat & Content, and Experimental Forwarding.
+ */
 public final class MorpheSettingsActivity extends Activity {
-    private Activity parentActivity = this;
-    private ScrollView rootScrollView;
-    private SharedPreferencesForwardingRuleStore store;
-    private LinearLayout content;
-    private LinearLayout rulesContainer;
-    private Switch enabledSwitch;
-    private EditText nameInput;
-    private EditText sourceInput;
-    private EditText destinationInput;
-    private EditText includeInput;
-    private EditText excludeInput;
-    private Spinner matchSpinner;
-    private Spinner deliverySpinner;
-    private Switch caseSensitiveSwitch;
-    private Switch showSenderSwitch;
-    private String editingRuleId;
-    private final Map<String, TextView> ruleStatsViews = new HashMap<>();
-    private final Handler statsHandler = new Handler(Looper.getMainLooper());
-    private final Runnable statsRefresh = new Runnable() {
-        @Override public void run() {
-            if (!isFinishing() && rulesContainer != null) {
-                refreshRuleStats();
-                statsHandler.postDelayed(this, 1500L);
-            }
-        }
-    };
 
-    @Override protected void onResume() {
-        super.onResume();
-        statsHandler.removeCallbacks(statsRefresh);
-        statsHandler.postDelayed(statsRefresh, 1500L);
-    }
+    public static void showInDialog(Context context) {
+        if (context == null) return;
+        Activity activity = findActivity(context);
+        if (activity == null || activity.isFinishing() || activity.isDestroyed()) return;
 
-    @Override protected void onPause() {
-        statsHandler.removeCallbacks(statsRefresh);
-        super.onPause();
-    }
+        boolean isDark = TelegramConfig.isDarkMode(activity);
+        int themeRes = isDark ? android.R.style.Theme_DeviceDefault_NoActionBar
+                : android.R.style.Theme_DeviceDefault_Light_NoActionBar;
 
-    @Override protected void onCreate(Bundle state) {
-        super.onCreate(state);
-        store = new SharedPreferencesForwardingRuleStore(this);
-        buildScreen();
-        refreshRules();
-    }
+        final Dialog dialog = new Dialog(activity, themeRes);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
 
-    private void buildScreen() {
-        // Follow Telegram's currently selected palette (including custom themes).
-        final int background = 0xfff1f1f3;
-        final int surface = Color.WHITE;
-        final int primary = 0xff202124;
-        final int secondary = 0xff666666;
-        content = new LinearLayout(this);
-        content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(18), dp(16), dp(18), dp(28));
-        content.setBackgroundColor(background);
-
-        rootScrollView = new ScrollView(parentActivity != null ? parentActivity : this);
-        rootScrollView.setFillViewport(true);
-        rootScrollView.addView(content, new ScrollView.LayoutParams(-1, -2));
-        if (getWindow() != null) {
-            setContentView(rootScrollView);
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+            int bgColor = TelegramConfig.isAmoledDark(activity) ? Color.BLACK :
+                    TelegramConfig.getThemeColor("key_windowBackgroundGray", isDark ? 0xFF0E1621 : 0xFFF0F2F5);
+            window.setBackgroundDrawable(new ColorDrawable(bgColor));
         }
 
-        TextView title = new TextView(this);
+        View contentView = buildSettingsView(activity, dialog);
+        dialog.setContentView(contentView);
+        dialog.show();
+    }
+
+    private static Activity findActivity(Context context) {
+        if (context instanceof Activity) return (Activity) context;
+        if (context instanceof android.content.ContextWrapper) {
+            Context base = ((android.content.ContextWrapper) context).getBaseContext();
+            if (base instanceof Activity) return (Activity) base;
+        }
+        return null;
+    }
+
+    private static View buildSettingsView(final Activity activity, final Dialog dialog) {
+        final boolean isDark = TelegramConfig.isDarkMode(activity);
+        final boolean isAmoled = TelegramConfig.isAmoledDark(activity);
+
+        final int pageBg = isAmoled ? Color.BLACK :
+                TelegramConfig.getThemeColor("key_windowBackgroundGray", isDark ? 0xFF0E1621 : 0xFFF0F2F5);
+        final int cardBg = isAmoled ? 0xFF0D0D0D :
+                TelegramConfig.getThemeColor("key_windowBackgroundWhite", isDark ? 0xFF17212B : Color.WHITE);
+        final int primaryText = TelegramConfig.getThemeColor("key_windowBackgroundWhiteBlackText", isDark ? Color.WHITE : 0xFF222222);
+        final int secondaryText = TelegramConfig.getThemeColor("key_windowBackgroundWhiteGrayText", isDark ? 0xFFA0A5A9 : 0xFF707579);
+        final int accentColor = TelegramConfig.getThemeColor("key_windowBackgroundWhiteBlueHeader", 0xFF2481CC);
+        final int dividerColor = TelegramConfig.getThemeColor("key_divider", isDark ? 0x1FFFFFFF : 0x1F000000);
+
+        LinearLayout root = new LinearLayout(activity);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackgroundColor(pageBg);
+        root.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        // Top Action Bar
+        LinearLayout actionBar = new LinearLayout(activity);
+        actionBar.setOrientation(LinearLayout.HORIZONTAL);
+        actionBar.setGravity(Gravity.CENTER_VERTICAL);
+        actionBar.setPadding(dp(activity, 16), dp(activity, 12), dp(activity, 16), dp(activity, 12));
+        actionBar.setBackgroundColor(cardBg);
+
+        TextView backBtn = new TextView(activity);
+        backBtn.setText("\u2190");
+        backBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 24);
+        backBtn.setTextColor(primaryText);
+        backBtn.setPadding(dp(activity, 4), dp(activity, 4), dp(activity, 16), dp(activity, 4));
+        backBtn.setClickable(true);
+        backBtn.setOnClickListener(v -> dialog.dismiss());
+        actionBar.addView(backBtn);
+
+        LinearLayout titleCol = new LinearLayout(activity);
+        titleCol.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        titleCol.setLayoutParams(titleParams);
+
+        TextView title = new TextView(activity);
         title.setText("Morphe Settings");
-        title.setTextSize(24);
-        title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        title.setTextColor(primary);
-        content.addView(title, params(-1, -2));
+        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 19);
+        title.setTypeface(Typeface.DEFAULT_BOLD);
+        title.setTextColor(primaryText);
+        titleCol.addView(title);
 
-        TextView subtitle = new TextView(this);
-        subtitle.setText("Automatic message forwarding using your existing Telegram account.");
-        subtitle.setTextSize(14);
-        subtitle.setTextColor(secondary);
-        LinearLayout.LayoutParams subtitleParams = params(-1, -2);
-        subtitleParams.topMargin = dp(6);
-        content.addView(subtitle, subtitleParams);
+        TextView subtitle = new TextView(activity);
+        subtitle.setText("N-Settings & Unified Tweaks");
+        subtitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        subtitle.setTextColor(secondaryText);
+        titleCol.addView(subtitle);
 
-        LinearLayout masterCard = card(surface);
-        enabledSwitch = new Switch(this);
-        enabledSwitch.setText("Enable automatic forwarding");
-        enabledSwitch.setTextSize(16);
-        enabledSwitch.setTextColor(primary);
-        enabledSwitch.setChecked(store.isEnabled());
-        masterCard.addView(enabledSwitch, params(-1, -2));
-        enabledSwitch.setOnCheckedChangeListener((button, checked) -> {
-            store.setEnabled(checked);
-            Toast.makeText(this, checked ? "Automatic forwarding enabled" : "Automatic forwarding paused", Toast.LENGTH_SHORT).show();
+        actionBar.addView(titleCol);
+
+        // Header Restart Action Button
+        Button restartBtn = new Button(activity);
+        restartBtn.setText("Restart");
+        restartBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        restartBtn.setTextColor(Color.WHITE);
+        GradientDrawable rstBg = new GradientDrawable();
+        rstBg.setColor(accentColor);
+        rstBg.setCornerRadius(dp(activity, 16));
+        restartBtn.setBackground(rstBg);
+        restartBtn.setPadding(dp(activity, 14), dp(activity, 6), dp(activity, 14), dp(activity, 6));
+        restartBtn.setOnClickListener(v -> {
+            Toast.makeText(activity, "Restarting Telegram...", Toast.LENGTH_SHORT).show();
+            v.postDelayed(() -> TelegramConfig.restartTelegram(activity), 300);
         });
-        LinearLayout.LayoutParams masterParams = params(-1, -2);
-        masterParams.topMargin = dp(18);
-        content.addView(masterCard, masterParams);
+        actionBar.addView(restartBtn);
 
-        addSectionTitle("Create forwarding rule", primary);
-        LinearLayout form = card(surface);
-        nameInput = addInput(form, "Rule name", "e.g. News forwarding");
-        sourceInput = addInput(form, "Source chats", "Choose chats or edit dialog IDs");
-        Button pickSources = button("Choose source chats");
-        form.addView(pickSources, params(-1, dp(44)));
-        pickSources.setOnClickListener(v -> showChatPicker(true));
-        destinationInput = addInput(form, "Destination chats", "Choose chats or edit dialog IDs");
-        Button pickDestinations = button("Choose destination chats");
-        form.addView(pickDestinations, params(-1, dp(44)));
-        pickDestinations.setOnClickListener(v -> showChatPicker(false));
-        includeInput = addInput(form, "Include keywords (optional)", "Comma-separated words or phrases");
-        excludeInput = addInput(form, "Exclude keywords (optional)", "Comma-separated words or phrases");
+        root.addView(actionBar);
 
-        TextView matchLabel = label("Keyword matching", primary);
-        form.addView(matchLabel, params(-1, -2));
-        matchSpinner = spinner(new String[]{"Match any included keyword", "Match all included keywords"});
-        form.addView(matchSpinner, params(-1, dp(48)));
+        View abDivider = new View(activity);
+        abDivider.setBackgroundColor(dividerColor);
+        root.addView(abDivider, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(activity, 1)));
 
-        TextView deliveryLabel = label("Delivery mode", primary);
-        LinearLayout.LayoutParams deliveryLabelParams = params(-1, -2);
-        deliveryLabelParams.topMargin = dp(12);
-        form.addView(deliveryLabel, deliveryLabelParams);
-        deliverySpinner = spinner(new String[]{"Forward (preserve attribution)", "Copy (send as a new message)"});
-        form.addView(deliverySpinner, params(-1, dp(48)));
+        // Scrollable Settings List
+        ScrollView scrollView = new ScrollView(activity);
+        scrollView.setFillViewport(true);
+        scrollView.setOverScrollMode(View.OVER_SCROLL_NEVER);
 
-        showSenderSwitch = new Switch(this);
-        showSenderSwitch.setText("Show original sender name (forward mode)");
-        showSenderSwitch.setTextColor(primary);
-        showSenderSwitch.setTextSize(14);
-        form.addView(showSenderSwitch, params(-1, -2));
+        LinearLayout list = new LinearLayout(activity);
+        list.setOrientation(LinearLayout.VERTICAL);
+        list.setPadding(dp(activity, 12), dp(activity, 10), dp(activity, 12), dp(activity, 24));
 
-        caseSensitiveSwitch = new Switch(this);
-        caseSensitiveSwitch.setText("Case-sensitive keyword matching");
-        caseSensitiveSwitch.setTextColor(primary);
-        caseSensitiveSwitch.setTextSize(14);
-        LinearLayout.LayoutParams caseParams = params(-1, -2);
-        caseParams.topMargin = dp(10);
-        form.addView(caseSensitiveSwitch, caseParams);
+        // 1. GENERAL
+        addSectionHeader(activity, list, "GENERAL", accentColor);
+        LinearLayout generalCard = createCardContainer(activity, cardBg, dividerColor, isDark);
+        addSettingRow(activity, generalCard, TelegramConfig.KEY_EXACT_NUMBERS,
+                "Exact Numbers", "Show precise counts without rounding (e.g. 4,812 instead of 4.8K)", true, primaryText, secondaryText, accentColor);
+        addDivider(activity, generalCard, dividerColor);
+        addSettingRow(activity, generalCard, TelegramConfig.KEY_BYPASS_INTEGRITY,
+                "Bypass Certificate Check", "Spoofs certificate SHA-256 fingerprint for signature verification", true, primaryText, secondaryText, accentColor);
+        addDivider(activity, generalCard, dividerColor);
+        addActionRow(activity, generalCard, "Restart Telegram", "Perform clean process rebirth to apply all updates",
+                primaryText, secondaryText, v -> TelegramConfig.restartTelegram(activity));
+        addDivider(activity, generalCard, dividerColor);
+        addActionRow(activity, generalCard, "Reset Morphe Settings", "Restore all settings to their default values",
+                0xFFE53935, secondaryText, v -> {
+                    new AlertDialog.Builder(activity)
+                            .setTitle("Reset Settings")
+                            .setMessage("Are you sure you want to reset all Morphe settings?")
+                            .setPositiveButton("Reset", (d, w) -> {
+                                TelegramConfig.resetDefaults(activity);
+                                dialog.dismiss();
+                                showInDialog(activity);
+                            })
+                            .setNegativeButton("Cancel", null)
+                            .show();
+                });
+        list.addView(generalCard);
 
-        Button save = button("Save forwarding rule");
-        LinearLayout.LayoutParams saveParams = params(-1, dp(48));
-        saveParams.topMargin = dp(14);
-        form.addView(save, saveParams);
-        save.setOnClickListener(v -> saveRule());
+        // 2. PRIVACY & GHOST MODE
+        addSectionHeader(activity, list, "PRIVACY & GHOST MODE", accentColor);
+        LinearLayout ghostCard = createCardContainer(activity, cardBg, dividerColor, isDark);
+        addSettingRow(activity, ghostCard, TelegramConfig.KEY_ANTI_DELETE,
+                "Anti-Delete Messages", "Keep deleted messages from being removed from local storage and chat", true, primaryText, secondaryText, accentColor);
+        addDivider(activity, ghostCard, dividerColor);
+        addSettingRow(activity, ghostCard, TelegramConfig.KEY_ANTI_DISAPPEARING,
+                "Anti-Disappearing Media", "Keep view-once and timer-based media viewable indefinitely", true, primaryText, secondaryText, accentColor);
+        addDivider(activity, ghostCard, dividerColor);
+        addSettingRow(activity, ghostCard, TelegramConfig.KEY_HIDE_TYPING,
+                "Ghost Typing", "Suppress typing status so other users cannot see when you type", false, primaryText, secondaryText, accentColor);
+        addDivider(activity, ghostCard, dividerColor);
+        addSettingRow(activity, ghostCard, TelegramConfig.KEY_HIDE_STORIES_READ,
+                "Stealth Stories View", "View stories anonymously without sending read receipts", false, primaryText, secondaryText, accentColor);
+        addDivider(activity, ghostCard, dividerColor);
+        addSettingRow(activity, ghostCard, TelegramConfig.KEY_ANTI_SCREENSHOT,
+                "Suppress Screenshot Alerts", "Prevent sending screenshot notifications in secret chats", true, primaryText, secondaryText, accentColor);
+        list.addView(ghostCard);
 
-        LinearLayout.LayoutParams formParams = params(-1, -2);
-        formParams.topMargin = dp(10);
-        content.addView(form, formParams);
+        // 3. MEDIA & DOWNLOADS
+        addSectionHeader(activity, list, "MEDIA & DOWNLOADS", accentColor);
+        LinearLayout mediaCard = createCardContainer(activity, cardBg, dividerColor, isDark);
+        addSettingRow(activity, mediaCard, TelegramConfig.KEY_DOWNLOAD_BOOST,
+                "Download Speed Boost", "Accelerate downloads using multi-connection 1 MB streaming chunks", true, primaryText, secondaryText, accentColor);
+        addDivider(activity, mediaCard, dividerColor);
+        addSettingRow(activity, mediaCard, TelegramConfig.KEY_VOICE_TO_MUSIC,
+                "Voice Notes in Music Player", "Allow voice messages to be played in Telegram's background music player", false, primaryText, secondaryText, accentColor);
+        list.addView(mediaCard);
 
-        addSectionTitle("Your rules", primary);
-        rulesContainer = new LinearLayout(this);
-        rulesContainer.setOrientation(LinearLayout.VERTICAL);
-        LinearLayout.LayoutParams rulesParams = params(-1, -2);
-        rulesParams.topMargin = dp(8);
-        content.addView(rulesContainer, rulesParams);
+        // 4. CHAT & CONTENT RESTRICTIONS
+        addSectionHeader(activity, list, "CHAT & CONTENT RESTRICTIONS", accentColor);
+        LinearLayout chatCard = createCardContainer(activity, cardBg, dividerColor, isDark);
+        addSettingRow(activity, chatCard, TelegramConfig.KEY_BYPASS_CHANNEL_RESTRICTIONS,
+                "Bypass Channel Restrictions", "Allow forwarding, copying, and saving media from restricted channels", true, primaryText, secondaryText, accentColor);
+        addDivider(activity, chatCard, dividerColor);
+        addSettingRow(activity, chatCard, TelegramConfig.KEY_BYPASS_CONTENT_RESTRICTIONS,
+                "Bypass Forward Restrictions", "Enable forwarding on copy-protected messages and private chats", true, primaryText, secondaryText, accentColor);
+        addDivider(activity, chatCard, dividerColor);
+        addSettingRow(activity, chatCard, TelegramConfig.KEY_REMOVE_ADS,
+                "Remove Sponsored Messages", "Hide channel advertisements and sponsored message cards", true, primaryText, secondaryText, accentColor);
+        addDivider(activity, chatCard, dividerColor);
+        addSettingRow(activity, chatCard, TelegramConfig.KEY_DISABLE_DOUBLE_TAP,
+                "Disable Double-Tap Reaction", "Prevent accidental reaction sending when double tapping messages", false, primaryText, secondaryText, accentColor);
+        addDivider(activity, chatCard, dividerColor);
+        addSettingRow(activity, chatCard, TelegramConfig.KEY_REVEAL_SPOILERS,
+                "Auto-Reveal Spoilers", "Automatically display hidden spoiler text without tapping", false, primaryText, secondaryText, accentColor);
+        addDivider(activity, chatCard, dividerColor);
+        addSettingRow(activity, chatCard, TelegramConfig.KEY_DISABLE_VIBRATION,
+                "Disable Vibration", "Turn off haptic vibration feedback for in-app gestures", false, primaryText, secondaryText, accentColor);
+        addDivider(activity, chatCard, dividerColor);
+        addSettingRow(activity, chatCard, TelegramConfig.KEY_SHOW_SECONDS,
+                "Show Message Seconds", "Display exact seconds in message time stamps", false, primaryText, secondaryText, accentColor);
+        list.addView(chatCard);
 
-        TextView note = new TextView(this);
-        note.setText("Choose source and destination chats from Telegram dialogs, or enter dialog IDs manually. Secret chats and protected/no-forward messages are excluded.");
-        note.setTextSize(12);
-        note.setTextColor(secondary);
-        LinearLayout.LayoutParams noteParams = params(-1, -2);
-        noteParams.topMargin = dp(18);
-        content.addView(note, noteParams);
+        // 5. EXPERIMENTAL & FORWARDING
+        addSectionHeader(activity, list, "EXPERIMENTAL & FORWARDING", accentColor);
+        LinearLayout expCard = createCardContainer(activity, cardBg, dividerColor, isDark);
+        addActionRow(activity, expCard, "Auto-Forwarding Rules", "Configure automated message forwarding between chats",
+                primaryText, secondaryText, v -> showForwardingRulesDialog(activity));
+        addDivider(activity, expCard, dividerColor);
+        addSettingRow(activity, expCard, TelegramConfig.KEY_DISABLE_AUTO_UPDATE,
+                "Disable Auto-Updates", "Suppress in-app update checks and version upgrade prompts", true, primaryText, secondaryText, accentColor);
+        addDivider(activity, expCard, dividerColor);
+        addSettingRow(activity, expCard, TelegramConfig.KEY_DISABLE_ANALYTICS,
+                "Disable Analytics", "Block telemetry, crashlytics and event reporting to Telegram", true, primaryText, secondaryText, accentColor);
+        list.addView(expCard);
+
+        // Footer
+        TextView footer = new TextView(activity);
+        footer.setText("NexFusion Morphe \u2022 Native Telegram Design");
+        footer.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        footer.setTextColor(secondaryText);
+        footer.setGravity(Gravity.CENTER);
+        footer.setPadding(0, dp(activity, 20), 0, dp(activity, 16));
+        list.addView(footer);
+
+        scrollView.addView(list);
+        root.addView(scrollView);
+        return root;
     }
 
-
-    /** Reads the currently loaded Telegram dialogs from the active native account. */
-    private void showChatPicker(boolean source) {
-        try {
-            List<ChatChoice> choices = readTelegramDialogs();
-            if (choices.isEmpty()) {
-                Toast.makeText(this, "No Telegram dialogs are loaded. Open Chats and retry.", Toast.LENGTH_LONG).show();
-                return;
-            }
-            EditText target = source ? sourceInput : destinationInput;
-            Set<Long> selected = parseIds(text(target));
-            final android.widget.ListView list = new android.widget.ListView(this);
-            list.setChoiceMode(android.widget.ListView.CHOICE_MODE_MULTIPLE);
-            final EditText search = new EditText(this);
-            search.setSingleLine(true);
-            search.setHint("Search chats");
-            final ArrayList<ChatChoice> visible = new ArrayList<>(choices);
-            final ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
-                    android.R.layout.simple_list_item_multiple_choice, new ArrayList<String>());
-            for (ChatChoice c : visible) adapter.add(c.icon + "  " + c.title + "  ·  " + c.id);
-            list.setAdapter(adapter);
-            for (int i=0;i<visible.size();i++) list.setItemChecked(i, selected.contains(visible.get(i).id));
-            list.setOnItemClickListener((parent, view, position, id) -> {
-                long chatId = visible.get(position).id;
-                if (list.isItemChecked(position)) selected.add(chatId); else selected.remove(chatId);
-            });
-            LinearLayout pickerLayout = new LinearLayout(this);
-            pickerLayout.setOrientation(LinearLayout.VERTICAL);
-            pickerLayout.setPadding(dp(16), dp(8), dp(16), dp(8));
-            pickerLayout.addView(search, params(-1, dp(48)));
-            pickerLayout.addView(list, params(-1, dp(420)));
-            search.addTextChangedListener(new android.text.TextWatcher() {
-                public void beforeTextChanged(CharSequence s,int st,int count,int after) {}
-                public void onTextChanged(CharSequence s,int st,int before,int count) {
-                    String q=s.toString().trim().toLowerCase(java.util.Locale.ROOT);
-                    visible.clear(); adapter.clear();
-                    for (ChatChoice c:choices) if (q.isEmpty() || c.title.toLowerCase(java.util.Locale.ROOT).contains(q)
-                            || String.valueOf(c.id).contains(q)) { visible.add(c); adapter.add(c.icon + "  " + c.title + "  ·  " + c.id); }
-                    adapter.notifyDataSetChanged();
-                    for (int i=0;i<visible.size();i++) list.setItemChecked(i, selected.contains(visible.get(i).id));
-                }
-                public void afterTextChanged(android.text.Editable e) {}
-            });
-            Activity act = parentActivity != null ? parentActivity : this;
-            new AlertDialog.Builder(act).setTitle(source ? "Choose source chats" : "Choose destination chats")
-                    .setView(pickerLayout)
-                    .setNegativeButton("Cancel", null)
-                    .setPositiveButton("Apply", (d, which) -> {
-                        StringBuilder ids = new StringBuilder();
-                        for (Long id : selected) { if (ids.length() > 0) ids.append(", "); ids.append(id); }
-                        target.setText(ids.toString());
-                    }).show();
-        } catch (Throwable e) {
-            Toast.makeText(this, "Could not load Telegram chats. Open the Chats screen once, then retry. Details: " + e.getClass().getSimpleName(), Toast.LENGTH_LONG).show();
-        }
+    private static void addSectionHeader(Context context, LinearLayout parent, String title, int color) {
+        TextView header = new TextView(context);
+        header.setText(title);
+        header.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f);
+        header.setTypeface(Typeface.DEFAULT_BOLD);
+        header.setTextColor(color);
+        header.setPadding(dp(context, 14), dp(context, 16), dp(context, 14), dp(context, 6));
+        parent.addView(header);
     }
 
-    private List<ChatChoice> readTelegramDialogs() throws Exception {
-        ClassLoader cl = getClassLoader();
-        Class<?> userConfig = Class.forName("org.telegram.messenger.UserConfig", false, cl);
-        int account = 0;
-        try { account = userConfig.getField("selectedAccount").getInt(null); } catch (Throwable ignored) { }
-
-        Class<?> controllerClass = Class.forName("org.telegram.messenger.MessagesController", false, cl);
-        Object controller = controllerClass.getMethod("getInstance", int.class).invoke(null, account);
-        if (controller == null) throw new IllegalStateException("Telegram MessagesController is unavailable");
-
-        // Do not assume a public field named "dialogs": Telegram forks move/rename this collection.
-        java.util.LinkedHashMap<Long, ChatChoice> found = new java.util.LinkedHashMap<>();
-        Class<?> type = controller.getClass();
-        while (type != null && type != Object.class) {
-            for (java.lang.reflect.Field field : type.getDeclaredFields()) {
-                if (java.lang.reflect.Modifier.isStatic(field.getModifiers())) continue;
-                try {
-                    field.setAccessible(true);
-                    Object value = field.get(controller);
-                    collectDialogCandidates(value, controllerClass, controller, found);
-                } catch (Throwable ignored) { }
-            }
-            type = type.getSuperclass();
-        }
-        ArrayList<ChatChoice> result = new ArrayList<>(found.values());
-        java.util.Collections.sort(result, (a, b) -> a.title.compareToIgnoreCase(b.title));
-        return result;
-    }
-
-    /** Handles Telegram's ArrayList/Map and Android SparseArray/LongSparseArray containers. */
-    private void collectDialogCandidates(Object value, Class<?> controllerClass, Object controller,
-                                         java.util.Map<Long, ChatChoice> result) {
-        if (value == null) return;
-        try {
-            if (value instanceof Iterable) {
-                for (Object item : (Iterable<?>) value) addDialogChoice(item, controllerClass, controller, result);
-                return;
-            }
-            if (value instanceof java.util.Map) {
-                for (Object item : ((java.util.Map<?, ?>) value).values()) addDialogChoice(item, controllerClass, controller, result);
-                return;
-            }
-            if (value.getClass().isArray()) {
-                int n = java.lang.reflect.Array.getLength(value);
-                for (int i = 0; i < n; i++) addDialogChoice(java.lang.reflect.Array.get(value, i), controllerClass, controller, result);
-                return;
-            }
-            // android.util.LongSparseArray, SparseArray and Telegram's sparse containers.
-            java.lang.reflect.Method size = findNoArgMethod(value.getClass(), "size");
-            java.lang.reflect.Method valueAt = findIndexedMethod(value.getClass(), "valueAt");
-            if (size != null && valueAt != null) {
-                size.setAccessible(true);
-                valueAt.setAccessible(true);
-                int count = ((Number) size.invoke(value)).intValue();
-                for (int i = 0; i < count; i++) addDialogChoice(valueAt.invoke(value, i), controllerClass, controller, result);
-            }
-        } catch (Throwable ignored) { }
-    }
-
-    private java.lang.reflect.Method findNoArgMethod(Class<?> type, String name) {
-        for (Class<?> c = type; c != null; c = c.getSuperclass()) {
-            try { return c.getDeclaredMethod(name); } catch (Throwable ignored) { }
-        }
-        return null;
-    }
-
-    private java.lang.reflect.Method findIndexedMethod(Class<?> type, String name) {
-        for (Class<?> c = type; c != null; c = c.getSuperclass()) {
-            for (java.lang.reflect.Method method : c.getDeclaredMethods()) {
-                if (method.getName().equals(name) && method.getParameterTypes().length == 1
-                        && method.getParameterTypes()[0] == int.class) return method;
-            }
-        }
-        return null;
-    }
-
-    private void addDialogChoice(Object dialog, Class<?> controllerClass, Object controller,
-                                 java.util.Map<Long, ChatChoice> result) {
-        if (dialog == null) return;
-        try {
-            // Telegram's concrete TL object is commonly TLRPC$TL_dialog, not TLRPC$Dialog.
-            // Test assignability against the base type instead of a case-sensitive class-name substring.
-            ClassLoader cl = getClassLoader();
-            Class<?> dialogBase = Class.forName("org.telegram.tgnet.TLRPC$Dialog", false, cl);
-            if (!dialogBase.isAssignableFrom(dialog.getClass())) return;
-            java.lang.reflect.Field idField = findField(dialog.getClass(), "id");
-            if (idField == null) return;
-            idField.setAccessible(true);
-            Object rawId = idField.get(dialog);
-            if (!(rawId instanceof Number)) return;
-            long id = ((Number) rawId).longValue();
-            if (id == 0 || result.containsKey(id)) return;
-            ChatChoice choice = resolveChatChoice(controllerClass, controller, id);
-            result.put(id, choice);
-        } catch (Throwable ignored) { }
-    }
-
-    private java.lang.reflect.Field findField(Class<?> type, String name) {
-        for (Class<?> c = type; c != null; c = c.getSuperclass()) {
-            try { return c.getDeclaredField(name); } catch (Throwable ignored) { }
-        }
-        return null;
-    }
-
-    /** Resolve dialog names using Telegram's native account controller. Handles int/long APIs and obfuscated forks. */
-    private ChatChoice resolveChatChoice(Class<?> mc, Object controller, long dialogId) {
-        String title = null;
-        String icon = dialogId > 0 ? "👤" : "👥";
-        try {
-            if (dialogId > 0) {
-                Object user = invokeNumericGetter(mc, controller, "getUser", dialogId);
-                if (user != null) {
-                    String first = readStringField(user, "first_name");
-                    String last = readStringField(user, "last_name");
-                    title = (first + " " + last).trim();
-                    if (title.isEmpty()) title = readStringField(user, "username");
-                }
-            } else {
-                long chatId = dialogId <= -1000000000000L
-                        ? -dialogId - 1000000000000L : -dialogId;
-                Object chat = invokeNumericGetter(mc, controller, "getChat", chatId);
-                if (chat != null) {
-                    title = readStringField(chat, "title");
-                    // Telegram channel chats expose broadcast/megagroup flags in flags.
-                    int flags = readIntField(chat, "flags");
-                    boolean channel = chat.getClass().getName().contains("TL_channel")
-                            || hasBooleanField(chat, "broadcast") || hasBooleanField(chat, "megagroup");
-                    if (channel && hasBooleanFieldValue(chat, "broadcast")) icon = "📢";
-                    else if (channel) icon = "📣";
-                    else icon = "👥";
-                }
-            }
-        } catch (Throwable ignored) { }
-        if (title == null || title.trim().isEmpty() || "null".equals(title)) title = "Chat";
-        return new ChatChoice(dialogId, title.trim(), icon);
-    }
-
-    private Object invokeNumericGetter(Class<?> owner, Object target, String name, long value) {
-        for (Class<?> c = owner; c != null; c = c.getSuperclass()) {
-            for (java.lang.reflect.Method m : c.getDeclaredMethods()) {
-                Class<?>[] p = m.getParameterTypes();
-                if (!m.getName().equals(name) || p.length != 1) continue;
-                try {
-                    Object arg;
-                    if (p[0] == int.class || p[0] == Integer.class) arg = (int) value;
-                    else if (p[0] == long.class || p[0] == Long.class) arg = value;
-                    else continue;
-                    m.setAccessible(true);
-                    return m.invoke(target, arg);
-                } catch (Throwable ignored) { }
-            }
-        }
-        return null;
-    }
-
-    private String readStringField(Object object, String name) {
-        java.lang.reflect.Field f = findField(object.getClass(), name);
-        if (f == null) return "";
-        try { f.setAccessible(true); Object v = f.get(object); return v == null ? "" : String.valueOf(v); }
-        catch (Throwable ignored) { return ""; }
-    }
-
-    private int readIntField(Object object, String name) {
-        java.lang.reflect.Field f = findField(object.getClass(), name);
-        if (f == null) return 0;
-        try { f.setAccessible(true); Object v = f.get(object); return v instanceof Number ? ((Number) v).intValue() : 0; }
-        catch (Throwable ignored) { return 0; }
-    }
-
-    private boolean hasBooleanField(Object object, String name) {
-        return findField(object.getClass(), name) != null;
-    }
-
-    private boolean hasBooleanFieldValue(Object object, String name) {
-        java.lang.reflect.Field f = findField(object.getClass(), name);
-        if (f == null) return false;
-        try { f.setAccessible(true); return f.getBoolean(object); } catch (Throwable ignored) { return false; }
-    }
-
-    private static final class ChatChoice {
-        final long id; final String title; final String icon;
-        ChatChoice(long id, String title, String icon) { this.id = id; this.title = title; this.icon = icon; }
-    }
-
-    private void saveRule() {
-        try {
-            String name = text(nameInput);
-            if (name.isEmpty()) name = "Forwarding rule";
-            Set<Long> sources = parseIds(text(sourceInput));
-            Set<Long> destinations = parseIds(text(destinationInput));
-            if (sources.isEmpty() || destinations.isEmpty()) {
-                Toast.makeText(this, "Enter at least one source and one destination chat ID", Toast.LENGTH_LONG).show();
-                return;
-            }
-            List<ForwardingRule> rules = new ArrayList<>(store.loadAllRules());
-            ForwardingRule rule = new ForwardingRule(editingRuleId == null ? UUID.randomUUID().toString() : editingRuleId, name, editingRuleId == null || findRuleEnabled(editingRuleId),
-                    sources, destinations, parseWords(text(includeInput)), parseWords(text(excludeInput)),
-                    matchSpinner.getSelectedItemPosition() == 1 ? ForwardingRule.MatchMode.ALL : ForwardingRule.MatchMode.ANY,
-                    caseSensitiveSwitch.isChecked(), deliverySpinner.getSelectedItemPosition() == 1
-                            ? ForwardingRule.DeliveryMode.COPY : ForwardingRule.DeliveryMode.FORWARD,
-                    showSenderSwitch.isChecked());
-            if (editingRuleId == null) rules.add(rule);
-            else { for (int i=0;i<rules.size();i++) if (rules.get(i).getId().equals(editingRuleId)) { rules.set(i, rule); break; } }
-            editingRuleId = null;
-            store.saveRules(rules);
-            nameInput.setText(""); sourceInput.setText(""); destinationInput.setText("");
-            includeInput.setText(""); excludeInput.setText("");
-            showSenderSwitch.setChecked(false);
-            refreshRules();
-            Toast.makeText(this, "Forwarding rule saved", Toast.LENGTH_SHORT).show();
-        } catch (Throwable error) {
-            Toast.makeText(this, "Could not save rule: " + error.getMessage(), Toast.LENGTH_LONG).show();
-        }
-    }
-
-    private void refreshRules() {
-        if (rulesContainer == null) return;
-        rulesContainer.removeAllViews();
-        ruleStatsViews.clear();
-        List<ForwardingRule> rules = store.loadAllRules();
-        if (rules.isEmpty()) {
-            TextView empty = label("No forwarding rules yet.", 0xff777777);
-            rulesContainer.addView(empty, params(-1, -2));
-            return;
-        }
-        for (ForwardingRule rule : rules) {
-            LinearLayout item = new LinearLayout(this);
-            item.setOrientation(LinearLayout.VERTICAL);
-            item.setPadding(dp(14), dp(12), dp(14), dp(12));
-            item.setBackground(roundBackground(Color.WHITE, dp(14)));
-            TextView name = label(rule.getName(), 0xff202124);
-            name.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-            item.addView(name, params(-1, -2));
-            TextView details = label(ruleDetailsText(rule), 0xff666666);
-            details.setTextSize(12);
-            ruleStatsViews.put(rule.getId(), details);
-            LinearLayout.LayoutParams detailsParams = params(-1, -2);
-            detailsParams.topMargin = dp(5);
-            item.addView(details, detailsParams);
-            TextView state = label(rule.isEnabled() ? "Rule is active" : "Rule is paused", rule.isEnabled() ? 0xff2e9d62 : 0xffd58a24);
-            state.setTag("rule_state_" + rule.getId());
-            state.setTextSize(12);
-            state.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-            LinearLayout.LayoutParams stateParams = params(-1, -2);
-            stateParams.topMargin = dp(4);
-            item.addView(state, stateParams);
-
-            LinearLayout firstRow = actionRow();
-            Button edit = compactButton("Edit");
-            Button pause = compactButton(rule.isEnabled() ? "Pause rule" : "Restart rule");
-            firstRow.addView(edit, actionParams());
-            firstRow.addView(pause, actionParams());
-            LinearLayout.LayoutParams rowParams = params(-1, dp(42));
-            rowParams.topMargin = dp(8);
-            item.addView(firstRow, rowParams);
-            edit.setOnClickListener(v -> loadRuleForEdit(rule));
-            pause.setOnClickListener(v -> setRuleEnabled(rule, !rule.isEnabled()));
-
-            LinearLayout secondRow = actionRow();
-            Button reset = compactButton("Reset counter");
-            Button remove = compactButton("Remove");
-            secondRow.addView(reset, actionParams());
-            secondRow.addView(remove, actionParams());
-            LinearLayout.LayoutParams secondRowParams = params(-1, dp(42));
-            secondRowParams.topMargin = dp(6);
-            item.addView(secondRow, secondRowParams);
-            reset.setOnClickListener(v -> new AlertDialog.Builder(this)
-                    .setTitle("Reset automation counter?")
-                    .setMessage("This resets Automation and the selected delivery counter for this rule to zero. It does not change the rule.")
-                    .setNegativeButton("Cancel", null)
-                    .setPositiveButton("Reset", (dialog, which) -> {
-                        store.resetStats(rule.getId());
-                        refreshRuleStats();
-                        Toast.makeText(this, "Rule counters reset", Toast.LENGTH_SHORT).show();
-                    }).show());
-            remove.setOnClickListener(v -> {
-                List<ForwardingRule> current = new ArrayList<>(store.loadAllRules());
-                ArrayList<ForwardingRule> kept = new ArrayList<>();
-                for (ForwardingRule candidate : current) if (!candidate.getId().equals(rule.getId())) kept.add(candidate);
-                store.saveRules(kept);
-                refreshRules();
-            });
-            LinearLayout.LayoutParams itemParams = params(-1, -2);
-            itemParams.bottomMargin = dp(8);
-            rulesContainer.addView(item, itemParams);
-        }
-    }
-
-
-    private LinearLayout actionRow() {
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        return row;
-    }
-
-    private LinearLayout.LayoutParams actionParams() {
-        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, dp(38), 1f);
-        p.leftMargin = dp(3);
-        p.rightMargin = dp(3);
-        return p;
-    }
-
-    private Button compactButton(String text) {
-        Button b = button(text);
-        b.setTextSize(12);
-        b.setMinHeight(0);
-        b.setMinimumHeight(dp(34));
-        b.setPadding(dp(6), 0, dp(6), 0);
-        return b;
-    }
-
-    private boolean findRuleEnabled(String id) {
-        for (ForwardingRule r : store.loadAllRules()) if (r.getId().equals(id)) return r.isEnabled();
-        return true;
-    }
-
-    private void setRuleEnabled(ForwardingRule target, boolean enabled) {
-        ArrayList<ForwardingRule> updated = new ArrayList<>();
-        for (ForwardingRule r : store.loadAllRules()) {
-            if (!r.getId().equals(target.getId())) { updated.add(r); continue; }
-            updated.add(new ForwardingRule(r.getId(), r.getName(), enabled, r.getSourceChatIds(),
-                    r.getDestinationChatIds(), r.getIncludeKeywords(), r.getExcludeKeywords(),
-                    r.getMatchMode(), r.isCaseSensitive(), r.getDeliveryMode(), r.isShowSenderName()));
-        }
-        store.saveRules(updated);
-        refreshRules();
-        Toast.makeText(this, enabled ? "Rule restarted" : "Rule paused", Toast.LENGTH_SHORT).show();
-    }
-
-    private String ruleDetailsText(ForwardingRule rule) {
-        String deliveryCount = rule.getDeliveryMode() == ForwardingRule.DeliveryMode.COPY
-                ? " · Copied: " + store.getCount(rule.getId(), "copied")
-                : " · Forwarded: " + store.getCount(rule.getId(), "forwarded");
-        return "Sources: " + rule.getSourceChatIds() + "\nDestinations: " + rule.getDestinationChatIds()
-                + "\nAutomation: " + store.getCount(rule.getId(), "automation") + deliveryCount;
-    }
-
-    /** Refresh count labels only; do not rebuild cards/buttons while the user is interacting. */
-    private void refreshRuleStats() {
-        if (store == null || ruleStatsViews.isEmpty()) return;
-        for (ForwardingRule rule : store.loadAllRules()) {
-            TextView view = ruleStatsViews.get(rule.getId());
-            if (view != null) view.setText(ruleDetailsText(rule));
-        }
-    }
-
-    private void loadRuleForEdit(ForwardingRule rule) {
-        editingRuleId = rule.getId();
-        nameInput.setText(rule.getName());
-        sourceInput.setText(joinIds(rule.getSourceChatIds()));
-        destinationInput.setText(joinIds(rule.getDestinationChatIds()));
-        includeInput.setText(android.text.TextUtils.join(", ", rule.getIncludeKeywords()));
-        excludeInput.setText(android.text.TextUtils.join(", ", rule.getExcludeKeywords()));
-        matchSpinner.setSelection(rule.getMatchMode() == ForwardingRule.MatchMode.ALL ? 1 : 0);
-        deliverySpinner.setSelection(rule.getDeliveryMode() == ForwardingRule.DeliveryMode.COPY ? 1 : 0);
-        caseSensitiveSwitch.setChecked(rule.isCaseSensitive());
-        showSenderSwitch.setChecked(rule.isShowSenderName());
-        Toast.makeText(this, "Rule loaded for editing; save to apply changes", Toast.LENGTH_SHORT).show();
-    }
-    private String joinIds(Set<Long> ids) {
-        StringBuilder out = new StringBuilder();
-        for (Long id : ids) { if (out.length() > 0) out.append(", "); out.append(id); }
-        return out.toString();
-    }
-
-    private void addSectionTitle(String text, int color) {
-        TextView heading = new TextView(this);
-        heading.setText(text);
-        heading.setTextSize(17);
-        heading.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        heading.setTextColor(color);
-        LinearLayout.LayoutParams p = params(-1, -2);
-        p.topMargin = dp(22);
-        p.bottomMargin = dp(4);
-        content.addView(heading, p);
-    }
-
-    private EditText addInput(LinearLayout parent, String label, String hint) {
-        TextView heading = label(label, 0xff202124);
-        parent.addView(heading, params(-1, -2));
-        EditText input = new EditText(this);
-        input.setSingleLine(false);
-        input.setTextSize(14);
-        input.setHint(hint);
-        input.setTextColor(0xff202124);
-        input.setHintTextColor(0xff777777);
-        input.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xff888888));
-        input.setPadding(dp(10), dp(8), dp(10), dp(8));
-        LinearLayout.LayoutParams p = params(-1, -2);
-        p.topMargin = dp(3);
-        p.bottomMargin = dp(9);
-        parent.addView(input, p);
-        return input;
-    }
-
-    private Spinner spinner(String[] options) {
-        Spinner spinner = new Spinner(this);
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, Arrays.asList(options)) {
-            @Override public View getView(int position, View convertView, android.view.ViewGroup parent) {
-                TextView view = (TextView) super.getView(position, convertView, parent);
-                view.setTextColor(0xff202124);
-                return view;
-            }
-            @Override public View getDropDownView(int position, View convertView, android.view.ViewGroup parent) {
-                TextView view = (TextView) super.getDropDownView(position, convertView, parent);
-                view.setTextColor(0xff202124);
-                view.setBackgroundColor(Color.WHITE);
-                return view;
-            }
-        };
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinner.setAdapter(adapter);
-        return spinner;
-    }
-
-    private LinearLayout card(int color) {
-        LinearLayout card = new LinearLayout(this);
+    private static LinearLayout createCardContainer(Context context, int bgColor, int borderColor, boolean isDark) {
+        LinearLayout card = new LinearLayout(context);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(dp(14), dp(14), dp(14), dp(14));
-        card.setBackground(roundBackground(color, dp(16)));
+        GradientDrawable gd = new GradientDrawable();
+        gd.setColor(bgColor);
+        gd.setCornerRadius(dp(context, 16));
+        if (isDark) {
+            gd.setStroke(dp(context, 1), borderColor);
+        }
+        card.setBackground(gd);
+        card.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         return card;
     }
 
-    private Button button(String text) {
-        Button button = new Button(this);
-        button.setText(text);
-        button.setTextColor(0xff202124);
-        button.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xffd6d8d8));
-        return button;
+    private static void addDivider(Context context, LinearLayout parent, int dividerColor) {
+        View divider = new View(context);
+        divider.setBackgroundColor(dividerColor);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 0.75f));
+        params.leftMargin = dp(context, 18);
+        params.rightMargin = dp(context, 18);
+        parent.addView(divider, params);
     }
 
-    private TextView label(String text, int color) {
-        TextView view = new TextView(this);
-        view.setText(text);
-        view.setTextSize(14);
-        view.setTextColor(color);
-        return view;
-    }
+    private static void addSettingRow(Context context, LinearLayout parent, String prefKey,
+                                      String titleText, String descText, boolean defaultVal,
+                                      int primaryColor, int secondaryColor, int accentColor) {
+        LinearLayout row = new LinearLayout(context);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(context, 18), dp(context, 12), dp(context, 18), dp(context, 12));
+        row.setClickable(true);
+        row.setFocusable(true);
 
-    private static LinearLayout.LayoutParams params(int width, int height) {
-        return new LinearLayout.LayoutParams(width, height);
-    }
+        LinearLayout textCol = new LinearLayout(context);
+        textCol.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams textParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        textParams.rightMargin = dp(context, 12);
+        textCol.setLayoutParams(textParams);
 
-    private GradientDrawable roundBackground(int color, float radius) {
-        GradientDrawable drawable = new GradientDrawable();
-        drawable.setColor(color);
-        drawable.setCornerRadius(radius);
-        return drawable;
-    }
+        TextView title = new TextView(context);
+        title.setText(titleText);
+        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15.5f);
+        title.setTextColor(primaryColor);
+        title.setTypeface(Typeface.DEFAULT_BOLD);
+        textCol.addView(title);
 
-    private Set<Long> parseIds(String input) {
-        LinkedHashSet<Long> ids = new LinkedHashSet<>();
-        for (String part : input.split(",")) {
-            String value = part.trim();
-            if (!value.isEmpty()) ids.add(Long.parseLong(value));
+        if (descText != null && !descText.isEmpty()) {
+            TextView desc = new TextView(context);
+            desc.setText(descText);
+            desc.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f);
+            desc.setTextColor(secondaryColor);
+            desc.setPadding(0, dp(context, 2), 0, 0);
+            textCol.addView(desc);
         }
-        return ids;
+
+        row.addView(textCol);
+
+        Switch sw = new Switch(context);
+        boolean currentVal = TelegramConfig.getBoolean(context, prefKey, defaultVal);
+        sw.setChecked(currentVal);
+
+        int[][] states = new int[][]{
+                new int[]{-android.R.attr.state_checked},
+                new int[]{android.R.attr.state_checked}
+        };
+        int[] thumbColors = new int[]{0xFFB0B0B0, accentColor};
+        int[] trackColors = new int[]{0x40808080, Color.argb(128, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor))};
+        sw.setThumbTintList(new ColorStateList(states, thumbColors));
+        sw.setTrackTintList(new ColorStateList(states, trackColors));
+
+        sw.setOnCheckedChangeListener((btn, isChecked) -> {
+            TelegramConfig.setBoolean(context, prefKey, isChecked);
+        });
+
+        row.setOnClickListener(v -> sw.toggle());
+        row.addView(sw);
+        parent.addView(row);
     }
 
-    private List<String> parseWords(String input) {
-        ArrayList<String> words = new ArrayList<>();
-        for (String part : input.split(",")) if (!part.trim().isEmpty()) words.add(part.trim());
-        return words;
+    private static void addActionRow(Context context, LinearLayout parent, String titleText,
+                                     String descText, int primaryColor, int secondaryColor,
+                                     View.OnClickListener onClick) {
+        LinearLayout row = new LinearLayout(context);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(context, 18), dp(context, 13), dp(context, 18), dp(context, 13));
+        row.setClickable(true);
+        row.setFocusable(true);
+        row.setOnClickListener(onClick);
+
+        LinearLayout textCol = new LinearLayout(context);
+        textCol.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams textParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        textParams.rightMargin = dp(context, 12);
+        textCol.setLayoutParams(textParams);
+
+        TextView title = new TextView(context);
+        title.setText(titleText);
+        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15.5f);
+        title.setTextColor(primaryColor);
+        title.setTypeface(Typeface.DEFAULT_BOLD);
+        textCol.addView(title);
+
+        if (descText != null && !descText.isEmpty()) {
+            TextView desc = new TextView(context);
+            desc.setText(descText);
+            desc.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f);
+            desc.setTextColor(secondaryColor);
+            desc.setPadding(0, dp(context, 2), 0, 0);
+            textCol.addView(desc);
+        }
+
+        row.addView(textCol);
+
+        TextView chevron = new TextView(context);
+        chevron.setText("\u203A");
+        chevron.setTextSize(TypedValue.COMPLEX_UNIT_SP, 24);
+        chevron.setTextColor(secondaryColor);
+        row.addView(chevron);
+
+        parent.addView(row);
     }
 
-    private static String text(EditText input) { return input.getText() == null ? "" : input.getText().toString().trim(); }
-    private int dp(float value) { return Math.round(value * getResources().getDisplayMetrics().density); }
+    // Forwarding Rules Dialog (Preserves forwarding feature from previous build)
+    private static void showForwardingRulesDialog(Activity activity) {
+        final SharedPreferencesForwardingRuleStore store = new SharedPreferencesForwardingRuleStore(activity);
+        final List<ForwardingRule> rules = store.loadAllRules();
 
-    public static void showInDialog(final Context context) {
-        if (context == null) return;
-        try {
-            Activity activity = null;
-            Context current = context;
-            while (current instanceof android.content.ContextWrapper) {
-                if (current instanceof Activity) {
-                    activity = (Activity) current;
-                    break;
-                }
-                current = ((android.content.ContextWrapper) current).getBaseContext();
+        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+        builder.setTitle("Auto-Forwarding Rules (" + rules.size() + ")");
+
+        CharSequence[] items = new CharSequence[rules.size() + 1];
+        for (int i = 0; i < rules.size(); i++) {
+            ForwardingRule r = rules.get(i);
+            String src = r.getSourceChatIds().isEmpty() ? "All" : r.getSourceChatIds().toString();
+            String dst = r.getDestinationChatIds().isEmpty() ? "None" : r.getDestinationChatIds().toString();
+            items[i] = (r.isEnabled() ? "[\u2713] " : "[ ] ") + r.getName() + " (" + src + " \u2192 " + dst + ")";
+        }
+        items[rules.size()] = "+ Create New Rule";
+
+        builder.setItems(items, (dialog, which) -> {
+            if (which == rules.size()) {
+                showEditRuleDialog(activity, null, store);
+            } else {
+                showEditRuleDialog(activity, rules.get(which), store);
             }
+        });
+        builder.setNegativeButton("Close", null);
+        builder.show();
+    }
 
-            if (activity == null) {
-                Intent intent = new Intent(context, MorpheSettingsActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                context.startActivity(intent);
-                return;
-            }
+    private static void showEditRuleDialog(Activity activity, ForwardingRule existingRule, SharedPreferencesForwardingRuleStore store) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+        builder.setTitle(existingRule == null ? "New Forwarding Rule" : "Edit Rule");
 
-            final MorpheSettingsActivity host = new MorpheSettingsActivity();
-            host.parentActivity = activity;
+        LinearLayout form = new LinearLayout(activity);
+        form.setOrientation(LinearLayout.VERTICAL);
+        form.setPadding(dp(activity, 20), dp(activity, 10), dp(activity, 20), dp(activity, 10));
+
+        final EditText nameInput = createFormInput(activity, "Rule Name", existingRule != null ? existingRule.getName() : "");
+        String existingSrc = "";
+        if (existingRule != null && !existingRule.getSourceChatIds().isEmpty()) {
+            existingSrc = String.valueOf(existingRule.getSourceChatIds().iterator().next());
+        }
+        String existingDst = "";
+        if (existingRule != null && !existingRule.getDestinationChatIds().isEmpty()) {
+            existingDst = String.valueOf(existingRule.getDestinationChatIds().iterator().next());
+        }
+        final EditText sourceInput = createFormInput(activity, "Source Chat ID", existingSrc);
+        final EditText destInput = createFormInput(activity, "Destination Chat ID", existingDst);
+
+        form.addView(nameInput);
+        form.addView(sourceInput);
+        form.addView(destInput);
+
+        builder.setView(form);
+        builder.setPositiveButton("Save", (d, w) -> {
             try {
-                java.lang.reflect.Method attach = android.app.Activity.class.getDeclaredMethod("attachBaseContext", Context.class);
-                attach.setAccessible(true);
-                attach.invoke(host, activity);
-            } catch (Throwable ignored) { }
+                String name = nameInput.getText().toString().trim();
+                long sourceId = Long.parseLong(sourceInput.getText().toString().trim());
+                long destId = Long.parseLong(destInput.getText().toString().trim());
+                String id = existingRule != null ? existingRule.getId() : UUID.randomUUID().toString();
 
-            host.store = new SharedPreferencesForwardingRuleStore(activity);
-            host.buildScreen();
-            host.refreshRules();
+                Set<Long> sources = new LinkedHashSet<>();
+                sources.add(sourceId);
+                Set<Long> destinations = new LinkedHashSet<>();
+                destinations.add(destId);
 
-            View root = host.rootScrollView != null ? host.rootScrollView : host.content;
-            if (root.getParent() instanceof android.view.ViewGroup) {
-                ((android.view.ViewGroup) root.getParent()).removeView(root);
+                ForwardingRule rule = new ForwardingRule(
+                        id,
+                        name.isEmpty() ? "Rule" : name,
+                        true,
+                        sources,
+                        destinations,
+                        existingRule != null ? existingRule.getIncludeKeywords() : new ArrayList<>(),
+                        existingRule != null ? existingRule.getExcludeKeywords() : new ArrayList<>(),
+                        existingRule != null ? existingRule.getMatchMode() : ForwardingRule.MatchMode.ALL,
+                        existingRule != null ? existingRule.isCaseSensitive() : false,
+                        existingRule != null ? existingRule.getDeliveryMode() : ForwardingRule.DeliveryMode.COPY,
+                        existingRule != null ? existingRule.isShowSenderName() : false
+                );
+                List<ForwardingRule> all = store.loadAllRules();
+                if (existingRule != null) {
+                    all.removeIf(r -> r.getId().equals(existingRule.getId()));
+                }
+                all.add(rule);
+                store.saveRules(all);
+                Toast.makeText(activity, "Rule saved", Toast.LENGTH_SHORT).show();
+            } catch (Exception e) {
+                Toast.makeText(activity, "Invalid chat IDs", Toast.LENGTH_SHORT).show();
             }
-
-            AlertDialog dialog = new AlertDialog.Builder(activity)
-                    .setView(root)
-                    .setPositiveButton("Close", null)
-                    .create();
-            dialog.show();
-        } catch (Throwable t) {
-            Toast.makeText(context, "Morphe Settings: " + t.getMessage(), Toast.LENGTH_LONG).show();
+        });
+        if (existingRule != null) {
+            builder.setNeutralButton("Delete", (d, w) -> {
+                List<ForwardingRule> all = store.loadAllRules();
+                all.removeIf(r -> r.getId().equals(existingRule.getId()));
+                store.saveRules(all);
+                Toast.makeText(activity, "Rule deleted", Toast.LENGTH_SHORT).show();
+            });
         }
+        builder.setNegativeButton("Cancel", null);
+        builder.show();
+    }
+
+    private static EditText createFormInput(Context context, String hint, String text) {
+        EditText et = new EditText(context);
+        et.setHint(hint);
+        et.setText(text);
+        et.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        et.setPadding(dp(context, 10), dp(context, 10), dp(context, 10), dp(context, 10));
+        return et;
+    }
+
+    private static int dp(Context context, float value) {
+        return Math.round(value * context.getResources().getDisplayMetrics().density);
     }
 }
