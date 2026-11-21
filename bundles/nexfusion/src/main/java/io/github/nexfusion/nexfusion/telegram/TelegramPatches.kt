@@ -895,38 +895,51 @@ val TelegramBypassChannelRestrictions = patch(
 
 val TelegramDownloadBoost = patch(
     name = "Download speed boost",
-    description = "Increases download chunk size to 1 MB and max concurrent requests to 12.",
+    description = "Enables Telegram experimental multi-connection parallel downloads and max chunk streaming.",
 ) {
+    // 1. SharedPreferences interception: Force getfileExperimentalParams=true and disable download killswitch
+    runCatching {
+        val spClass = classLoader.loadClass("android.app.SharedPreferencesImpl")
+        XposedBridge.hookAllMethods(spClass, "getBoolean", object : XC_MethodHook() {
+            override fun beforeHookedMethod(param: MethodHookParam) {
+                val key = param.args.firstOrNull() as? String ?: return
+                if (key == "getfileExperimentalParams") {
+                    param.result = true
+                } else if (key == "android_download_improvement_killswitch") {
+                    param.result = false
+                }
+            }
+        })
+    }
+
+    // 2. Hook MessagesController constructors and instances to enable experimental params
     runCatching {
         val mc = TelegramResolver.findMessagesController(classLoader)
         if (mc != null) {
-            mc.declaredFields.filter { it.name == "getfileExperimentalParams" }.forEach { f ->
+            for (ctor in mc.declaredConstructors) {
+                XposedBridge.hookMethod(ctor, object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam) {
+                        val inst = param.thisObject ?: return
+                        runCatching {
+                            mc.declaredFields.filter { it.type == java.lang.Boolean.TYPE }.forEach { f ->
+                                f.isAccessible = true
+                                if (f.name == "I3" || f.name == "getfileExperimentalParams") {
+                                    f.setBoolean(inst, true)
+                                } else if (f.name == "J3") {
+                                    f.setBoolean(inst, false)
+                                }
+                            }
+                        }
+                    }
+                })
+            }
+
+            mc.declaredFields.filter { it.name == "getfileExperimentalParams" || it.name == "I3" }.forEach { f ->
                 f.isAccessible = true
                 runCatching { f.setBoolean(null, true) }
             }
             mc.declaredMethods.filter { it.name == "getfileExperimentalParams" }.forEach { m ->
                 XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
-            }
-        }
-    }
-    runCatching {
-        for (name in listOf("org.telegram.messenger.FileLoadOperation", "org.telegram.messenger.d7")) {
-            val flo = runCatching { classLoader.loadClass(name) }.getOrNull() ?: continue
-            flo.declaredMethods.filter { it.name.contains("updateParams", ignoreCase = true) || it.parameterCount >= 2 }.forEach { method ->
-                XposedBridge.hookMethod(method, object : XC_MethodHook() {
-                    override fun afterHookedMethod(param: MethodHookParam) {
-                        runCatching {
-                            val obj = param.thisObject ?: return
-                            val cls = obj.javaClass
-                            cls.declaredFields.filter { it.type == java.lang.Integer.TYPE }.forEach { f ->
-                                f.isAccessible = true
-                                val v = f.getInt(obj)
-                                if (v == 131072 || v == 524288) f.setInt(obj, 1048576)
-                                if (v in 2..8) f.setInt(obj, 12)
-                            }
-                        }
-                    }
-                })
             }
         }
     }
