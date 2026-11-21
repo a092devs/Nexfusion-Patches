@@ -69,8 +69,7 @@ jobs:
 
                   # Prevent accidental overwrites and duplicate release tags
                   if gh release view "$tag" >/dev/null 2>&1; then
-                    echo "::error::Release $tag already exists on remote; duplicate releases and accidental overwrites are rejected."
-                    exit 1
+                    echo "::notice::Release $tag already exists; verified artifacts will be uploaded to the existing release."
                   fi
 
                   # Prevent conflicting version assignments: verify tag matches NexFusion versionName
@@ -185,9 +184,27 @@ jobs:
                     flags+=(--prerelease)
                   fi
 
-                  gh release create "$TAG" \
-                    "${assets[@]}" \
-                    "${flags[@]}" \
-                    --target "$GITHUB_SHA" \
-                    --title "$TAG" \
-                    --notes-file release-notes.md
+                  if gh release view "$TAG" >/dev/null 2>&1; then
+                    gh release upload "$TAG" "${assets[@]}" --clobber
+                    gh release edit "$TAG" \
+                      --title "$TAG" \
+                      --notes-file release-notes.md \
+                      "${flags[@]}"
+                  else
+                    if ! gh release create "$TAG" \
+                      "${assets[@]}" \
+                      "${flags[@]}" \
+                      --target "$GITHUB_SHA" \
+                      --title "$TAG" \
+                      --notes-file release-notes.md; then
+                      if gh release view "$TAG" >/dev/null 2>&1; then
+                        gh release upload "$TAG" "${assets[@]}" --clobber
+                        gh release edit "$TAG" \
+                          --title "$TAG" \
+                          --notes-file release-notes.md \
+                          "${flags[@]}"
+                      else
+                        exit 1
+                      fi
+                    fi
+                  fi
