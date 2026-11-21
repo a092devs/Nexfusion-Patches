@@ -27,43 +27,41 @@ private fun isOfficialTelegram(classLoader: ClassLoader?): Boolean {
 // Dynamic reflection helpers to resolve Telegram internal classes across all versions (unobfuscated, FOSS, 13.0, 13.3+)
 internal object TelegramResolver {
     fun findUserConfig(classLoader: ClassLoader): Class<*>? {
-        runCatching { return classLoader.loadClass("org.telegram.messenger.UserConfig") }
-        for (name in listOf("org.telegram.messenger.BaseController", "org.telegram.messenger.c1", "org.telegram.messenger.f1", "yg.v2")) {
+        for (name in listOf("org.telegram.messenger.y10", "org.telegram.messenger.UserConfig")) {
+            val cls = runCatching { classLoader.loadClass(name) }.getOrNull()
+            if (cls != null) return cls
+        }
+        for (name in listOf("org.telegram.messenger.c1", "org.telegram.messenger.d1", "org.telegram.messenger.BaseController", "yg.v2")) {
             val cls = runCatching { classLoader.loadClass(name) }.getOrNull() ?: continue
             val m = cls.declaredMethods.firstOrNull { it.name == "getUserConfig" && it.parameterCount == 0 }
             if (m != null && m.returnType != java.lang.Void.TYPE && m.returnType != Any::class.java) {
                 return m.returnType
             }
         }
-        for (name in listOf("org.telegram.messenger.y10", "org.telegram.messenger.d20")) {
-            val cls = runCatching { classLoader.loadClass(name) }.getOrNull()
-            if (cls != null) return cls
-        }
         return null
     }
 
     fun findMessagesController(classLoader: ClassLoader): Class<*>? {
-        runCatching { return classLoader.loadClass("org.telegram.messenger.MessagesController") }
-        for (name in listOf("org.telegram.messenger.BaseController", "org.telegram.messenger.c1", "org.telegram.messenger.f1", "yg.v2")) {
+        for (name in listOf("org.telegram.messenger.tp", "org.telegram.messenger.sp", "org.telegram.messenger.MessagesController")) {
+            val cls = runCatching { classLoader.loadClass(name) }.getOrNull()
+            if (cls != null) return cls
+        }
+        for (name in listOf("org.telegram.messenger.c1", "org.telegram.messenger.d1", "org.telegram.messenger.BaseController", "yg.v2")) {
             val cls = runCatching { classLoader.loadClass(name) }.getOrNull() ?: continue
             val m = cls.declaredMethods.firstOrNull { it.name == "getMessagesController" && it.parameterCount == 0 }
             if (m != null && m.returnType != java.lang.Void.TYPE && m.returnType != Any::class.java) {
                 return m.returnType
             }
         }
-        for (name in listOf("org.telegram.messenger.tp", "org.telegram.messenger.sp")) {
-            val cls = runCatching { classLoader.loadClass(name) }.getOrNull()
-            if (cls != null) return cls
-        }
         return null
     }
 
     fun findMessagesStorage(classLoader: ClassLoader): Class<*>? {
-        for (name in listOf("org.telegram.messenger.MessagesStorage", "org.telegram.messenger.wf")) {
+        for (name in listOf("org.telegram.messenger.es", "org.telegram.messenger.is", "org.telegram.messenger.MessagesStorage")) {
             val cls = runCatching { classLoader.loadClass(name) }.getOrNull()
             if (cls != null) return cls
         }
-        for (name in listOf("org.telegram.messenger.BaseController", "org.telegram.messenger.c1", "org.telegram.messenger.f1", "yg.v2")) {
+        for (name in listOf("org.telegram.messenger.c1", "org.telegram.messenger.d1", "org.telegram.messenger.BaseController", "yg.v2")) {
             val cls = runCatching { classLoader.loadClass(name) }.getOrNull() ?: continue
             val m = cls.declaredMethods.firstOrNull { it.name == "getMessagesStorage" && it.parameterCount == 0 }
             if (m != null && m.returnType != java.lang.Void.TYPE && m.returnType != Any::class.java) {
@@ -74,30 +72,15 @@ internal object TelegramResolver {
     }
 
     fun findStoriesController(classLoader: ClassLoader): Class<*>? {
-        for (name in listOf("org.telegram.ui.Stories.StoriesController", "yg.e5", "org.telegram.messenger.StoriesController")) {
+        for (name in listOf("yg.e5", "wg.f5", "zg.d5", "org.telegram.ui.Stories.StoriesController")) {
             val cls = runCatching { classLoader.loadClass(name) }.getOrNull()
             if (cls != null) return cls
-        }
-        for (name in listOf("org.telegram.ui.Components.xt0", "org.telegram.messenger.BaseController", "yg.v2")) {
-            val cls = runCatching { classLoader.loadClass(name) }.getOrNull() ?: continue
-            val m = cls.declaredMethods.firstOrNull { it.name == "getStoriesController" && it.parameterCount == 0 }
-            if (m != null && m.returnType != java.lang.Void.TYPE && m.returnType != Any::class.java) {
-                return m.returnType
-            }
         }
         return null
     }
 
     fun findMessageObject(classLoader: ClassLoader): Class<*>? {
-        runCatching { return classLoader.loadClass("org.telegram.messenger.MessageObject") }
-        for (name in listOf("org.telegram.ui.Cells.ChatMessageCell", "org.telegram.ui.Cells.u0", "org.telegram.ui.Cells.q1")) {
-            val cls = runCatching { classLoader.loadClass(name) }.getOrNull() ?: continue
-            val m = cls.declaredMethods.firstOrNull { it.name == "getMessageObject" && it.parameterCount == 0 }
-            if (m != null && m.returnType != java.lang.Void.TYPE && m.returnType != Any::class.java) {
-                return m.returnType
-            }
-        }
-        for (name in listOf("org.telegram.messenger.jj", "org.telegram.messenger.hj")) {
+        for (name in listOf("org.telegram.messenger.jj", "org.telegram.messenger.hj", "org.telegram.messenger.MessageObject")) {
             val cls = runCatching { classLoader.loadClass(name) }.getOrNull()
             if (cls != null) return cls
         }
@@ -105,15 +88,7 @@ internal object TelegramResolver {
     }
 
     fun findNotificationsController(classLoader: ClassLoader): Class<*>? {
-        runCatching { return classLoader.loadClass("org.telegram.messenger.NotificationsController") }
-        for (name in listOf("org.telegram.messenger.BaseController", "org.telegram.messenger.c1", "org.telegram.messenger.f1", "yg.v2")) {
-            val cls = runCatching { classLoader.loadClass(name) }.getOrNull() ?: continue
-            val m = cls.declaredMethods.firstOrNull { it.name == "getNotificationsController" && it.parameterCount == 0 }
-            if (m != null && m.returnType != java.lang.Void.TYPE && m.returnType != Any::class.java) {
-                return m.returnType
-            }
-        }
-        for (name in listOf("org.telegram.messenger.jt", "org.telegram.messenger.kt")) {
+        for (name in listOf("org.telegram.messenger.nz", "org.telegram.messenger.nt", "org.telegram.messenger.NotificationsController")) {
             val cls = runCatching { classLoader.loadClass(name) }.getOrNull()
             if (cls != null) return cls
         }
@@ -121,8 +96,7 @@ internal object TelegramResolver {
     }
 
     fun findThemeClass(classLoader: ClassLoader): Class<*>? {
-        runCatching { return classLoader.loadClass("org.telegram.ui.ActionBar.Theme") }
-        for (name in listOf("org.telegram.ui.ActionBar.u6", "org.telegram.ui.ActionBar.t6")) {
+        for (name in listOf("org.telegram.ui.ActionBar.u6", "org.telegram.ui.ActionBar.Theme", "org.telegram.ui.ActionBar.t6")) {
             val cls = runCatching { classLoader.loadClass(name) }.getOrNull()
             if (cls != null) return cls
         }
@@ -130,7 +104,7 @@ internal object TelegramResolver {
     }
 
     fun findThemeKeyLookup(classLoader: ClassLoader): Class<*>? {
-        for (name in listOf("org.telegram.ui.ActionBar.d5", "org.telegram.ui.ActionBar.Theme")) {
+        for (name in listOf("org.telegram.ui.ActionBar.d5", "org.telegram.ui.ActionBar.g5", "org.telegram.ui.ActionBar.Theme")) {
             val cls = runCatching { classLoader.loadClass(name) }.getOrNull()
             if (cls != null) return cls
         }
@@ -265,13 +239,8 @@ val TelegramAmoledBlack = patch(
                         for (arg in param.args) {
                             if (arg is android.util.SparseIntArray) {
                                 val winId = getKeyId("windowBackgroundWhite")
-                                val isDark = if (winId >= 0 && arg.indexOfKey(winId) >= 0) {
-                                    isColorDark(arg.get(winId))
-                                } else true
-                                if (isDark) {
-                                    for (id in amoledKeyIds) {
-                                        arg.put(id, 0xFF000000.toInt())
-                                    }
+                                tapestry@for (id in amoledKeyIds) {
+                                    arg.put(id, 0xFF000000.toInt())
                                 }
                             }
                         }
@@ -319,11 +288,12 @@ val TelegramUnlockPremium = patch(
     runCatching {
         val userConfig = TelegramResolver.findUserConfig(classLoader)
         if (userConfig != null) {
-            // isPremium() and hasPremiumOnAccounts()
+            // ONLY hook isPremium: q() in 13.3.0, or isPremium in unobfuscated.
+            // NEVER hook p() (isClientActivated) or o() (account counting loop) as that forces phantom deleted accounts!
             userConfig.declaredMethods.filter {
                 (it.returnType == java.lang.Boolean.TYPE || it.returnType == java.lang.Boolean::class.java) &&
                     it.parameterCount == 0 &&
-                    (it.name == "isPremium" || it.name == "hasPremiumOnAccounts" || it.name == "q" || it.name == "p" || it.name == "o")
+                    (it.name == "isPremium" || it.name == "q")
             }.forEach { m ->
                 XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
             }
@@ -367,12 +337,12 @@ val TelegramUnlockPremium = patch(
         }
     }.onFailure { PatcherLog.info(it) { "Telegram: failed hooking UserConfig for Premium" } }
 
-    // 2. Hook MessagesController.isPremiumUser (H2 in 13.3.0) safely for self/premium only
+    // 2. Hook MessagesController.isPremiumUser (B2, Z4, H2 in 13.3.0) safely for self/premium only
     runCatching {
         val mc = TelegramResolver.findMessagesController(classLoader)
         if (mc != null) {
             mc.declaredMethods.filter {
-                (it.name == "isPremiumUser" || it.name == "H2") &&
+                (it.name == "isPremiumUser" || it.name == "l5" || it.name == "B2" || it.name == "Z4" || it.name == "H2") &&
                     it.parameterCount == 1 &&
                     (it.returnType == java.lang.Boolean.TYPE || it.returnType == java.lang.Boolean::class.java)
             }.forEach { m ->
@@ -535,53 +505,94 @@ val TelegramAntiDisappearingMedia = patch(
         runCatching { XposedHelpers.setIntField(media, "ttl_seconds", 0) }
     }
 
-    // 1. Hook static TLRPC$Message.TLdeserialize across all threads/sync routines
+    // 1. Hook TLRPC.deserialize (catches ALL incoming objects across all threads/sync routines)
     runCatching {
-        val msgClass = runCatching { classLoader.loadClass("org.telegram.tgnet.TLRPC\$Message") }.getOrNull()
-        if (msgClass != null) {
-            msgClass.declaredMethods.filter {
-                java.lang.reflect.Modifier.isStatic(it.modifiers) && it.name == "TLdeserialize"
+        val tlrpc = runCatching { classLoader.loadClass("org.telegram.tgnet.TLRPC") }.getOrNull()
+        if (tlrpc != null) {
+            tlrpc.declaredMethods.filter {
+                java.lang.reflect.Modifier.isStatic(it.modifiers) && it.name == "deserialize"
             }.forEach { m ->
                 XposedBridge.hookMethod(m, object : XC_MethodHook() {
                     override fun afterHookedMethod(param: MethodHookParam) {
-                        neutralizeMessage(param.result)
+                        val res = param.result ?: return
+                        neutralizeMessage(res)
+                        neutralizeMedia(res)
                     }
                 })
             }
         }
     }
 
-    // 2. Hook static TLRPC$MessageMedia.TLdeserialize
+    // 2. Hook TLRPC$Message and TL_message readParams & TLdeserialize
     runCatching {
-        val mediaClass = runCatching { classLoader.loadClass("org.telegram.tgnet.TLRPC\$MessageMedia") }.getOrNull()
-        if (mediaClass != null) {
-            mediaClass.declaredMethods.filter {
-                java.lang.reflect.Modifier.isStatic(it.modifiers) && it.name == "TLdeserialize"
-            }.forEach { m ->
+        for (name in listOf(
+            "org.telegram.tgnet.TLRPC\$Message",
+            "org.telegram.tgnet.TLRPC\$TL_message",
+            "org.telegram.tgnet.TLRPC\$TL_message_layer104",
+            "org.telegram.tgnet.TLRPC\$TL_message_layer117",
+            "org.telegram.tgnet.TLRPC\$TL_message_layer72",
+            "org.telegram.tgnet.TLRPC\$TL_message_secret",
+            "org.telegram.tgnet.TLRPC\$TL_message_secret_layer72",
+            "org.telegram.tgnet.TLRPC\$TL_message_secret_old",
+        )) {
+            val cls = runCatching { classLoader.loadClass(name) }.getOrNull() ?: continue
+            cls.declaredMethods.filter { it.name == "readParams" || it.name == "TLdeserialize" }.forEach { m ->
                 XposedBridge.hookMethod(m, object : XC_MethodHook() {
                     override fun afterHookedMethod(param: MethodHookParam) {
-                        neutralizeMedia(param.result)
+                        neutralizeMessage(param.result ?: param.thisObject)
                     }
                 })
             }
         }
     }
 
-    // 3. Hook MessageObject constructors
+    // 3. Hook TLRPC$MessageMedia and all subclasses readParams & TLdeserialize
+    runCatching {
+        for (name in listOf(
+            "org.telegram.tgnet.TLRPC\$MessageMedia",
+            "org.telegram.tgnet.TLRPC\$TL_messageMediaPhoto",
+            "org.telegram.tgnet.TLRPC\$TL_messageMediaPhoto_layer223",
+            "org.telegram.tgnet.TLRPC\$TL_messageMediaPhoto_layer74",
+            "org.telegram.tgnet.TLRPC\$TL_messageMediaDocument",
+            "org.telegram.tgnet.TLRPC\$TL_messageMediaDocument_layer197",
+            "org.telegram.tgnet.TLRPC\$TL_messageMediaDocument_layer187",
+            "org.telegram.tgnet.TLRPC\$TL_messageMediaDocument_layer159",
+            "org.telegram.tgnet.TLRPC\$TL_messageMediaDocument_layer74",
+        )) {
+            val cls = runCatching { classLoader.loadClass(name) }.getOrNull() ?: continue
+            cls.declaredMethods.filter { it.name == "readParams" || it.name == "TLdeserialize" }.forEach { m ->
+                XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam) {
+                        neutralizeMedia(param.result ?: param.thisObject)
+                    }
+                })
+            }
+        }
+    }
+
+    // 4. Hook MessageObject (org.telegram.messenger.mj) constructors
     runCatching {
         val mo = TelegramResolver.findMessageObject(classLoader)
         if (mo != null) {
             XposedBridge.hookAllConstructors(mo, object : XC_MethodHook() {
                 override fun afterHookedMethod(param: MethodHookParam) {
-                    val owner = runCatching { XposedHelpers.getObjectField(param.thisObject, "messageOwner") }.getOrNull()
+                    val obj = param.thisObject ?: return
+                    val owner = runCatching { XposedHelpers.getObjectField(obj, "messageOwner") }.getOrNull()
+                        ?: runCatching { XposedHelpers.getObjectField(obj, "k") }.getOrNull()
                     neutralizeMessage(owner)
-                    runCatching { XposedHelpers.setBooleanField(param.thisObject, "forceExpired", false) }
+                    runCatching { XposedHelpers.setBooleanField(obj, "forceExpired", false) }
+                    for (f in obj.javaClass.declaredFields) {
+                        if (f.type == java.lang.Boolean.TYPE && f.name == "forceExpired") {
+                            f.isAccessible = true
+                            runCatching { f.setBoolean(obj, false) }
+                        }
+                    }
                 }
             })
         }
     }
 
-    // 4. Hook MessagesController view-once / timer expiration methods
+    // 5. Hook MessagesController view-once / timer expiration methods
     runCatching {
         val mc = TelegramResolver.findMessagesController(classLoader)
         if (mc != null) {
@@ -598,7 +609,7 @@ val TelegramAntiDisappearingMedia = patch(
         }
     }
 
-    // 5. Hook MessagesStorage emptyMessagesMedia & checkMessagesTTL
+    // 6. Hook MessagesStorage emptyMessagesMedia & checkMessagesTTL and emptying runner (ur)
     runCatching {
         val ms = TelegramResolver.findMessagesStorage(classLoader)
         if (ms != null) {
@@ -608,9 +619,17 @@ val TelegramAntiDisappearingMedia = patch(
                 XposedBridge.hookMethod(m, XC_MethodReplacement.DO_NOTHING)
             }
         }
+        for (qName in listOf("org.telegram.messenger.qr", "org.telegram.messenger.ur")) {
+            val qCls = runCatching { classLoader.loadClass(qName) }.getOrNull()
+            if (qCls != null) {
+                qCls.declaredMethods.filter { it.name == "run" && it.parameterCount == 0 }.forEach { m ->
+                    XposedBridge.hookMethod(m, XC_MethodReplacement.DO_NOTHING)
+                }
+            }
+        }
     }
 
-    // 6. Strip FLAG_SECURE on Window so view-once media can always be captured/recorded
+    // 7. Strip FLAG_SECURE on Window so view-once media can always be captured/recorded
     runCatching {
         val windowClass = Class.forName("android.view.Window")
         XposedBridge.hookAllMethods(windowClass, "setFlags", object : XC_MethodHook() {
@@ -631,16 +650,15 @@ val TelegramAntiDisappearingMedia = patch(
         })
     }
 
-    // 7. Hook MessageObject secret / voice once getters
+    // 8. Hook MessageObject secret / voice once getters (l4, S4, g4, m5, R5, m4 in 13.3.0)
     runCatching {
         val mo = TelegramResolver.findMessageObject(classLoader)
         if (mo != null) {
             mo.declaredMethods.filter {
                 (it.returnType == java.lang.Boolean.TYPE || it.returnType == java.lang.Boolean::class.java) &&
-                    it.parameterCount == 0 &&
                     (it.name == "isSecretMedia" || it.name == "isSecretPhotoOrVideo" || it.name == "shouldEncryptPhotoOrVideo" ||
                      it.name == "isVoiceOnce" || it.name == "isRoundOnce" || it.name == "needDrawBluredPreview" ||
-                     it.name == "l4" || it.name == "S4")
+                     it.name == "l4" || it.name == "S4" || it.name == "g4" || it.name == "m5" || it.name == "R5" || it.name == "m4")
             }.forEach { m ->
                 XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(false))
             }
@@ -660,7 +678,8 @@ val TelegramHideStories = patch(
                 override fun beforeHookedMethod(param: MethodHookParam) {
                     val req = param.args.firstOrNull() ?: return
                     val name = req.javaClass.name
-                    if (name.contains("getAllStories", ignoreCase = true) ||
+                    if (name.contains("stories", ignoreCase = true) ||
+                        name.contains("getAllStories", ignoreCase = true) ||
                         name.contains("getAllReadPeerStories", ignoreCase = true) ||
                         name.contains("getStoriesArchive", ignoreCase = true) ||
                         name.contains("getStoriesByID", ignoreCase = true)
@@ -672,7 +691,7 @@ val TelegramHideStories = patch(
         }
     }
 
-    // 2. Hook StoriesController (org.telegram.ui.Stories.StoriesController / yg.e5)
+    // 2. Hook StoriesController (wg.f5 / yg.e5 / StoriesController)
     runCatching {
         val sc = TelegramResolver.findStoriesController(classLoader)
         if (sc != null) {
@@ -695,10 +714,10 @@ val TelegramHideStories = patch(
                 })
             }
 
-            // Total stories count -> 0
+            // Total stories count -> 0 (D, E, x in 13.3.0)
             sc.declaredMethods.filter {
                 (it.returnType == java.lang.Integer.TYPE || it.returnType == java.lang.Integer::class.java) &&
-                    it.name.contains("count", ignoreCase = true)
+                    it.parameterCount <= 1
             }.forEach { m ->
                 XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(0))
             }
@@ -727,7 +746,8 @@ val TelegramHideStoriesRead = patch(
         val sc = TelegramResolver.findStoriesController(classLoader)
         if (sc != null) {
             sc.declaredMethods.filter {
-                it.name.contains("read", ignoreCase = true) && it.returnType == java.lang.Boolean.TYPE
+                (it.name.contains("read", ignoreCase = true) || it.name.contains("mark", ignoreCase = true)) &&
+                    it.returnType == java.lang.Boolean.TYPE
             }.forEach { method ->
                 XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(true))
             }
