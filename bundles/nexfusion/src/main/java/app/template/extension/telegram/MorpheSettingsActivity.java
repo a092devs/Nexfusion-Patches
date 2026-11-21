@@ -12,6 +12,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.RippleDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -20,6 +21,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CompoundButton;
@@ -45,9 +47,9 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Native-styled Morphe Settings Screen for Telegram.
- * Implements NagramXF's N-settings architecture with categories for:
- * General, Ghost Mode & Privacy, Media & Downloads, Chat & Content, and Experimental Forwarding.
+ * Native-styled NexFusion Settings Screen for Telegram.
+ * Implements clean categories for:
+ * Look & Feel, Privacy & Ghost Mode, Media & Downloads, Chat & Restrictions, General, and Forwarding.
  */
 public final class MorpheSettingsActivity extends Activity {
 
@@ -57,18 +59,28 @@ public final class MorpheSettingsActivity extends Activity {
         if (activity == null || activity.isFinishing() || activity.isDestroyed()) return;
 
         boolean isDark = TelegramConfig.isDarkMode(activity);
+        boolean isAmoled = TelegramConfig.isAmoledDark(activity);
         int themeRes = isDark ? android.R.style.Theme_DeviceDefault_NoActionBar
                 : android.R.style.Theme_DeviceDefault_Light_NoActionBar;
 
         final Dialog dialog = new Dialog(activity, themeRes);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
 
+        final int pageBg = isAmoled ? Color.BLACK :
+                TelegramConfig.getThemeColor("key_windowBackgroundGray", isDark ? 0xFF0E1621 : 0xFFF0F2F5);
+        final int cardBg = isAmoled ? 0xFF000000 :
+                TelegramConfig.getThemeColor("key_windowBackgroundWhite", isDark ? 0xFF17212B : Color.WHITE);
+
         Window window = dialog.getWindow();
         if (window != null) {
             window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-            int bgColor = TelegramConfig.isAmoledDark(activity) ? Color.BLACK :
-                    TelegramConfig.getThemeColor("key_windowBackgroundGray", isDark ? 0xFF0E1621 : 0xFFF0F2F5);
-            window.setBackgroundDrawable(new ColorDrawable(bgColor));
+            window.setBackgroundDrawable(new ColorDrawable(pageBg));
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            window.setStatusBarColor(cardBg);
+            if (!isDark && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                View decor = window.getDecorView();
+                decor.setSystemUiVisibility(decor.getSystemUiVisibility() | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+            }
         }
 
         View contentView = buildSettingsView(activity, dialog);
@@ -85,13 +97,21 @@ public final class MorpheSettingsActivity extends Activity {
         return null;
     }
 
+    private static int getStatusBarHeight(Activity activity) {
+        int resId = activity.getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (resId > 0) {
+            return activity.getResources().getDimensionPixelSize(resId);
+        }
+        return dp(activity, 28);
+    }
+
     private static View buildSettingsView(final Activity activity, final Dialog dialog) {
         final boolean isDark = TelegramConfig.isDarkMode(activity);
         final boolean isAmoled = TelegramConfig.isAmoledDark(activity);
 
         final int pageBg = isAmoled ? Color.BLACK :
                 TelegramConfig.getThemeColor("key_windowBackgroundGray", isDark ? 0xFF0E1621 : 0xFFF0F2F5);
-        final int cardBg = isAmoled ? 0xFF0D0D0D :
+        final int cardBg = isAmoled ? 0xFF000000 :
                 TelegramConfig.getThemeColor("key_windowBackgroundWhite", isDark ? 0xFF17212B : Color.WHITE);
         final int primaryText = TelegramConfig.getThemeColor("key_windowBackgroundWhiteBlackText", isDark ? Color.WHITE : 0xFF222222);
         final int secondaryText = TelegramConfig.getThemeColor("key_windowBackgroundWhiteGrayText", isDark ? 0xFFA0A5A9 : 0xFF707579);
@@ -103,57 +123,45 @@ public final class MorpheSettingsActivity extends Activity {
         root.setBackgroundColor(pageBg);
         root.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-        // Top Action Bar
+        // Top Action Bar with proper status bar padding
         LinearLayout actionBar = new LinearLayout(activity);
         actionBar.setOrientation(LinearLayout.HORIZONTAL);
         actionBar.setGravity(Gravity.CENTER_VERTICAL);
-        actionBar.setPadding(dp(activity, 16), dp(activity, 12), dp(activity, 16), dp(activity, 12));
+        int statusBarHeight = getStatusBarHeight(activity);
+        actionBar.setPadding(dp(activity, 16), statusBarHeight + dp(activity, 10), dp(activity, 16), dp(activity, 12));
         actionBar.setBackgroundColor(cardBg);
 
+        // Back button
         TextView backBtn = new TextView(activity);
         backBtn.setText("\u2190");
         backBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 24);
         backBtn.setTextColor(primaryText);
         backBtn.setPadding(dp(activity, 4), dp(activity, 4), dp(activity, 16), dp(activity, 4));
         backBtn.setClickable(true);
+        backBtn.setFocusable(true);
         backBtn.setOnClickListener(v -> dialog.dismiss());
         actionBar.addView(backBtn);
 
+        // Title column
         LinearLayout titleCol = new LinearLayout(activity);
         titleCol.setOrientation(LinearLayout.VERTICAL);
         LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
         titleCol.setLayoutParams(titleParams);
 
         TextView title = new TextView(activity);
-        title.setText("Morphe Settings");
+        title.setText("NexFusion");
         title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 19);
         title.setTypeface(Typeface.DEFAULT_BOLD);
         title.setTextColor(primaryText);
         titleCol.addView(title);
 
         TextView subtitle = new TextView(activity);
-        subtitle.setText("N-Settings & Unified Tweaks");
+        subtitle.setText("Privacy, media tweaks and app customization");
         subtitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
         subtitle.setTextColor(secondaryText);
         titleCol.addView(subtitle);
 
         actionBar.addView(titleCol);
-
-        // Header Restart Action Button
-        Button restartBtn = new Button(activity);
-        restartBtn.setText("Restart");
-        restartBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-        restartBtn.setTextColor(Color.WHITE);
-        GradientDrawable rstBg = new GradientDrawable();
-        rstBg.setColor(accentColor);
-        rstBg.setCornerRadius(dp(activity, 16));
-        restartBtn.setBackground(rstBg);
-        restartBtn.setPadding(dp(activity, 14), dp(activity, 6), dp(activity, 14), dp(activity, 6));
-        restartBtn.setOnClickListener(v -> {
-            Toast.makeText(activity, "Restarting Telegram...", Toast.LENGTH_SHORT).show();
-            v.postDelayed(() -> TelegramConfig.restartTelegram(activity), 300);
-        });
-        actionBar.addView(restartBtn);
 
         root.addView(actionBar);
 
@@ -170,32 +178,12 @@ public final class MorpheSettingsActivity extends Activity {
         list.setOrientation(LinearLayout.VERTICAL);
         list.setPadding(dp(activity, 12), dp(activity, 10), dp(activity, 12), dp(activity, 24));
 
-        // 1. GENERAL
-        addSectionHeader(activity, list, "GENERAL", accentColor);
-        LinearLayout generalCard = createCardContainer(activity, cardBg, dividerColor, isDark);
-        addSettingRow(activity, generalCard, TelegramConfig.KEY_EXACT_NUMBERS,
-                "Exact Numbers", "Show precise counts without rounding (e.g. 4,812 instead of 4.8K)", true, primaryText, secondaryText, accentColor);
-        addDivider(activity, generalCard, dividerColor);
-        addSettingRow(activity, generalCard, TelegramConfig.KEY_BYPASS_INTEGRITY,
-                "Bypass Certificate Check", "Spoofs certificate SHA-256 fingerprint for signature verification", true, primaryText, secondaryText, accentColor);
-        addDivider(activity, generalCard, dividerColor);
-        addActionRow(activity, generalCard, "Restart Telegram", "Perform clean process rebirth to apply all updates",
-                primaryText, secondaryText, v -> TelegramConfig.restartTelegram(activity));
-        addDivider(activity, generalCard, dividerColor);
-        addActionRow(activity, generalCard, "Reset Morphe Settings", "Restore all settings to their default values",
-                0xFFE53935, secondaryText, v -> {
-                    new AlertDialog.Builder(activity)
-                            .setTitle("Reset Settings")
-                            .setMessage("Are you sure you want to reset all Morphe settings?")
-                            .setPositiveButton("Reset", (d, w) -> {
-                                TelegramConfig.resetDefaults(activity);
-                                dialog.dismiss();
-                                showInDialog(activity);
-                            })
-                            .setNegativeButton("Cancel", null)
-                            .show();
-                });
-        list.addView(generalCard);
+        // 1. LOOK & FEEL
+        addSectionHeader(activity, list, "LOOK & FEEL", accentColor);
+        LinearLayout themeCard = createCardContainer(activity, cardBg, dividerColor, isDark);
+        addSettingRow(activity, themeCard, TelegramConfig.KEY_AMOLED_BLACK,
+                "AMOLED Black", "Pure black background across chats, drawer, bars and settings", true, primaryText, secondaryText, accentColor);
+        list.addView(themeCard);
 
         // 2. PRIVACY & GHOST MODE
         addSectionHeader(activity, list, "PRIVACY & GHOST MODE", accentColor);
@@ -251,7 +239,34 @@ public final class MorpheSettingsActivity extends Activity {
                 "Show Message Seconds", "Display exact seconds in message time stamps", false, primaryText, secondaryText, accentColor);
         list.addView(chatCard);
 
-        // 5. EXPERIMENTAL & FORWARDING
+        // 5. GENERAL & MAINTENANCE
+        addSectionHeader(activity, list, "GENERAL & MAINTENANCE", accentColor);
+        LinearLayout generalCard = createCardContainer(activity, cardBg, dividerColor, isDark);
+        addSettingRow(activity, generalCard, TelegramConfig.KEY_EXACT_NUMBERS,
+                "Exact Numbers", "Show precise counts without rounding (e.g. 4,812 instead of 4.8K)", true, primaryText, secondaryText, accentColor);
+        addDivider(activity, generalCard, dividerColor);
+        addSettingRow(activity, generalCard, TelegramConfig.KEY_BYPASS_INTEGRITY,
+                "Bypass Certificate Check", "Spoofs certificate SHA-256 fingerprint for signature verification", true, primaryText, secondaryText, accentColor);
+        addDivider(activity, generalCard, dividerColor);
+        addActionRow(activity, generalCard, "Restart Telegram", "Perform clean process rebirth to apply all updates",
+                primaryText, secondaryText, v -> TelegramConfig.restartTelegram(activity));
+        addDivider(activity, generalCard, dividerColor);
+        addActionRow(activity, generalCard, "Reset NexFusion Settings", "Restore all settings to their default values",
+                0xFFE53935, secondaryText, v -> {
+                    new AlertDialog.Builder(activity)
+                            .setTitle("Reset Settings")
+                            .setMessage("Are you sure you want to reset all NexFusion settings?")
+                            .setPositiveButton("Reset", (d, w) -> {
+                                TelegramConfig.resetDefaults(activity);
+                                dialog.dismiss();
+                                showInDialog(activity);
+                            })
+                            .setNegativeButton("Cancel", null)
+                            .show();
+                });
+        list.addView(generalCard);
+
+        // 6. EXPERIMENTAL & FORWARDING
         addSectionHeader(activity, list, "EXPERIMENTAL & FORWARDING", accentColor);
         LinearLayout expCard = createCardContainer(activity, cardBg, dividerColor, isDark);
         addActionRow(activity, expCard, "Auto-Forwarding Rules", "Configure automated message forwarding between chats",
@@ -266,7 +281,7 @@ public final class MorpheSettingsActivity extends Activity {
 
         // Footer
         TextView footer = new TextView(activity);
-        footer.setText("NexFusion Morphe \u2022 Native Telegram Design");
+        footer.setText("NexFusion \u2022 Native Telegram Design");
         footer.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         footer.setTextColor(secondaryText);
         footer.setGravity(Gravity.CENTER);
@@ -360,9 +375,15 @@ public final class MorpheSettingsActivity extends Activity {
 
         sw.setOnCheckedChangeListener((btn, isChecked) -> {
             TelegramConfig.setBoolean(context, prefKey, isChecked);
+            if (btn.isPressed()) {
+                Toast.makeText(context, "Setting saved. Restart Telegram to apply changes", Toast.LENGTH_SHORT).show();
+            }
         });
 
-        row.setOnClickListener(v -> sw.toggle());
+        row.setOnClickListener(v -> {
+            sw.toggle();
+            Toast.makeText(context, "Setting saved. Restart Telegram to apply changes", Toast.LENGTH_SHORT).show();
+        });
         row.addView(sw);
         parent.addView(row);
     }

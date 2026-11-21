@@ -18,9 +18,10 @@ import java.util.Objects;
 public final class TelegramConfig {
 
     public static final String PREF_BUNDLE_NAME = "nexfusion_patch_prefs_io.github.nexfusion.patches";
-    public static final String PREF_LOCAL_NAME = "morphe_telegram_prefs";
+    public static final String PREF_LOCAL_NAME = "nexfusion_telegram_prefs";
 
     // Patch preference keys matching NexFusion bundle registration
+    public static final String KEY_AMOLED_BLACK = "io.github.nexfusion.patches/AMOLED black";
     public static final String KEY_ANTI_DELETE = "io.github.nexfusion.patches/Anti-delete messages";
     public static final String KEY_ANTI_DISAPPEARING = "io.github.nexfusion.patches/Anti-disappearing media";
     public static final String KEY_DOWNLOAD_BOOST = "io.github.nexfusion.patches/Download speed boost";
@@ -54,13 +55,13 @@ public final class TelegramConfig {
     public static boolean getBoolean(Context context, String key, boolean defaultValue) {
         if (context == null) return defaultValue;
         try {
-            SharedPreferences bundlePrefs = getBundlePrefs(context);
-            if (bundlePrefs.contains(key)) {
-                return bundlePrefs.getBoolean(key, defaultValue);
-            }
             SharedPreferences localPrefs = getLocalPrefs(context);
             if (localPrefs.contains(key)) {
                 return localPrefs.getBoolean(key, defaultValue);
+            }
+            SharedPreferences bundlePrefs = getBundlePrefs(context);
+            if (bundlePrefs.contains(key)) {
+                return bundlePrefs.getBoolean(key, defaultValue);
             }
         } catch (Throwable ignored) {}
         return defaultValue;
@@ -69,8 +70,15 @@ public final class TelegramConfig {
     public static void setBoolean(Context context, String key, boolean value) {
         if (context == null) return;
         try {
-            getBundlePrefs(context).edit().putBoolean(key, value).apply();
-            getLocalPrefs(context).edit().putBoolean(key, value).apply();
+            long now = System.currentTimeMillis();
+            getLocalPrefs(context).edit()
+                    .putBoolean(key, value)
+                    .putLong(key + "_timestamp", now)
+                    .apply();
+            getBundlePrefs(context).edit()
+                    .putBoolean(key, value)
+                    .putLong(key + "_timestamp", now)
+                    .apply();
         } catch (Throwable ignored) {}
     }
 
@@ -100,30 +108,81 @@ public final class TelegramConfig {
         }
     }
 
-    // Dynamic Theme Color Resolution using Telegram Theme keys
+    // Dynamic Theme Color Resolution using Telegram Theme keys (handles obfuscated & unobfuscated classes)
     public static int getThemeColor(String keyName, int fallback) {
         try {
-            Class<?> themeClass = Class.forName("org.telegram.ui.ActionBar.Theme");
-            Field field = themeClass.getField(keyName);
-            int key = field.getInt(null);
-            Method getColor = themeClass.getMethod("getColor", int.class);
-            Object result = getColor.invoke(null, key);
-            if (result instanceof Number) {
-                return ((Number) result).intValue();
+            int key = -1;
+            String cleanKey = keyName.startsWith("key_") ? keyName.substring(4) : keyName;
+            ClassLoader cl = Thread.currentThread().getContextClassLoader();
+            if (cl == null) cl = TelegramConfig.class.getClassLoader();
+
+            // Try key lookup classes (d5.h in 13.3.0, Theme.keyId in un-obfuscated)
+            for (String lookupClsName : new String[]{"org.telegram.ui.ActionBar.d5", "org.telegram.ui.ActionBar.Theme"}) {
+                try {
+                    Class<?> lookupCls = cl.loadClass(lookupClsName);
+                    for (Method m : lookupCls.getDeclaredMethods()) {
+                        if (java.lang.reflect.Modifier.isStatic(m.getModifiers()) &&
+                                m.getParameterTypes().length == 1 && m.getParameterTypes()[0] == String.class &&
+                                m.getReturnType() == int.class) {
+                            key = (Integer) m.invoke(null, cleanKey);
+                            if (key != -1) break;
+                        }
+                    }
+                } catch (Throwable ignored) {}
+                if (key != -1) break;
+            }
+
+            // Fallback to static field on Theme class
+            if (key == -1) {
+                try {
+                    Class<?> themeClass = cl.loadClass("org.telegram.ui.ActionBar.Theme");
+                    Field field = themeClass.getField(keyName);
+                    key = field.getInt(null);
+                } catch (Throwable ignored) {}
+            }
+
+            if (key != -1) {
+                // Call getColor on Theme class (u6.E0 in 13.3.0, Theme.getColor in un-obfuscated)
+                for (String themeClsName : new String[]{"org.telegram.ui.ActionBar.u6", "org.telegram.ui.ActionBar.Theme"}) {
+                    try {
+                        Class<?> themeCls = cl.loadClass(themeClsName);
+                        for (Method m : themeCls.getDeclaredMethods()) {
+                            if (java.lang.reflect.Modifier.isStatic(m.getModifiers()) &&
+                                    m.getParameterTypes().length == 1 && m.getParameterTypes()[0] == int.class &&
+                                    m.getReturnType() == int.class) {
+                                Object res = m.invoke(null, key);
+                                if (res instanceof Number) {
+                                    return ((Number) res).intValue();
+                                }
+                            }
+                        }
+                    } catch (Throwable ignored) {}
+                }
             }
         } catch (Throwable ignored) {}
         return fallback;
     }
 
     public static boolean isDarkMode(Context context) {
-        try {
-            Class<?> themeClass = Class.forName("org.telegram.ui.ActionBar.Theme");
-            Method isDark = themeClass.getMethod("isCurrentThemeDark");
-            Object result = isDark.invoke(null);
-            if (result instanceof Boolean) {
-                return (Boolean) result;
-            }
-        } catch (Throwable ignored) {}
+        ClassLoader cl = context != null ? context.getClassLoader() : Thread.currentThread().getContextClassLoader();
+        if (cl == null) cl = TelegramConfig.class.getClassLoader();
+        for (String themeClsName : new String[]{"org.telegram.ui.ActionBar.u6", "org.telegram.ui.ActionBar.Theme"}) {
+            try {
+                Class<?> themeClass = cl.loadClass(themeClsName);
+                for (Method m : themeClass.getDeclaredMethods()) {
+                    if (java.lang.reflect.Modifier.isStatic(m.getModifiers()) &&
+                            m.getParameterTypes().length == 0 &&
+                            (m.getReturnType() == boolean.class || m.getReturnType() == Boolean.class)) {
+                        if ("isCurrentThemeDark".equals(m.getName()) || "g1".equals(m.getName())) {
+                            Object result = m.invoke(null);
+                            if (result instanceof Boolean) {
+                                return (Boolean) result;
+                            }
+                        }
+                    }
+                }
+            } catch (Throwable ignored) {}
+        }
         if (context != null) {
             int nightMode = context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
             return nightMode == Configuration.UI_MODE_NIGHT_YES;
@@ -133,6 +192,7 @@ public final class TelegramConfig {
 
     public static boolean isAmoledDark(Context context) {
         if (!isDarkMode(context)) return false;
+        if (getBoolean(context, KEY_AMOLED_BLACK, true)) return true;
         int bg = getThemeColor("key_windowBackgroundWhite", Color.WHITE);
         return (bg & 0x00FFFFFF) == 0;
     }
