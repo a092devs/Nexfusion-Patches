@@ -110,6 +110,23 @@ internal object TelegramResolver {
         }
         return null
     }
+
+    fun findTimeStringMethod(classLoader: ClassLoader): java.lang.reflect.Method? {
+        val moClass = findMessageObject(classLoader)
+        for (name in listOf("org.telegram.ui.Cells.q1", "org.telegram.ui.Cells.ChatMessageCell", "org.telegram.ui.Cells.u0")) {
+            val cls = runCatching { classLoader.loadClass(name) }.getOrNull() ?: continue
+            val m = cls.declaredMethods.firstOrNull {
+                java.lang.reflect.Modifier.isStatic(it.modifiers) &&
+                    it.returnType == String::class.java &&
+                    it.parameterCount == 4 &&
+                    (moClass == null || it.parameterTypes[0] == moClass) &&
+                    it.parameterTypes[2] == java.lang.Boolean.TYPE &&
+                    it.parameterTypes[3] == java.lang.Integer.TYPE
+            }
+            if (m != null) return m
+        }
+        return null
+    }
 }
 
 val TelegramAmoledBlack = patch(
@@ -445,9 +462,59 @@ val TelegramRemoveAds = patch(
 
 val TelegramAntiDelete = patch(
     name = "Anti-delete messages",
-    description = "Prevents messages deleted by other users from being removed locally while allowing immediate self-deletion.",
+    description = "Prevents messages deleted by other users from being removed locally and marks them with an indicator icon in the chat bubble.",
 ) {
-    // 1. Clear deleted message IDs from incoming delete updates
+    val deletedMessageIds = java.util.concurrent.ConcurrentHashMap.newKeySet<Int>()
+    var prefsLoaded = false
+
+    fun getPrefs(): android.content.SharedPreferences? {
+        return runCatching {
+            val appLoader = classLoader.loadClass("org.telegram.messenger.ApplicationLoader")
+            val ctx = appLoader.getField("applicationContext").get(null) as? Context
+            ctx?.getSharedPreferences("nexfusion_tg_deleted_msgs", Context.MODE_PRIVATE)
+        }.getOrNull() ?: runCatching {
+            val at = Class.forName("android.app.ActivityThread")
+            val currentApp = at.getMethod("currentApplication").invoke(null) as? android.app.Application
+            currentApp?.applicationContext?.getSharedPreferences("nexfusion_tg_deleted_msgs", Context.MODE_PRIVATE)
+        }.getOrNull()
+    }
+
+    fun ensureLoaded() {
+        if (!prefsLoaded) {
+            val sp = getPrefs()
+            if (sp != null) {
+                prefsLoaded = true
+                for (k in sp.all.keys) {
+                    if (k.startsWith("d_")) {
+                        val id = k.removePrefix("d_").toIntOrNull()
+                        if (id != null) deletedMessageIds.add(id)
+                    }
+                }
+            }
+        }
+    }
+
+    fun markDeleted(ids: List<*>) {
+        ensureLoaded()
+        val sp = getPrefs()
+        val editor = sp?.edit()
+        for (item in ids) {
+            val mid = (item as? Number)?.toInt() ?: continue
+            deletedMessageIds.add(mid)
+            editor?.putBoolean("d_$mid", true)
+        }
+        editor?.apply()
+    }
+
+    fun isDeleted(id: Int): Boolean {
+        if (id <= 0) return false
+        ensureLoaded()
+        if (deletedMessageIds.contains(id)) return true
+        val sp = getPrefs()
+        return sp?.getBoolean("d_$id", false) == true
+    }
+
+    // 1. Clear deleted message IDs from incoming delete updates and track them
     runCatching {
         for (name in listOf(
             "org.telegram.tgnet.tl.TL_update\$TL_updateDeleteMessages",
@@ -458,7 +525,10 @@ val TelegramAntiDelete = patch(
                 XposedBridge.hookMethod(m, object : XC_MethodHook() {
                     override fun afterHookedMethod(param: MethodHookParam) {
                         val messages = runCatching { XposedHelpers.getObjectField(param.thisObject, "messages") as? java.util.ArrayList<*> }.getOrNull()
-                        messages?.clear()
+                        if (messages != null && messages.isNotEmpty()) {
+                            markDeleted(messages)
+                            messages.clear()
+                        }
                     }
                 })
             }
@@ -480,6 +550,31 @@ val TelegramAntiDelete = patch(
             }
         }
     }
+
+    // 3. Mark deleted messages with trash icon in chat bubbles
+    runCatching {
+        val timeStringMethod = TelegramResolver.findTimeStringMethod(classLoader)
+        if (timeStringMethod != null) {
+            XposedBridge.hookMethod(timeStringMethod, object : XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    val current = param.args.firstOrNull() ?: return
+                    val id = (runCatching { XposedHelpers.callMethod(current, "getId") as? Int }.getOrNull()
+                        ?: runCatching {
+                            val owner = XposedHelpers.getObjectField(current, "messageOwner")
+                            XposedHelpers.getIntField(owner, "id")
+                        }.getOrNull()) ?: 0
+
+                    if (id > 0 && isDeleted(id)) {
+                        val orig = (param.result as? String) ?: ""
+                        if (!orig.startsWith("🗑")) {
+                            param.result = if (orig.isEmpty()) "🗑" else "🗑 $orig"
+                        }
+                    }
+                }
+            })
+            PatcherLog.info { "Telegram: hooked timeString (${timeStringMethod.declaringClass.name}.${timeStringMethod.name}) for deleted message mark" }
+        }
+    }.onFailure { PatcherLog.info(it) { "Telegram: failed to hook timeString for deleted mark" } }
 }
 
 val TelegramAntiDisappearingMedia = patch(
@@ -505,6 +600,18 @@ val TelegramAntiDisappearingMedia = patch(
         runCatching { XposedHelpers.setIntField(media, "ttl_seconds", 0) }
     }
 
+    fun neutralizeObject(obj: Any?) {
+        if (obj == null) return
+        if (obj is java.util.Collection<*>) {
+            for (item in obj) neutralizeObject(item)
+        } else {
+            neutralizeMessage(obj)
+            neutralizeMedia(obj)
+            val owner = runCatching { XposedHelpers.getObjectField(obj, "messageOwner") }.getOrNull()
+            if (owner != null) neutralizeMessage(owner)
+        }
+    }
+
     // 1. Hook TLRPC.deserialize (catches ALL incoming objects across all threads/sync routines)
     runCatching {
         val tlrpc = runCatching { classLoader.loadClass("org.telegram.tgnet.TLRPC") }.getOrNull()
@@ -514,9 +621,7 @@ val TelegramAntiDisappearingMedia = patch(
             }.forEach { m ->
                 XposedBridge.hookMethod(m, object : XC_MethodHook() {
                     override fun afterHookedMethod(param: MethodHookParam) {
-                        val res = param.result ?: return
-                        neutralizeMessage(res)
-                        neutralizeMedia(res)
+                        neutralizeObject(param.result)
                     }
                 })
             }
@@ -570,7 +675,7 @@ val TelegramAntiDisappearingMedia = patch(
         }
     }
 
-    // 4. Hook MessageObject (org.telegram.messenger.mj) constructors
+    // 4. Hook MessageObject constructors
     runCatching {
         val mo = TelegramResolver.findMessageObject(classLoader)
         if (mo != null) {
@@ -592,7 +697,50 @@ val TelegramAntiDisappearingMedia = patch(
         }
     }
 
-    // 5. Hook MessagesController view-once / timer expiration methods
+    // 5. Hook MessagesStorage (es / MessagesStorage) to neutralize before persisting and cancel TTL tasks
+    runCatching {
+        val ms = TelegramResolver.findMessagesStorage(classLoader)
+        if (ms != null) {
+            for (m in ms.declaredMethods) {
+                val hasMsgParam = m.parameterTypes.any { pt ->
+                    pt.name.contains("Message") || java.util.Collection::class.java.isAssignableFrom(pt)
+                }
+                if (hasMsgParam) {
+                    XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                        override fun beforeHookedMethod(param: MethodHookParam) {
+                            for (arg in param.args) {
+                                neutralizeObject(arg)
+                            }
+                        }
+                    })
+                }
+
+                // Prevent createTaskForMid (6 params: long, int, int, int, int, boolean)
+                if (m.parameterCount == 6 && m.parameterTypes[0] == java.lang.Long.TYPE && m.parameterTypes[5] == java.lang.Boolean.TYPE) {
+                    XposedBridge.hookMethod(m, XC_MethodReplacement.DO_NOTHING)
+                }
+
+                // Prevent emptyMessagesMedia, checkMessagesTTL, getNewTask
+                if (m.name == "emptyMessagesMedia" || m.name == "checkMessagesTTL" || m.name == "getNewTask" ||
+                    (m.parameterCount == 2 && m.parameterTypes[0] == java.lang.Long.TYPE && java.util.List::class.java.isAssignableFrom(m.parameterTypes[1]))
+                ) {
+                    XposedBridge.hookMethod(m, XC_MethodReplacement.DO_NOTHING)
+                }
+            }
+        }
+
+        // Emptying runners
+        for (qName in listOf("org.telegram.messenger.qr", "org.telegram.messenger.ur")) {
+            val qCls = runCatching { classLoader.loadClass(qName) }.getOrNull()
+            if (qCls != null) {
+                qCls.declaredMethods.filter { it.name == "run" && it.parameterCount == 0 }.forEach { m ->
+                    XposedBridge.hookMethod(m, XC_MethodReplacement.DO_NOTHING)
+                }
+            }
+        }
+    }
+
+    // 6. Hook MessagesController view-once / timer expiration / task processing
     runCatching {
         val mc = TelegramResolver.findMessagesController(classLoader)
         if (mc != null) {
@@ -602,29 +750,14 @@ val TelegramAntiDisappearingMedia = patch(
                 XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(0L))
             }
             mc.declaredMethods.filter {
-                it.name == "markMessageContentAsRead"
+                it.name == "markMessageContentAsRead" || it.name == "markMessageAsRead2" || it.name == "processLoadedDeleteTask"
             }.forEach { m ->
                 XposedBridge.hookMethod(m, XC_MethodReplacement.DO_NOTHING)
             }
-        }
-    }
-
-    // 6. Hook MessagesStorage emptyMessagesMedia & checkMessagesTTL and emptying runner (ur)
-    runCatching {
-        val ms = TelegramResolver.findMessagesStorage(classLoader)
-        if (ms != null) {
-            ms.declaredMethods.filter {
-                it.name == "emptyMessagesMedia" || it.name == "checkMessagesTTL"
+            mc.declaredMethods.filter {
+                it.name == "checkDeletingTask" && it.returnType == java.lang.Boolean.TYPE
             }.forEach { m ->
-                XposedBridge.hookMethod(m, XC_MethodReplacement.DO_NOTHING)
-            }
-        }
-        for (qName in listOf("org.telegram.messenger.qr", "org.telegram.messenger.ur")) {
-            val qCls = runCatching { classLoader.loadClass(qName) }.getOrNull()
-            if (qCls != null) {
-                qCls.declaredMethods.filter { it.name == "run" && it.parameterCount == 0 }.forEach { m ->
-                    XposedBridge.hookMethod(m, XC_MethodReplacement.DO_NOTHING)
-                }
+                XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(false))
             }
         }
     }
@@ -757,8 +890,9 @@ val TelegramHideStoriesRead = patch(
 
 val TelegramHideDeletedAccounts = patch(
     name = "Hide deleted accounts",
-    description = "Hides chats with deleted accounts from the chat list.",
+    description = "Hides chats with deleted accounts from chat list and suppresses deleted account switcher slots.",
 ) {
+    // 1. Hide deleted accounts from Dialogs (chat list)
     runCatching {
         val mc = TelegramResolver.findMessagesController(classLoader)
         if (mc != null) {
@@ -782,6 +916,86 @@ val TelegramHideDeletedAccounts = patch(
                                 }
                             }
                         }
+                    }
+                })
+            }
+        }
+    }
+
+    // 2. Hide deleted / unactivated accounts from account switchers and UserConfig
+    runCatching {
+        val userConfig = TelegramResolver.findUserConfig(classLoader)
+        if (userConfig != null) {
+            // isClientActivated: p() in 13.3.0
+            userConfig.declaredMethods.filter {
+                (it.returnType == java.lang.Boolean.TYPE || it.returnType == java.lang.Boolean::class.java) &&
+                    it.parameterCount == 0 && (it.name == "isClientActivated" || it.name == "p")
+            }.forEach { m ->
+                XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam) {
+                        val obj = param.thisObject ?: return
+                        val user = runCatching { XposedHelpers.getObjectField(obj, "c") }.getOrNull()
+                            ?: runCatching { XposedHelpers.callMethod(obj, "getCurrentUser") }.getOrNull()
+                        val uid = (runCatching { XposedHelpers.getLongField(user, "id") }.getOrNull()
+                            ?: runCatching { (XposedHelpers.callMethod(obj, "getClientUserId") as? Number)?.toLong() }.getOrNull()) ?: 0L
+                        val isDeleted = runCatching { XposedHelpers.getBooleanField(user, "deleted") }.getOrDefault(false)
+                        if (user == null || uid == 0L || isDeleted) {
+                            param.result = false
+                        }
+                    }
+                })
+            }
+
+            // isValidAccount: r(int) in 13.3.0
+            userConfig.declaredMethods.filter {
+                (it.returnType == java.lang.Boolean.TYPE || it.returnType == java.lang.Boolean::class.java) &&
+                    it.parameterCount == 1 && it.parameterTypes[0] == java.lang.Integer.TYPE &&
+                    (it.name == "isValidAccount" || it.name == "r")
+            }.forEach { m ->
+                XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam) {
+                        val acc = param.args[0] as? Int ?: return
+                        if (param.result == true) {
+                            val instance = runCatching { XposedHelpers.callStaticMethod(userConfig, "getInstance", acc) }.getOrNull()
+                                ?: runCatching { XposedHelpers.callStaticMethod(userConfig, "i", acc) }.getOrNull()
+                            val user = if (instance != null) {
+                                runCatching { XposedHelpers.getObjectField(instance, "c") }.getOrNull()
+                                    ?: runCatching { XposedHelpers.callMethod(instance, "getCurrentUser") }.getOrNull()
+                            } else null
+                            val uid = (runCatching { XposedHelpers.getLongField(user, "id") }.getOrNull()
+                                ?: runCatching { (XposedHelpers.callMethod(instance, "getClientUserId") as? Number)?.toLong() }.getOrNull()) ?: 0L
+                            val isDeleted = runCatching { XposedHelpers.getBooleanField(user, "deleted") }.getOrDefault(false)
+                            if (user == null || uid == 0L || isDeleted) {
+                                param.result = false
+                            }
+                        }
+                    }
+                })
+            }
+
+            // getActivatedAccountsCount: c() in 13.3.0
+            userConfig.declaredMethods.filter {
+                (it.returnType == java.lang.Integer.TYPE || it.returnType == java.lang.Integer::class.java) &&
+                    it.parameterCount == 0 && (it.name == "getActivatedAccountsCount" || it.name == "c")
+            }.forEach { m ->
+                XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam) {
+                        var activeCount = 0
+                        for (i in 0 until 4) {
+                            val instance = runCatching { XposedHelpers.callStaticMethod(userConfig, "getInstance", i) }.getOrNull()
+                                ?: runCatching { XposedHelpers.callStaticMethod(userConfig, "i", i) }.getOrNull()
+                            val user = if (instance != null) {
+                                runCatching { XposedHelpers.getObjectField(instance, "c") }.getOrNull()
+                                    ?: runCatching { XposedHelpers.callMethod(instance, "getCurrentUser") }.getOrNull()
+                            } else null
+                            val uid = (runCatching { XposedHelpers.getLongField(user, "id") }.getOrNull()
+                                ?: runCatching { (XposedHelpers.callMethod(instance, "getClientUserId") as? Number)?.toLong() }.getOrNull()) ?: 0L
+                            val isDeleted = runCatching { XposedHelpers.getBooleanField(user, "deleted") }.getOrDefault(false)
+                            if (user != null && uid != 0L && !isDeleted) {
+                                activeCount++
+                            }
+                        }
+                        param.result = if (activeCount > 0) activeCount else 1
                     }
                 })
             }
