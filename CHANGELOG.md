@@ -7,6 +7,23 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.4.8
+
+- `Telegram`:
+  * Resolved obfuscated class and method mappings for Telegram 13.3.0 (`MessagesController`, `MessagesStorage`, `MessageObject`, `StoriesController`, `Theme`, `ThemeKeyLookup`).
+  * Fixed phantom "Deleted Account" entries under account settings by isolating client premium status from multi-account activation logic.
+  * Enhanced anti-disappearing media hooks to preserve timer-based and view-once media across all chats, including unopened chats and background tasks.
+  * Neutralized SQLite media database destruction and automated read-destruction tasks.
+  * Added stealth stories viewing and stories suppression support.
+  * Added pure AMOLED black theming support across chats, settings, and navigation.
+  * Suppressed sponsored channel messages and video ads.
+  * Added bypass restrictions for forward-protected and secret chat content.
+  * Added download speed boost chunk size optimization and audio voice playback in background music player.
+- `YouTube`:
+  * Synchronized upstream improvements for Add to queue functionality.
+- `Build & CI`:
+  * Optimized release publication workflow concurrency and updated test assertions.
+
 ## 4.4.7
 
 - `Telegram (Experimental)`:
