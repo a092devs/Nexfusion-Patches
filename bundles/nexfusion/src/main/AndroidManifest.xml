@@ -27,9 +27,5 @@
             android:name="nexfusion.bundle.maxManagerVersion"
             android:value="${nexfusionMaxManagerVersion}" />
 
-        <activity
-            android:name="app.template.extension.telegram.MorpheSettingsActivity"
-            android:exported="true"
-            android:label="Morphe Settings" />
     </application>
 </manifest>
