@@ -2,13 +2,7 @@ package io.github.nexfusion.nexfusion.telegram
 
 import android.app.Activity
 import android.content.Context
-import android.content.Intent
 import android.view.View
-import android.view.ViewGroup
-import app.template.extension.telegram.MorpheForwardingRuntime
-import app.template.extension.telegram.MorpheSettingsActivity
-import app.template.extension.telegram.MorpheSettingsEntry
-import app.template.extension.telegram.TelegramConfig
 import io.github.nexfusion.compat.XC_MethodHook
 import io.github.nexfusion.compat.XC_MethodHook.MethodHookParam
 import io.github.nexfusion.compat.XC_MethodReplacement
@@ -16,8 +10,6 @@ import io.github.nexfusion.compat.XposedBridge
 import io.github.nexfusion.compat.XposedHelpers
 import io.github.nexfusion.PatcherLog
 import io.github.nexfusion.patch
-import java.lang.reflect.Method
-import android.widget.TextView
 import java.util.ArrayList
 
 private fun isOfficialTelegram(classLoader: ClassLoader?): Boolean {
@@ -30,155 +22,6 @@ private fun isOfficialTelegram(classLoader: ClassLoader?): Boolean {
         return true
     }
     return true
-}
-
-val TelegramNexFusionSettings = patch(
-    name = "NexFusion Settings",
-    description = "Adds unified NexFusion settings to Telegram settings screen and top bar.",
-) {
-    if (!isOfficialTelegram(classLoader)) return@patch
-    // 1. Initialize forwarding runtime on ApplicationLoader.postInitApplication
-    runCatching {
-        val appLoader = runCatching { classLoader.loadClass("org.telegram.messenger.ApplicationLoader") }.getOrNull()
-            ?: runCatching { classLoader.loadClass("org.telegram.messenger.t0") }.getOrNull()
-        if (appLoader != null) {
-            XposedBridge.hookAllMethods(appLoader, "postInitApplication", object : XC_MethodHook() {
-                override fun afterHookedMethod(param: MethodHookParam) {
-                    runCatching {
-                        MorpheForwardingRuntime.install()
-                        PatcherLog.info { "Telegram: MorpheForwardingRuntime initialized successfully" }
-                    }
-                }
-            })
-        }
-    }.onFailure { PatcherLog.info(it) { "Telegram: failed to hook ApplicationLoader.postInitApplication" } }
-
-    // 2. Hook Settings screen to inject NexFusion row
-    runCatching {
-        val uiClasses = listOf(
-            "org.telegram.ui.v41",
-            "org.telegram.ui.p91",
-            "org.telegram.ui.t91",
-            "org.telegram.ui.ProfileActivity",
-        )
-        for (name in uiClasses) {
-            val clazz = runCatching { classLoader.loadClass(name) }.getOrNull() ?: continue
-            clazz.declaredMethods.filter {
-                it.parameterCount == 2 && ArrayList::class.java.isAssignableFrom(it.parameterTypes[1])
-            }.forEach { method ->
-                XposedBridge.hookMethod(method, object : XC_MethodHook() {
-                    override fun afterHookedMethod(param: MethodHookParam) {
-                        runCatching {
-                            @Suppress("UNCHECKED_CAST")
-                            val list = param.args[1] as? ArrayList<Any?> ?: return
-                            val fragment = param.args[0]
-                            val context: Context = runCatching {
-                                val launch = classLoader.loadClass("org.telegram.ui.LaunchActivity")
-                                (launch.getField("D1").get(null) as? Context) ?: (launch.getField("G1").get(null) as? Context)
-                            }.getOrNull() ?: runCatching {
-                                val t0 = classLoader.loadClass("org.telegram.messenger.t0")
-                                t0.getField("b").get(null) as? Context
-                            }.getOrNull() ?: runCatching {
-                                fragment?.javaClass?.getMethod("getParentActivity")?.invoke(fragment) as? Context
-                            }.getOrNull() ?: (param.thisObject as? View)?.context
-                            ?: return
-
-                            if (context.packageName.contains("nagramx")) return
-
-                            val uItemClasses = listOf(
-                                "org.telegram.ui.Components.g51",
-                                "org.telegram.ui.Components.r71",
-                                "org.telegram.ui.Components.UItem",
-                            )
-                            val uItemClass = uItemClasses.mapNotNull { runCatching { classLoader.loadClass(it) }.getOrNull() }.firstOrNull() ?: return
-                            val asCustom = uItemClass.declaredMethods.firstOrNull {
-                                java.lang.reflect.Modifier.isStatic(it.modifiers) &&
-                                    it.returnType == uItemClass &&
-                                    it.parameterTypes.size == 1 &&
-                                    it.parameterTypes[0] == View::class.java
-                            } ?: return
-                            asCustom.isAccessible = true
-
-                            val hasNexFusion = list.any { it?.toString()?.contains("NexFusion") == true }
-                            if (!hasNexFusion) {
-                                val row = MorpheSettingsEntry.createSettingsRow(context)
-                                val item = asCustom.invoke(null, row)
-                                val insertIdx = if (list.size > 1) 1 else 0
-                                list.add(insertIdx, item)
-
-                                val asShadow = uItemClass.declaredMethods.firstOrNull {
-                                    java.lang.reflect.Modifier.isStatic(it.modifiers) &&
-                                        it.returnType == uItemClass &&
-                                        it.parameterTypes.size == 1 &&
-                                        CharSequence::class.java.isAssignableFrom(it.parameterTypes[0])
-                                }
-                                if (asShadow != null) {
-                                    val shadow = asShadow.invoke(null, "")
-                                    list.add(insertIdx + 1, shadow)
-                                }
-                                PatcherLog.info { "Telegram: injected NexFusion item at index $insertIdx with gap" }
-                            }
-                        }.onFailure { PatcherLog.info(it) { "Telegram: failed injecting NexFusion row into settings" } }
-                    }
-                })
-            }
-        }
-    }.onFailure { PatcherLog.info(it) { "Telegram: settings screen injection hook failed" } }
-
-    // 3. Hook LaunchActivity: resume intent & chat list title long-press
-    runCatching {
-        val launchActivity = classLoader.loadClass("org.telegram.ui.LaunchActivity")
-        XposedBridge.hookAllMethods(launchActivity, "onResume", object : XC_MethodHook() {
-            override fun afterHookedMethod(param: MethodHookParam) {
-                val activity = param.thisObject as? Activity ?: return
-                val intent = activity.intent
-                if (intent != null && (
-                    intent.getBooleanExtra("io.github.nexfusion.OPEN_SETTINGS", false) ||
-                    intent.getBooleanExtra("app.hushtelegram.extension.telegram.OPEN_SETTINGS", false) ||
-                    "io.github.nexfusion.OPEN_SETTINGS" == intent.action
-                )) {
-                    intent.removeExtra("io.github.nexfusion.OPEN_SETTINGS")
-                    intent.removeExtra("app.hushtelegram.extension.telegram.OPEN_SETTINGS")
-                    MorpheSettingsActivity.showInDialog(activity)
-                }
-            }
-        })
-
-        XposedBridge.hookAllMethods(launchActivity, "onCreate", object : XC_MethodHook() {
-            override fun afterHookedMethod(param: MethodHookParam) {
-                val activity = param.thisObject as? Activity ?: return
-                activity.window?.decorView?.post {
-                    runCatching {
-                        val decor = activity.window?.decorView as? ViewGroup ?: return@post
-                        fun findTitle(view: View): TextView? {
-                            if (view is TextView && view.text?.toString()?.equals("Telegram", ignoreCase = true) == true) {
-                                return view
-                            }
-                            if (view is ViewGroup) {
-                                for (i in 0 until view.childCount) {
-                                    val res = findTitle(view.getChildAt(i))
-                                    if (res != null) return res
-                                }
-                            }
-                            return null
-                        }
-                        val titleView = findTitle(decor)
-                        if (titleView != null) {
-                            val parent = titleView.parent as? View ?: titleView
-                            parent.setOnLongClickListener {
-                                MorpheSettingsActivity.showInDialog(activity)
-                                true
-                            }
-                            titleView.setOnLongClickListener {
-                                MorpheSettingsActivity.showInDialog(activity)
-                                true
-                            }
-                        }
-                    }
-                }
-            }
-        })
-    }.onFailure { PatcherLog.info(it) { "Telegram: LaunchActivity title hook failed" } }
 }
 
 val TelegramAmoledBlack = patch(
@@ -226,18 +69,31 @@ val TelegramAmoledBlack = patch(
             }
         }
 
-        fun blackenArrays(ctx: Context?) {
+        fun isColorDark(color: Int): Boolean {
+            val r = (color shr 16) and 0xFF
+            val g = (color shr 8) and 0xFF
+            val b = color and 0xFF
+            return (0.2126 * r + 0.7152 * g + 0.0722 * b) < 130
+        }
+
+        fun blackenArrays() {
             if (themeClass == null) return
-            val enabled = TelegramConfig.getBoolean(ctx, TelegramConfig.KEY_AMOLED_BLACK, true)
-            if (!enabled || !TelegramConfig.isDarkMode(ctx)) return
             populateKeyIds()
             for (f in themeClass.declaredFields) {
                 if (java.lang.reflect.Modifier.isStatic(f.modifiers) && android.util.SparseIntArray::class.java.isAssignableFrom(f.type)) {
                     runCatching {
                         f.isAccessible = true
                         val arr = f.get(null) as? android.util.SparseIntArray ?: return@runCatching
-                        for (id in amoledKeyIds) {
-                            arr.put(id, 0xFF000000.toInt())
+                        val winId = getKeyId("windowBackgroundWhite")
+                        val isDark = if (winId >= 0 && arr.indexOfKey(winId) >= 0) {
+                            isColorDark(arr.get(winId))
+                        } else true
+                        if (isDark) {
+                            for (id in amoledKeyIds) {
+                                if (arr.indexOfKey(id) >= 0) {
+                                    arr.put(id, 0xFF000000.toInt())
+                                }
+                            }
                         }
                     }
                 }
@@ -245,35 +101,24 @@ val TelegramAmoledBlack = patch(
         }
 
         if (themeClass != null) {
-            // 1. Hook Theme file reader returning SparseIntArray (T0, loadThemeColors)
+            // 1. Hook Theme file reader returning SparseIntArray
             themeClass.declaredMethods.filter {
                 android.util.SparseIntArray::class.java.isAssignableFrom(it.returnType)
             }.forEach { method ->
                 XposedBridge.hookMethod(method, object : XC_MethodHook() {
                     override fun afterHookedMethod(param: MethodHookParam) {
                         val colors = param.result as? android.util.SparseIntArray ?: return
-                        val ctx = runCatching {
-                            val appLoader = classLoader.loadClass("org.telegram.messenger.ApplicationLoader")
-                            appLoader.getField("applicationContext").get(null) as? Context
-                        }.getOrNull()
-                        val enabled = TelegramConfig.getBoolean(ctx, TelegramConfig.KEY_AMOLED_BLACK, true)
-                        if (!enabled) return
-
                         populateKeyIds()
                         val winId = getKeyId("windowBackgroundWhite")
                         val isDark = if (winId >= 0 && colors.indexOfKey(winId) >= 0) {
-                            val c = colors.get(winId)
-                            val r = (c shr 16) and 0xFF
-                            val g = (c shr 8) and 0xFF
-                            val b = c and 0xFF
-                            (0.2126 * r + 0.7152 * g + 0.0722 * b) < 96
-                        } else TelegramConfig.isDarkMode(ctx)
+                            isColorDark(colors.get(winId))
+                        } else true
 
                         if (isDark) {
                             for (id in amoledKeyIds) {
                                 colors.put(id, 0xFF000000.toInt())
                             }
-                            blackenArrays(ctx)
+                            blackenArrays()
                         }
                     }
                 })
@@ -290,35 +135,29 @@ val TelegramAmoledBlack = patch(
                         val key = (param.args[0] as? Number)?.toInt() ?: return
                         populateKeyIds()
                         if (!amoledKeyIds.contains(key)) return
-
-                        val ctx = runCatching {
-                            val appLoader = classLoader.loadClass("org.telegram.messenger.ApplicationLoader")
-                            appLoader.getField("applicationContext").get(null) as? Context
-                        }.getOrNull()
-                        val enabled = TelegramConfig.getBoolean(ctx, TelegramConfig.KEY_AMOLED_BLACK, true)
-                        if (enabled && TelegramConfig.isDarkMode(ctx)) {
+                        val currentColor = (param.result as? Number)?.toInt() ?: return
+                        if (isColorDark(currentColor)) {
                             param.result = 0xFF000000.toInt()
                         }
                     }
                 })
             }
 
-            // 3. Hook wallpaper creation (method J / createBackgroundDrawable)
+            // 3. Hook wallpaper creation
             themeClass.declaredMethods.filter {
                 it.parameterCount >= 10 &&
                     it.parameterTypes.any { pt -> android.util.SparseIntArray::class.java.isAssignableFrom(pt) }
             }.forEach { method ->
                 XposedBridge.hookMethod(method, object : XC_MethodHook() {
                     override fun beforeHookedMethod(param: MethodHookParam) {
-                        val ctx = runCatching {
-                            val appLoader = classLoader.loadClass("org.telegram.messenger.ApplicationLoader")
-                            appLoader.getField("applicationContext").get(null) as? Context
-                        }.getOrNull()
-                        val enabled = TelegramConfig.getBoolean(ctx, TelegramConfig.KEY_AMOLED_BLACK, true)
-                        if (enabled && TelegramConfig.isDarkMode(ctx)) {
-                            populateKeyIds()
-                            for (arg in param.args) {
-                                if (arg is android.util.SparseIntArray) {
+                        populateKeyIds()
+                        for (arg in param.args) {
+                            if (arg is android.util.SparseIntArray) {
+                                val winId = getKeyId("windowBackgroundWhite")
+                                val isDark = if (winId >= 0 && arg.indexOfKey(winId) >= 0) {
+                                    isColorDark(arg.get(winId))
+                                } else true
+                                if (isDark) {
                                     for (id in amoledKeyIds) {
                                         arg.put(id, 0xFF000000.toInt())
                                     }
@@ -330,26 +169,22 @@ val TelegramAmoledBlack = patch(
             }
         }
 
-        // 4. Hook LaunchActivity window background & decorView
+        // 4. Hook LaunchActivity window background
         val launchActivity = runCatching { classLoader.loadClass("org.telegram.ui.LaunchActivity") }.getOrNull()
         if (launchActivity != null) {
             XposedBridge.hookAllMethods(launchActivity, "onCreate", object : XC_MethodHook() {
                 override fun afterHookedMethod(param: MethodHookParam) {
                     val activity = param.thisObject as? Activity ?: return
-                    val enabled = TelegramConfig.getBoolean(activity, TelegramConfig.KEY_AMOLED_BLACK, true)
-                    if (enabled && TelegramConfig.isDarkMode(activity)) {
-                        activity.window?.decorView?.setBackgroundColor(0xFF000000.toInt())
-                        blackenArrays(activity)
-                        if (android.os.Build.VERSION.SDK_INT >= 33) {
-                            activity.splashScreen?.setSplashScreenTheme(android.R.style.Theme_Black_NoTitleBar)
-                        }
+                    activity.window?.decorView?.setBackgroundColor(0xFF000000.toInt())
+                    blackenArrays()
+                    if (android.os.Build.VERSION.SDK_INT >= 33) {
+                        activity.splashScreen?.setSplashScreenTheme(android.R.style.Theme_Black_NoTitleBar)
                     }
                 }
             })
             XposedBridge.hookAllMethods(launchActivity, "onResume", object : XC_MethodHook() {
                 override fun afterHookedMethod(param: MethodHookParam) {
-                    val activity = param.thisObject as? Activity ?: return
-                    blackenArrays(activity)
+                    blackenArrays()
                 }
             })
         }
@@ -409,14 +244,7 @@ val TelegramAntiDelete = patch(
         val mc = classLoader.loadClass("org.telegram.messenger.MessagesController")
         XposedBridge.hookAllMethods(mc, "deleteMessagesByPush", object : XC_MethodHook() {
             override fun beforeHookedMethod(param: MethodHookParam) {
-                val ctx = runCatching {
-                    val appLoader = param.thisObject?.javaClass?.classLoader?.loadClass("org.telegram.messenger.ApplicationLoader")
-                    appLoader?.getField("applicationContext")?.get(null) as? Context
-                }.getOrNull()
-                val enabled = TelegramConfig.getBoolean(ctx, TelegramConfig.KEY_ANTI_DELETE, true)
-                if (enabled) {
-                    param.result = null // suppress remote push deletion
-                }
+                param.result = null // suppress remote push deletion
             }
         })
     }
@@ -425,14 +253,7 @@ val TelegramAntiDelete = patch(
         val nc = classLoader.loadClass("org.telegram.messenger.NotificationsController")
         XposedBridge.hookAllMethods(nc, "removeDeletedMessagesFromNotifications", object : XC_MethodHook() {
             override fun beforeHookedMethod(param: MethodHookParam) {
-                val ctx = runCatching {
-                    val appLoader = param.thisObject?.javaClass?.classLoader?.loadClass("org.telegram.messenger.ApplicationLoader")
-                    appLoader?.getField("applicationContext")?.get(null) as? Context
-                }.getOrNull()
-                val enabled = TelegramConfig.getBoolean(ctx, TelegramConfig.KEY_ANTI_DELETE, true)
-                if (enabled) {
-                    param.result = null
-                }
+                param.result = null
             }
         })
     }
@@ -444,15 +265,8 @@ val TelegramAntiDelete = patch(
                 override fun beforeHookedMethod(param: MethodHookParam) {
                     val isLocal = param.args.filterIsInstance<Boolean>().lastOrNull() ?: false
                     if (!isLocal) {
-                        val ctx = runCatching {
-                            val appLoader = param.thisObject?.javaClass?.classLoader?.loadClass("org.telegram.messenger.ApplicationLoader")
-                            appLoader?.getField("applicationContext")?.get(null) as? Context
-                        }.getOrNull()
-                        val enabled = TelegramConfig.getBoolean(ctx, TelegramConfig.KEY_ANTI_DELETE, true)
-                        if (enabled) {
-                            if (method.returnType == ArrayList::class.java || method.returnType == java.util.List::class.java) {
-                                param.result = ArrayList<Any?>()
-                            }
+                        if (method.returnType == ArrayList::class.java || method.returnType == java.util.List::class.java) {
+                            param.result = ArrayList<Any?>()
                         }
                     }
                 }
@@ -556,14 +370,7 @@ val TelegramHideTyping = patch(
         val mc = classLoader.loadClass("org.telegram.messenger.MessagesController")
         XposedBridge.hookAllMethods(mc, "sendTyping", object : XC_MethodHook() {
             override fun beforeHookedMethod(param: MethodHookParam) {
-                val ctx = runCatching {
-                    val appLoader = param.thisObject?.javaClass?.classLoader?.loadClass("org.telegram.messenger.ApplicationLoader")
-                    appLoader?.getField("applicationContext")?.get(null) as? Context
-                }.getOrNull()
-                val enabled = TelegramConfig.getBoolean(ctx, TelegramConfig.KEY_HIDE_TYPING, false)
-                if (enabled) {
-                    param.result = true // Telegram considers it handled/sent and drops transmission
-                }
+                param.result = true // Telegram considers it handled/sent and drops transmission
             }
         })
     }
@@ -623,11 +430,7 @@ val TelegramDisableDoubleTapReaction = patch(
         }.forEach { method ->
             XposedBridge.hookMethod(method, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
-                    val ctx = (param.thisObject as? View)?.context
-                    val disabled = TelegramConfig.getBoolean(ctx, TelegramConfig.KEY_DISABLE_DOUBLE_TAP, false)
-                    if (disabled) {
-                        param.result = null
-                    }
+                    param.result = null
                 }
             })
         }
@@ -656,13 +459,7 @@ val TelegramDisableVibration = patch(
         }.forEach { method ->
             XposedBridge.hookMethod(method, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
-                    val ctx = runCatching {
-                        val appLoader = classLoader.loadClass("org.telegram.messenger.ApplicationLoader")
-                        appLoader.getField("applicationContext").get(null) as? Context
-                    }.getOrNull()
-                    if (TelegramConfig.getBoolean(ctx, TelegramConfig.KEY_DISABLE_VIBRATION, false)) {
-                        param.result = null
-                    }
+                    param.result = null
                 }
             })
         }
@@ -680,19 +477,13 @@ val TelegramShowSeconds = patch(
         }.forEach { method ->
             XposedBridge.hookMethod(method, object : XC_MethodHook() {
                 override fun afterHookedMethod(param: MethodHookParam) {
-                    val ctx = runCatching {
-                        val appLoader = classLoader.loadClass("org.telegram.messenger.ApplicationLoader")
-                        appLoader.getField("applicationContext").get(null) as? Context
-                    }.getOrNull()
-                    if (TelegramConfig.getBoolean(ctx, TelegramConfig.KEY_SHOW_SECONDS, false)) {
-                        val timestamp = (param.args[0] as? Number)?.toLong() ?: return
-                        val cal = java.util.Calendar.getInstance().apply { timeInMillis = timestamp * 1000L }
-                        param.result = String.format("%02d:%02d:%02d",
-                            cal.get(java.util.Calendar.HOUR_OF_DAY),
-                            cal.get(java.util.Calendar.MINUTE),
-                            cal.get(java.util.Calendar.SECOND)
-                        )
-                    }
+                    val timestamp = (param.args[0] as? Number)?.toLong() ?: return
+                    val cal = java.util.Calendar.getInstance().apply { timeInMillis = timestamp * 1000L }
+                    param.result = String.format("%02d:%02d:%02d",
+                        cal.get(java.util.Calendar.HOUR_OF_DAY),
+                        cal.get(java.util.Calendar.MINUTE),
+                        cal.get(java.util.Calendar.SECOND)
+                    )
                 }
             })
         }
@@ -768,7 +559,6 @@ val TelegramBypassIntegrity = patch(
 }
 
 val TelegramPatches = arrayOf(
-    TelegramNexFusionSettings,
     TelegramAmoledBlack,
     TelegramUnlockPremium,
     TelegramRemoveAds,
