@@ -895,52 +895,100 @@ val TelegramBypassChannelRestrictions = patch(
 
 val TelegramDownloadBoost = patch(
     name = "Download speed boost",
-    description = "Enables Telegram experimental multi-connection parallel downloads and max chunk streaming.",
+    description = "Accelerates downloads by increasing chunk size to 512 KB with safe parallel streams.",
+    use = false,
 ) {
-    // 1. SharedPreferences interception: Force getfileExperimentalParams=true and disable download killswitch
-    runCatching {
-        val spClass = classLoader.loadClass("android.app.SharedPreferencesImpl")
-        XposedBridge.hookAllMethods(spClass, "getBoolean", object : XC_MethodHook() {
-            override fun beforeHookedMethod(param: MethodHookParam) {
-                val key = param.args.firstOrNull() as? String ?: return
-                if (key == "getfileExperimentalParams") {
-                    param.result = true
-                } else if (key == "android_download_improvement_killswitch") {
-                    param.result = false
-                }
-            }
-        })
-    }
+    if (!isOfficialTelegram(classLoader)) return@patch
 
-    // 2. Hook MessagesController constructors and instances to enable experimental params
+    // 1. Hook FileLoadOperation (d7 or FileLoadOperation) updateParams to safely set downloadChunkSizeBig to 512 KB
+    // without exceeding the connection array size.
     runCatching {
-        val mc = TelegramResolver.findMessagesController(classLoader)
-        if (mc != null) {
-            for (ctor in mc.declaredConstructors) {
-                XposedBridge.hookMethod(ctor, object : XC_MethodHook() {
+        val d7Class = runCatching { classLoader.loadClass("org.telegram.messenger.d7") }.getOrNull()
+            ?: runCatching { classLoader.loadClass("org.telegram.messenger.FileLoadOperation") }.getOrNull()
+        if (d7Class != null) {
+            val updateParamsMethods = d7Class.declaredMethods.filter {
+                it.parameterCount == 0 && it.returnType == java.lang.Void.TYPE &&
+                    (it.name == "t" || it.name == "updateParams")
+            }
+            for (m in updateParamsMethods) {
+                XposedBridge.hookMethod(m, object : XC_MethodHook() {
                     override fun afterHookedMethod(param: MethodHookParam) {
-                        val inst = param.thisObject ?: return
+                        val obj = param.thisObject ?: return
                         runCatching {
-                            mc.declaredFields.filter { it.type == java.lang.Boolean.TYPE }.forEach { f ->
-                                f.isAccessible = true
-                                if (f.name == "I3" || f.name == "getfileExperimentalParams") {
-                                    f.setBoolean(inst, true)
-                                } else if (f.name == "J3") {
-                                    f.setBoolean(inst, false)
-                                }
+                            // n is downloadChunkSizeBig in Telegram 13.3.0
+                            val nField = runCatching { d7Class.getDeclaredField("n") }.getOrNull()
+                                ?: d7Class.declaredFields.firstOrNull { it.name == "downloadChunkSizeBig" }
+                            if (nField != null && nField.type == java.lang.Integer.TYPE) {
+                                nField.isAccessible = true
+                                nField.setInt(obj, 524288) // 512 KB
+                            }
+                            // q is maxCdnParts in Telegram 13.3.0
+                            val qField = runCatching { d7Class.getDeclaredField("q") }.getOrNull()
+                                ?: d7Class.declaredFields.firstOrNull { it.name == "maxCdnParts" }
+                            if (qField != null && qField.type == java.lang.Integer.TYPE) {
+                                qField.isAccessible = true
+                                qField.setInt(obj, (4294967296L / 524288).toInt())
+                            }
+                            // Keep maxDownloadRequests clamped to <= 4 to prevent connection slot overflow
+                            val oField = runCatching { d7Class.getDeclaredField("o") }.getOrNull()
+                                ?: d7Class.declaredFields.firstOrNull { it.name == "maxDownloadRequests" }
+                            if (oField != null && oField.type == java.lang.Integer.TYPE) {
+                                oField.isAccessible = true
+                                val curr = oField.getInt(obj)
+                                if (curr > 4) oField.setInt(obj, 4)
+                            }
+                            val pField = runCatching { d7Class.getDeclaredField("p") }.getOrNull()
+                                ?: d7Class.declaredFields.firstOrNull { it.name == "maxDownloadRequestsBig" }
+                            if (pField != null && pField.type == java.lang.Integer.TYPE) {
+                                pField.isAccessible = true
+                                val curr = pField.getInt(obj)
+                                if (curr > 4) pField.setInt(obj, 4)
                             }
                         }
                     }
                 })
             }
+        }
+    }
 
-            mc.declaredFields.filter { it.name == "getfileExperimentalParams" || it.name == "I3" }.forEach { f ->
-                f.isAccessible = true
-                runCatching { f.setBoolean(null, true) }
-            }
-            mc.declaredMethods.filter { it.name == "getfileExperimentalParams" }.forEach { m ->
-                XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
-            }
+    // 2. Safety hook for t6 (FileLoadOperation runnable) to clamp connection slot index and prevent ArrayIndexOutOfBoundsException
+    runCatching {
+        val t6Class = runCatching { classLoader.loadClass("org.telegram.messenger.t6") }.getOrNull()
+        if (t6Class != null) {
+            XposedBridge.hookAllMethods(t6Class, "run", object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    val t6Obj = param.thisObject ?: return
+                    runCatching {
+                        val bField = t6Obj.javaClass.declaredFields.firstOrNull { it.name == "b" } ?: return
+                        bField.isAccessible = true
+                        val d7Obj = bField.get(t6Obj) ?: return
+                        for (field in d7Obj.javaClass.declaredFields) {
+                            if (java.util.List::class.java.isAssignableFrom(field.type)) {
+                                field.isAccessible = true
+                                val list = field.get(d7Obj) as? List<*> ?: continue
+                                for (item in list) {
+                                    if (item != null) {
+                                        val dField = runCatching { item.javaClass.getDeclaredField("d") }.getOrNull()
+                                        if (dField != null && dField.type == java.lang.Integer.TYPE) {
+                                            dField.isAccessible = true
+                                            val v = dField.getInt(item)
+                                            if (v >= 8) dField.setInt(item, 7)
+                                            else if (v < 0) dField.setInt(item, 0)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    if (param.hasThrowable() && param.throwable is IndexOutOfBoundsException) {
+                        param.throwable = null
+                        param.result = null
+                    }
+                }
+            })
         }
     }
 }
