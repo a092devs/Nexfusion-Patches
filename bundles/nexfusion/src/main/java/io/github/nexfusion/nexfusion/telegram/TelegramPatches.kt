@@ -306,13 +306,22 @@ val TelegramUnlockPremium = patch(
         val userConfig = TelegramResolver.findUserConfig(classLoader)
         if (userConfig != null) {
             // ONLY hook isPremium: q() in 13.3.0, or isPremium in unobfuscated.
-            // NEVER hook p() (isClientActivated) or o() (account counting loop) as that forces phantom deleted accounts!
+            // ONLY return true when currentUser != null so empty account slots are never treated as active/premium!
             userConfig.declaredMethods.filter {
                 (it.returnType == java.lang.Boolean.TYPE || it.returnType == java.lang.Boolean::class.java) &&
                     it.parameterCount == 0 &&
                     (it.name == "isPremium" || it.name == "q")
             }.forEach { m ->
-                XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
+                XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        val obj = param.thisObject ?: return
+                        val user = runCatching { XposedHelpers.getObjectField(obj, "c") }.getOrNull()
+                            ?: runCatching { XposedHelpers.callMethod(obj, "getCurrentUser") }.getOrNull()
+                        if (user != null) {
+                            param.result = true
+                        }
+                    }
+                })
             }
 
             // getCurrentUser() -> f() in 13.3.0
@@ -514,6 +523,33 @@ val TelegramAntiDelete = patch(
         return sp?.getBoolean("d_$id", false) == true
     }
 
+    fun getMessageId(msgObj: Any?): Int {
+        if (msgObj == null) return 0
+        runCatching {
+            val m = msgObj.javaClass.methods.firstOrNull { it.name == "getId" && it.parameterCount == 0 }
+            if (m != null) {
+                val v = (m.invoke(msgObj) as? Number)?.toInt() ?: 0
+                if (v > 0) return v
+            }
+        }
+        for (f in msgObj.javaClass.declaredFields) {
+            if (f.type.name.contains("TLRPC\$Message")) {
+                f.isAccessible = true
+                val owner = runCatching { f.get(msgObj) }.getOrNull()
+                if (owner != null) {
+                    val v = runCatching { XposedHelpers.getIntField(owner, "id") }.getOrDefault(0)
+                    if (v > 0) return v
+                }
+            }
+        }
+        val owner = runCatching { XposedHelpers.getObjectField(msgObj, "messageOwner") }.getOrNull()
+            ?: runCatching { XposedHelpers.getObjectField(msgObj, "k") }.getOrNull()
+        if (owner != null) {
+            return runCatching { XposedHelpers.getIntField(owner, "id") }.getOrDefault(0)
+        }
+        return 0
+    }
+
     // 1. Clear deleted message IDs from incoming delete updates and track them
     runCatching {
         for (name in listOf(
@@ -551,23 +587,18 @@ val TelegramAntiDelete = patch(
         }
     }
 
-    // 3. Mark deleted messages with trash icon in chat bubbles
+    // 3. Mark deleted messages with indicator icon in chat bubbles
     runCatching {
         val timeStringMethod = TelegramResolver.findTimeStringMethod(classLoader)
         if (timeStringMethod != null) {
             XposedBridge.hookMethod(timeStringMethod, object : XC_MethodHook() {
                 override fun afterHookedMethod(param: MethodHookParam) {
                     val current = param.args.firstOrNull() ?: return
-                    val id = (runCatching { XposedHelpers.callMethod(current, "getId") as? Int }.getOrNull()
-                        ?: runCatching {
-                            val owner = XposedHelpers.getObjectField(current, "messageOwner")
-                            XposedHelpers.getIntField(owner, "id")
-                        }.getOrNull()) ?: 0
-
+                    val id = getMessageId(current)
                     if (id > 0 && isDeleted(id)) {
-                        val orig = (param.result as? String) ?: ""
-                        if (!orig.startsWith("🗑")) {
-                            param.result = if (orig.isEmpty()) "🗑" else "🗑 $orig"
+                        val orig = (param.result as? CharSequence)?.toString() ?: ""
+                        if (!orig.contains("🗑") && !orig.contains("Deleted")) {
+                            param.result = if (orig.isEmpty()) "🗑 Deleted" else "🗑 Deleted  $orig"
                         }
                     }
                 }
@@ -581,6 +612,46 @@ val TelegramAntiDisappearingMedia = patch(
     name = "Anti-disappearing media",
     description = "Keeps view-once photos, videos and voice messages viewable indefinitely across foreground and unopened chats.",
 ) {
+    fun preloadMedia(msg: Any?) {
+        if (msg == null) return
+        runCatching {
+            val media = runCatching { XposedHelpers.getObjectField(msg, "media") }.getOrNull() ?: return
+            val flCls = runCatching { classLoader.loadClass("org.telegram.messenger.s7") }.getOrNull()
+                ?: runCatching { classLoader.loadClass("org.telegram.messenger.FileLoader") }.getOrNull() ?: return
+            val ilCls = runCatching { classLoader.loadClass("org.telegram.messenger.dc") }.getOrNull()
+                ?: runCatching { classLoader.loadClass("org.telegram.messenger.ImageLocation") }.getOrNull() ?: return
+
+            val loader = runCatching { XposedHelpers.callStaticMethod(flCls, "getInstance", 0) }.getOrNull()
+                ?: runCatching { XposedHelpers.callStaticMethod(flCls, "G", 0) }.getOrNull() ?: return
+
+            val photo = runCatching { XposedHelpers.getObjectField(media, "photo") }.getOrNull()
+            if (photo != null) {
+                val sizes = runCatching { XposedHelpers.getObjectField(photo, "sizes") as? java.util.ArrayList<*> }.getOrNull()
+                if (sizes != null) {
+                    for (size in sizes) {
+                        if (size == null) continue
+                        val loc = runCatching { XposedHelpers.callStaticMethod(ilCls, "getForPhoto", size, photo) }.getOrNull()
+                            ?: runCatching { XposedHelpers.callStaticMethod(ilCls, "i", size, photo) }.getOrNull()
+                        if (loc != null) {
+                            runCatching { XposedHelpers.callMethod(loader, "loadFile", loc, msg, "jpg", 0, 0) }
+                                .onFailure { runCatching { XposedHelpers.callMethod(loader, "V", loc, msg, "jpg", 0, 0) } }
+                        }
+                    }
+                }
+            }
+
+            val document = runCatching { XposedHelpers.getObjectField(media, "document") }.getOrNull()
+            if (document != null) {
+                val size = (runCatching { XposedHelpers.getLongField(document, "size") }.getOrNull()
+                    ?: runCatching { (XposedHelpers.getObjectField(document, "size") as? Number)?.toLong() }.getOrNull()) ?: 0L
+                if (size in 1..20971520L) {
+                    runCatching { XposedHelpers.callMethod(loader, "loadFile", document, msg, 0, 0) }
+                        .onFailure { runCatching { XposedHelpers.callMethod(loader, "W", document, msg, 0, 0) } }
+                }
+            }
+        }
+    }
+
     fun neutralizeMessage(msg: Any?) {
         if (msg == null) return
         runCatching { XposedHelpers.setIntField(msg, "ttl_period", 0) }
@@ -592,6 +663,7 @@ val TelegramAntiDisappearingMedia = patch(
         val media = runCatching { XposedHelpers.getObjectField(msg, "media") }.getOrNull()
         if (media != null) {
             runCatching { XposedHelpers.setIntField(media, "ttl_seconds", 0) }
+            preloadMedia(msg)
         }
     }
 
@@ -888,121 +960,6 @@ val TelegramHideStoriesRead = patch(
     }
 }
 
-val TelegramHideDeletedAccounts = patch(
-    name = "Hide deleted accounts",
-    description = "Hides chats with deleted accounts from chat list and suppresses deleted account switcher slots.",
-) {
-    // 1. Hide deleted accounts from Dialogs (chat list)
-    runCatching {
-        val mc = TelegramResolver.findMessagesController(classLoader)
-        if (mc != null) {
-            mc.declaredMethods.filter {
-                it.name == "getDialogs" || (it.name.startsWith("getDialogs") && java.util.ArrayList::class.java.isAssignableFrom(it.returnType))
-            }.forEach { m ->
-                XposedBridge.hookMethod(m, object : XC_MethodHook() {
-                    override fun afterHookedMethod(param: MethodHookParam) {
-                        val list = param.result as? java.util.ArrayList<*> ?: return
-                        val iterator = list.iterator()
-                        while (iterator.hasNext()) {
-                            val dialog = iterator.next() ?: continue
-                            val peerId = runCatching { XposedHelpers.getLongField(dialog, "id") }.getOrDefault(0L)
-                            if (peerId > 0) {
-                                val user = runCatching { XposedHelpers.callMethod(param.thisObject, "getUser", peerId) }.getOrNull()
-                                val isDeleted = if (user != null) {
-                                    runCatching { XposedHelpers.getBooleanField(user, "deleted") }.getOrDefault(false)
-                                } else false
-                                if (isDeleted) {
-                                    iterator.remove()
-                                }
-                            }
-                        }
-                    }
-                })
-            }
-        }
-    }
-
-    // 2. Hide deleted / unactivated accounts from account switchers and UserConfig
-    runCatching {
-        val userConfig = TelegramResolver.findUserConfig(classLoader)
-        if (userConfig != null) {
-            // isClientActivated: p() in 13.3.0
-            userConfig.declaredMethods.filter {
-                (it.returnType == java.lang.Boolean.TYPE || it.returnType == java.lang.Boolean::class.java) &&
-                    it.parameterCount == 0 && (it.name == "isClientActivated" || it.name == "p")
-            }.forEach { m ->
-                XposedBridge.hookMethod(m, object : XC_MethodHook() {
-                    override fun afterHookedMethod(param: MethodHookParam) {
-                        val obj = param.thisObject ?: return
-                        val user = runCatching { XposedHelpers.getObjectField(obj, "c") }.getOrNull()
-                            ?: runCatching { XposedHelpers.callMethod(obj, "getCurrentUser") }.getOrNull()
-                        val uid = (runCatching { XposedHelpers.getLongField(user, "id") }.getOrNull()
-                            ?: runCatching { (XposedHelpers.callMethod(obj, "getClientUserId") as? Number)?.toLong() }.getOrNull()) ?: 0L
-                        val isDeleted = runCatching { XposedHelpers.getBooleanField(user, "deleted") }.getOrDefault(false)
-                        if (user == null || uid == 0L || isDeleted) {
-                            param.result = false
-                        }
-                    }
-                })
-            }
-
-            // isValidAccount: r(int) in 13.3.0
-            userConfig.declaredMethods.filter {
-                (it.returnType == java.lang.Boolean.TYPE || it.returnType == java.lang.Boolean::class.java) &&
-                    it.parameterCount == 1 && it.parameterTypes[0] == java.lang.Integer.TYPE &&
-                    (it.name == "isValidAccount" || it.name == "r")
-            }.forEach { m ->
-                XposedBridge.hookMethod(m, object : XC_MethodHook() {
-                    override fun afterHookedMethod(param: MethodHookParam) {
-                        val acc = param.args[0] as? Int ?: return
-                        if (param.result == true) {
-                            val instance = runCatching { XposedHelpers.callStaticMethod(userConfig, "getInstance", acc) }.getOrNull()
-                                ?: runCatching { XposedHelpers.callStaticMethod(userConfig, "i", acc) }.getOrNull()
-                            val user = if (instance != null) {
-                                runCatching { XposedHelpers.getObjectField(instance, "c") }.getOrNull()
-                                    ?: runCatching { XposedHelpers.callMethod(instance, "getCurrentUser") }.getOrNull()
-                            } else null
-                            val uid = (runCatching { XposedHelpers.getLongField(user, "id") }.getOrNull()
-                                ?: runCatching { (XposedHelpers.callMethod(instance, "getClientUserId") as? Number)?.toLong() }.getOrNull()) ?: 0L
-                            val isDeleted = runCatching { XposedHelpers.getBooleanField(user, "deleted") }.getOrDefault(false)
-                            if (user == null || uid == 0L || isDeleted) {
-                                param.result = false
-                            }
-                        }
-                    }
-                })
-            }
-
-            // getActivatedAccountsCount: c() in 13.3.0
-            userConfig.declaredMethods.filter {
-                (it.returnType == java.lang.Integer.TYPE || it.returnType == java.lang.Integer::class.java) &&
-                    it.parameterCount == 0 && (it.name == "getActivatedAccountsCount" || it.name == "c")
-            }.forEach { m ->
-                XposedBridge.hookMethod(m, object : XC_MethodHook() {
-                    override fun afterHookedMethod(param: MethodHookParam) {
-                        var activeCount = 0
-                        for (i in 0 until 4) {
-                            val instance = runCatching { XposedHelpers.callStaticMethod(userConfig, "getInstance", i) }.getOrNull()
-                                ?: runCatching { XposedHelpers.callStaticMethod(userConfig, "i", i) }.getOrNull()
-                            val user = if (instance != null) {
-                                runCatching { XposedHelpers.getObjectField(instance, "c") }.getOrNull()
-                                    ?: runCatching { XposedHelpers.callMethod(instance, "getCurrentUser") }.getOrNull()
-                            } else null
-                            val uid = (runCatching { XposedHelpers.getLongField(user, "id") }.getOrNull()
-                                ?: runCatching { (XposedHelpers.callMethod(instance, "getClientUserId") as? Number)?.toLong() }.getOrNull()) ?: 0L
-                            val isDeleted = runCatching { XposedHelpers.getBooleanField(user, "deleted") }.getOrDefault(false)
-                            if (user != null && uid != 0L && !isDeleted) {
-                                activeCount++
-                            }
-                        }
-                        param.result = if (activeCount > 0) activeCount else 1
-                    }
-                })
-            }
-        }
-    }
-}
-
 val TelegramBypassContentRestrictions = patch(
     name = "Bypass content restrictions",
     description = "Allows saving and forwarding content from restricted channels, chats, and users.",
@@ -1109,13 +1066,55 @@ val TelegramBypassChannelRestrictions = patch(
 
 val TelegramDownloadBoost = patch(
     name = "Download speed boost",
-    description = "Accelerates downloads by increasing chunk size to 512 KB with safe parallel streams.",
-    use = false,
+    description = "Accelerates downloads by enabling 512 KB chunks and 8 concurrent parallel connections.",
 ) {
     if (!isOfficialTelegram(classLoader)) return@patch
 
-    // 1. Hook FileLoadOperation (d7 or FileLoadOperation) updateParams to safely set downloadChunkSizeBig to 512 KB
-    // without exceeding the connection array size.
+    // 1. Enable getfileExperimentalParams in MessagesController (tp / I3 in 13.3.0)
+    runCatching {
+        val mc = TelegramResolver.findMessagesController(classLoader)
+        if (mc != null) {
+            mc.declaredConstructors.forEach { c ->
+                XposedBridge.hookMethod(c, object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam) {
+                        val obj = param.thisObject ?: return
+                        for (f in obj.javaClass.declaredFields) {
+                            if (f.type == java.lang.Boolean.TYPE && (f.name == "getfileExperimentalParams" || f.name == "I3")) {
+                                f.isAccessible = true
+                                runCatching { f.setBoolean(obj, true) }
+                            }
+                            if (f.type == java.lang.Boolean.TYPE && (f.name == "android_download_improvement_killswitch" || f.name == "J3")) {
+                                f.isAccessible = true
+                                runCatching { f.setBoolean(obj, false) }
+                            }
+                        }
+                    }
+                })
+            }
+        }
+    }
+
+    // 2. Hook SharedPreferences.getBoolean for getfileExperimentalParams
+    runCatching {
+        val spClass = Class.forName("android.content.SharedPreferences")
+        val getBooleanMethods = spClass.declaredMethods.filter {
+            it.name == "getBoolean" && it.parameterCount == 2 && it.parameterTypes[0] == String::class.java
+        }
+        for (m in getBooleanMethods) {
+            XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    val key = param.args[0] as? String ?: return
+                    if (key == "getfileExperimentalParams") {
+                        param.result = true
+                    } else if (key == "android_download_improvement_killswitch") {
+                        param.result = false
+                    }
+                }
+            })
+        }
+    }
+
+    // 3. Fallback: Hook FileLoadOperation (d7) updateParams (t()) to safely ensure 512 KB chunk size
     runCatching {
         val d7Class = runCatching { classLoader.loadClass("org.telegram.messenger.d7") }.getOrNull()
             ?: runCatching { classLoader.loadClass("org.telegram.messenger.FileLoadOperation") }.getOrNull()
@@ -1129,80 +1128,34 @@ val TelegramDownloadBoost = patch(
                     override fun afterHookedMethod(param: MethodHookParam) {
                         val obj = param.thisObject ?: return
                         runCatching {
-                            // n is downloadChunkSizeBig in Telegram 13.3.0
                             val nField = runCatching { d7Class.getDeclaredField("n") }.getOrNull()
                                 ?: d7Class.declaredFields.firstOrNull { it.name == "downloadChunkSizeBig" }
                             if (nField != null && nField.type == java.lang.Integer.TYPE) {
                                 nField.isAccessible = true
                                 nField.setInt(obj, 524288) // 512 KB
                             }
-                            // q is maxCdnParts in Telegram 13.3.0
+                            val oField = runCatching { d7Class.getDeclaredField("o") }.getOrNull()
+                                ?: d7Class.declaredFields.firstOrNull { it.name == "maxDownloadRequests" }
+                            if (oField != null && oField.type == java.lang.Integer.TYPE) {
+                                oField.isAccessible = true
+                                oField.setInt(obj, 8)
+                            }
+                            val pField = runCatching { d7Class.getDeclaredField("p") }.getOrNull()
+                                ?: d7Class.declaredFields.firstOrNull { it.name == "maxDownloadRequestsBig" }
+                            if (pField != null && pField.type == java.lang.Integer.TYPE) {
+                                pField.isAccessible = true
+                                pField.setInt(obj, 8)
+                            }
                             val qField = runCatching { d7Class.getDeclaredField("q") }.getOrNull()
                                 ?: d7Class.declaredFields.firstOrNull { it.name == "maxCdnParts" }
                             if (qField != null && qField.type == java.lang.Integer.TYPE) {
                                 qField.isAccessible = true
                                 qField.setInt(obj, (4294967296L / 524288).toInt())
                             }
-                            // Keep maxDownloadRequests clamped to <= 4 to prevent connection slot overflow
-                            val oField = runCatching { d7Class.getDeclaredField("o") }.getOrNull()
-                                ?: d7Class.declaredFields.firstOrNull { it.name == "maxDownloadRequests" }
-                            if (oField != null && oField.type == java.lang.Integer.TYPE) {
-                                oField.isAccessible = true
-                                val curr = oField.getInt(obj)
-                                if (curr > 4) oField.setInt(obj, 4)
-                            }
-                            val pField = runCatching { d7Class.getDeclaredField("p") }.getOrNull()
-                                ?: d7Class.declaredFields.firstOrNull { it.name == "maxDownloadRequestsBig" }
-                            if (pField != null && pField.type == java.lang.Integer.TYPE) {
-                                pField.isAccessible = true
-                                val curr = pField.getInt(obj)
-                                if (curr > 4) pField.setInt(obj, 4)
-                            }
                         }
                     }
                 })
             }
-        }
-    }
-
-    // 2. Safety hook for t6 (FileLoadOperation runnable) to clamp connection slot index and prevent ArrayIndexOutOfBoundsException
-    runCatching {
-        val t6Class = runCatching { classLoader.loadClass("org.telegram.messenger.t6") }.getOrNull()
-        if (t6Class != null) {
-            XposedBridge.hookAllMethods(t6Class, "run", object : XC_MethodHook() {
-                override fun beforeHookedMethod(param: MethodHookParam) {
-                    val t6Obj = param.thisObject ?: return
-                    runCatching {
-                        val bField = t6Obj.javaClass.declaredFields.firstOrNull { it.name == "b" } ?: return
-                        bField.isAccessible = true
-                        val d7Obj = bField.get(t6Obj) ?: return
-                        for (field in d7Obj.javaClass.declaredFields) {
-                            if (java.util.List::class.java.isAssignableFrom(field.type)) {
-                                field.isAccessible = true
-                                val list = field.get(d7Obj) as? List<*> ?: continue
-                                for (item in list) {
-                                    if (item != null) {
-                                        val dField = runCatching { item.javaClass.getDeclaredField("d") }.getOrNull()
-                                        if (dField != null && dField.type == java.lang.Integer.TYPE) {
-                                            dField.isAccessible = true
-                                            val v = dField.getInt(item)
-                                            if (v >= 8) dField.setInt(item, 7)
-                                            else if (v < 0) dField.setInt(item, 0)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                override fun afterHookedMethod(param: MethodHookParam) {
-                    if (param.hasThrowable() && param.throwable is IndexOutOfBoundsException) {
-                        param.throwable = null
-                        param.result = null
-                    }
-                }
-            })
         }
     }
 }
@@ -1544,7 +1497,6 @@ val TelegramPatches = arrayOf(
     TelegramAntiDisappearingMedia,
     TelegramHideStories,
     TelegramHideStoriesRead,
-    TelegramHideDeletedAccounts,
     TelegramBypassContentRestrictions,
     TelegramBypassChannelRestrictions,
     TelegramDownloadBoost,

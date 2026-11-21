@@ -10,17 +10,21 @@ bundles after CI succeeds.
 ## 4.4.8
 
 - `Telegram`:
-  * Resolved obfuscated class and method mappings for Telegram 13.3.0 (`MessagesController`, `MessagesStorage`, `MessageObject`, `StoriesController`, `Theme`, `ThemeKeyLookup`).
-  * Fixed phantom "Deleted Account" entries under account settings by isolating client premium status from multi-account activation logic.
-  * Enhanced anti-disappearing media hooks to preserve timer-based and view-once media across all chats, including unopened chats and background tasks.
+  * Fixed phantom "Deleted Account" entries under account settings by eliminating unnecessary account enumeration hooks and properly gating client premium status to authenticated accounts.
+  * Added marked indicator (`🗑 Deleted`) in chat bubble timestamps for messages deleted by other users, matching Nagram XF.
+  * Fixed disappearing media in unopened chats by pre-caching incoming view-once and self-destructing media via FileLoader prior to remote deletion.
+  * Fixed Telegram download crash by enabling native `getfileExperimentalParams` configuration (512 KB chunks with 8 parallel streams) and removing unstable background thread hooks.
+  * Resolved obfuscated class and method mappings for Telegram 13.3.0 (`MessagesController`, `MessagesStorage`, `MessageObject`, `StoriesController`, `Theme`, `ThemeKeyLookup`, `ChatMessageCell`).
   * Neutralized SQLite media database destruction and automated read-destruction tasks.
   * Added stealth stories viewing and stories suppression support.
   * Added pure AMOLED black theming support across chats, settings, and navigation.
   * Suppressed sponsored channel messages and video ads.
   * Added bypass restrictions for forward-protected and secret chat content.
-  * Added download speed boost chunk size optimization and audio voice playback in background music player.
+  * Added audio voice note playback in background music player.
 - `YouTube`:
   * Synchronized upstream improvements for Add to queue functionality.
+- `All Supported Apps`:
+  * Verified and synchronized up-to-date changes and bug fixes across all upstream patch sources.
 - `Build & CI`:
   * Optimized release publication workflow concurrency and updated test assertions.
 
