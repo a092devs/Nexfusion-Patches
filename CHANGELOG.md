@@ -7,6 +7,27 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.4.9
+
+- `Telegram`:
+  * Fixed phantom "Deleted Account" entries under account settings by eliminating uninitialized account preference creation and properly gating client premium status to authenticated accounts.
+  * Added marked indicator (`🗑 Deleted`) in chat bubble timestamps for messages deleted by other users, matching Nagram XF.
+  * Fixed disappearing media in unopened chats by pre-caching incoming view-once and self-destructing media via FileLoader prior to remote deletion.
+  * Fixed Telegram download crash by enabling native `getfileExperimentalParams` configuration (512 KB chunks with 8 parallel streams) and removing unstable background thread hooks.
+  * Resolved obfuscated class and method mappings for Telegram 13.3.0 (`MessagesController`, `MessagesStorage`, `MessageObject`, `StoriesController`, `Theme`, `ThemeKeyLookup`, `ChatMessageCell`).
+  * Neutralized SQLite media database destruction and automated read-destruction tasks.
+  * Added stealth stories viewing and stories suppression support.
+  * Added pure AMOLED black theming support across chats, settings, and navigation.
+  * Suppressed sponsored channel messages and video ads.
+  * Added bypass restrictions for forward-protected and secret chat content.
+  * Added audio voice note playback in background music player.
+- `YouTube`:
+  * Synchronized upstream improvements for Add to queue functionality.
+- `All Supported Apps`:
+  * Verified and synchronized up-to-date changes and bug fixes across all upstream patch sources.
+- `Build & CI`:
+  * Bumped patch bundle version to 4.4.9 (versionCode 118).
+
 ## 4.4.8
 
 - `Telegram`:
