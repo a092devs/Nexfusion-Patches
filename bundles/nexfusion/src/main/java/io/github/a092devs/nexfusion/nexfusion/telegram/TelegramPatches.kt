@@ -503,16 +503,48 @@ val TelegramAntiDelete = patch(
         }
     }
 
+    fun requestUIRefresh() {
+        runCatching {
+            val auCls = runCatching { classLoader.loadClass("org.telegram.messenger.AndroidUtilities") }.getOrNull()
+            val runOnUIThread = auCls?.methods?.firstOrNull { it.name == "runOnUIThread" && it.parameterTypes.size == 1 }
+            val ncCls = runCatching { classLoader.loadClass("org.telegram.messenger.NotificationCenter") }.getOrNull()
+            val mcCls = TelegramResolver.findMessagesController(classLoader)
+
+            val updateMask = runCatching { mcCls?.getField("UPDATE_MASK_ALL")?.getInt(null) }.getOrNull() ?: 255
+            val updateInterfaces = runCatching { ncCls?.getField("updateInterfaces")?.getInt(null) }.getOrNull()
+
+            if (runOnUIThread != null && ncCls != null && updateInterfaces != null) {
+                runOnUIThread.invoke(null, java.lang.Runnable {
+                    for (acc in 0..3) {
+                        runCatching {
+                            val nc = ncCls.getMethod("getInstance", Int::class.javaPrimitiveType).invoke(null, acc)
+                            val postMethod = ncCls.methods.firstOrNull {
+                                it.name == "postNotificationName" && it.parameterTypes.size == 2 && it.parameterTypes[0] == Int::class.javaPrimitiveType
+                            }
+                            postMethod?.invoke(nc, updateInterfaces, arrayOf(updateMask))
+                        }
+                    }
+                })
+            }
+        }
+    }
+
     fun markDeleted(ids: List<*>) {
         ensureLoaded()
         val sp = getPrefs()
         val editor = sp?.edit()
+        var changed = false
         for (item in ids) {
             val mid = (item as? Number)?.toInt() ?: continue
-            deletedMessageIds.add(mid)
-            editor?.putBoolean("d_$mid", true)
+            if (deletedMessageIds.add(mid)) {
+                changed = true
+                editor?.putBoolean("d_$mid", true)
+            }
         }
         editor?.apply()
+        if (changed) {
+            requestUIRefresh()
+        }
     }
 
     fun isDeleted(id: Int): Boolean {
@@ -587,7 +619,7 @@ val TelegramAntiDelete = patch(
         }
     }
 
-    // 3. Mark deleted messages with indicator icon in chat bubbles
+    // 3. Mark deleted messages with cute trash icon indicator in chat bubbles
     runCatching {
         val timeStringMethod = TelegramResolver.findTimeStringMethod(classLoader)
         if (timeStringMethod != null) {
@@ -597,8 +629,8 @@ val TelegramAntiDelete = patch(
                     val id = getMessageId(current)
                     if (id > 0 && isDeleted(id)) {
                         val orig = (param.result as? CharSequence)?.toString() ?: ""
-                        if (!orig.contains("🗑") && !orig.contains("Deleted")) {
-                            param.result = if (orig.isEmpty()) "🗑 Deleted" else "🗑 Deleted  $orig"
+                        if (!orig.contains("🗑")) {
+                            param.result = if (orig.isEmpty()) "🗑" else "🗑  $orig"
                         }
                     }
                 }
@@ -606,52 +638,37 @@ val TelegramAntiDelete = patch(
             PatcherLog.info { "Telegram: hooked timeString (${timeStringMethod.declaringClass.name}.${timeStringMethod.name}) for deleted message mark" }
         }
     }.onFailure { PatcherLog.info(it) { "Telegram: failed to hook timeString for deleted mark" } }
+
+    // 4. Slightly grey-out / dim deleted chat bubbles (alpha = 0.78f) matching NagramXF
+    runCatching {
+        val moClass = TelegramResolver.findMessageObject(classLoader)
+        for (name in listOf("org.telegram.ui.Cells.ChatMessageCell", "org.telegram.ui.Cells.q1", "org.telegram.ui.Cells.u0")) {
+            val cellClass = runCatching { classLoader.loadClass(name) }.getOrNull() ?: continue
+            cellClass.declaredMethods.filter {
+                (it.name == "setMessageObject" || (it.parameterTypes.isNotEmpty() && moClass != null && it.parameterTypes[0] == moClass)) &&
+                    !java.lang.reflect.Modifier.isStatic(it.modifiers)
+            }.forEach { method ->
+                XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam) {
+                        val view = param.thisObject as? View ?: return
+                        val msgObj = param.args.firstOrNull()
+                        val id = getMessageId(msgObj)
+                        if (id > 0 && isDeleted(id)) {
+                            view.alpha = 0.78f
+                        } else {
+                            view.alpha = 1.0f
+                        }
+                    }
+                })
+            }
+        }
+    }
 }
 
 val TelegramAntiDisappearingMedia = patch(
     name = "Anti-disappearing media",
     description = "Keeps view-once photos, videos and voice messages viewable indefinitely across foreground and unopened chats.",
 ) {
-    fun preloadMedia(msg: Any?) {
-        if (msg == null) return
-        runCatching {
-            val media = runCatching { XposedHelpers.getObjectField(msg, "media") }.getOrNull() ?: return
-            val flCls = runCatching { classLoader.loadClass("org.telegram.messenger.s7") }.getOrNull()
-                ?: runCatching { classLoader.loadClass("org.telegram.messenger.FileLoader") }.getOrNull() ?: return
-            val ilCls = runCatching { classLoader.loadClass("org.telegram.messenger.dc") }.getOrNull()
-                ?: runCatching { classLoader.loadClass("org.telegram.messenger.ImageLocation") }.getOrNull() ?: return
-
-            val loader = runCatching { XposedHelpers.callStaticMethod(flCls, "getInstance", 0) }.getOrNull()
-                ?: runCatching { XposedHelpers.callStaticMethod(flCls, "G", 0) }.getOrNull() ?: return
-
-            val photo = runCatching { XposedHelpers.getObjectField(media, "photo") }.getOrNull()
-            if (photo != null) {
-                val sizes = runCatching { XposedHelpers.getObjectField(photo, "sizes") as? java.util.ArrayList<*> }.getOrNull()
-                if (sizes != null) {
-                    for (size in sizes) {
-                        if (size == null) continue
-                        val loc = runCatching { XposedHelpers.callStaticMethod(ilCls, "getForPhoto", size, photo) }.getOrNull()
-                            ?: runCatching { XposedHelpers.callStaticMethod(ilCls, "i", size, photo) }.getOrNull()
-                        if (loc != null) {
-                            runCatching { XposedHelpers.callMethod(loader, "loadFile", loc, msg, "jpg", 0, 0) }
-                                .onFailure { runCatching { XposedHelpers.callMethod(loader, "V", loc, msg, "jpg", 0, 0) } }
-                        }
-                    }
-                }
-            }
-
-            val document = runCatching { XposedHelpers.getObjectField(media, "document") }.getOrNull()
-            if (document != null) {
-                val size = (runCatching { XposedHelpers.getLongField(document, "size") }.getOrNull()
-                    ?: runCatching { (XposedHelpers.getObjectField(document, "size") as? Number)?.toLong() }.getOrNull()) ?: 0L
-                if (size in 1..20971520L) {
-                    runCatching { XposedHelpers.callMethod(loader, "loadFile", document, msg, 0, 0) }
-                        .onFailure { runCatching { XposedHelpers.callMethod(loader, "W", document, msg, 0, 0) } }
-                }
-            }
-        }
-    }
-
     fun neutralizeMessage(msg: Any?) {
         if (msg == null) return
         runCatching { XposedHelpers.setIntField(msg, "ttl_period", 0) }
@@ -663,7 +680,6 @@ val TelegramAntiDisappearingMedia = patch(
         val media = runCatching { XposedHelpers.getObjectField(msg, "media") }.getOrNull()
         if (media != null) {
             runCatching { XposedHelpers.setIntField(media, "ttl_seconds", 0) }
-            preloadMedia(msg)
         }
     }
 
