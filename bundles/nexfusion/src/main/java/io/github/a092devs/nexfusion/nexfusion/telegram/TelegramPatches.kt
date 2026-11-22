@@ -512,8 +512,9 @@ val TelegramAntiDelete = patch(
 
             val updateMask = runCatching { mcCls?.getField("UPDATE_MASK_ALL")?.getInt(null) }.getOrNull() ?: 255
             val updateInterfaces = runCatching { ncCls?.getField("updateInterfaces")?.getInt(null) }.getOrNull()
+            val updateAllMessages = runCatching { ncCls?.getField("updateAllMessages")?.getInt(null) }.getOrNull()
 
-            if (runOnUIThread != null && ncCls != null && updateInterfaces != null) {
+            if (runOnUIThread != null && ncCls != null) {
                 runOnUIThread.invoke(null, java.lang.Runnable {
                     for (acc in 0..3) {
                         runCatching {
@@ -521,7 +522,12 @@ val TelegramAntiDelete = patch(
                             val postMethod = ncCls.methods.firstOrNull {
                                 it.name == "postNotificationName" && it.parameterTypes.size == 2 && it.parameterTypes[0] == Int::class.javaPrimitiveType
                             }
-                            postMethod?.invoke(nc, updateInterfaces, arrayOf(updateMask))
+                            if (updateAllMessages != null) {
+                                postMethod?.invoke(nc, updateAllMessages, emptyArray<Any?>())
+                            }
+                            if (updateInterfaces != null) {
+                                postMethod?.invoke(nc, updateInterfaces, arrayOf(updateMask))
+                            }
                         }
                     }
                 })
@@ -529,7 +535,7 @@ val TelegramAntiDelete = patch(
         }
     }
 
-    fun markDeleted(ids: List<*>) {
+    fun markDeleted(ids: Collection<*>) {
         ensureLoaded()
         val sp = getPrefs()
         val editor = sp?.edit()
@@ -584,6 +590,26 @@ val TelegramAntiDelete = patch(
 
     // 1. Clear deleted message IDs from incoming delete updates and track them
     runCatching {
+        val tlrpc = runCatching { classLoader.loadClass("org.telegram.tgnet.TLRPC") }.getOrNull()
+        if (tlrpc != null) {
+            tlrpc.declaredMethods.filter {
+                java.lang.reflect.Modifier.isStatic(it.modifiers) && it.name == "deserialize"
+            }.forEach { m ->
+                XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam) {
+                        val obj = param.result ?: return
+                        val name = obj.javaClass.name
+                        if (name.contains("updateDeleteMessages") || name.contains("updateDeleteChannelMessages")) {
+                            val messages = runCatching { XposedHelpers.getObjectField(obj, "messages") as? java.util.ArrayList<*> }.getOrNull()
+                            if (messages != null && messages.isNotEmpty()) {
+                                markDeleted(messages)
+                                messages.clear()
+                            }
+                        }
+                    }
+                })
+            }
+        }
         for (name in listOf(
             "org.telegram.tgnet.tl.TL_update\$TL_updateDeleteMessages",
             "org.telegram.tgnet.tl.TL_update\$TL_updateDeleteChannelMessages",
@@ -603,7 +629,7 @@ val TelegramAntiDelete = patch(
         }
     }
 
-    // 2. Suppress remote push deletion safely (only deleteMessagesByPush)
+    // 2. Track messages deleted via MessagesController and suppress remote push deletion
     runCatching {
         val mc = TelegramResolver.findMessagesController(classLoader)
         if (mc != null) {
@@ -613,6 +639,20 @@ val TelegramAntiDelete = patch(
                 XposedBridge.hookMethod(m, object : XC_MethodHook() {
                     override fun beforeHookedMethod(param: MethodHookParam) {
                         param.result = null
+                    }
+                })
+            }
+            mc.declaredMethods.filter {
+                it.name.startsWith("deleteMessages") && !it.name.contains("Push") &&
+                    it.parameterTypes.any { pt -> java.util.List::class.java.isAssignableFrom(pt) }
+            }.forEach { m ->
+                XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        for (arg in param.args) {
+                            if (arg is java.util.List<*>) {
+                                markDeleted(arg)
+                            }
+                        }
                     }
                 })
             }
@@ -630,7 +670,7 @@ val TelegramAntiDelete = patch(
                     if (id > 0 && isDeleted(id)) {
                         val orig = (param.result as? CharSequence)?.toString() ?: ""
                         if (!orig.contains("🗑")) {
-                            param.result = if (orig.isEmpty()) "🗑" else "🗑  $orig"
+                            param.result = if (orig.isEmpty()) "🗑️" else "🗑️ $orig"
                         }
                     }
                 }
