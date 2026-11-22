@@ -7,6 +7,18 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.0.1
+
+- `YouTube & YouTube Music (Upstream Sync)`:
+  * Added `Video effects` patch for YouTube and YouTube Music with preset configurations, flyout button integration, and custom shader effects.
+  * Added `Disable DRC audio` patch with user-configurable "Disable loudness normalization" setting to preserve native dynamic range.
+  * Enhanced `Glass menus` patch to cleanly constrain glass blurs to bottom sheet panels without visual bleeding.
+  * Updated YouTube Music `Play album songs` patch: intelligently replaces album music videos with true audio tracks in playback queues.
+  * Expanded YouTube Music `Third-party lyrics` with offline Kuromoji romanization, custom font uploads, inline lyric sharing card editor, separate cache controls, and refined CJK/Romaji sweep animations.
+- `Ecosystem Synchronization & Bundle Stability`:
+  * Upgraded patch bundle version to 5.0.1 (versionCode 122).
+  * Fully synchronized with NexFusion manager v5.0.1.
+
 ## 5.0.0
 
 - `Unified Package Architecture & Namespace Migration`:
