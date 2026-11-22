@@ -368,7 +368,7 @@ val GboardSmartAutoCorrection = patch(
 
 val GboardCandidateEmojiVibrancy = patch(
     name = "Candidate strip emoji vibrancy",
-    description = "Ensures emoji glyphs in suggestion candidates render at full opacity (alpha 255) instead of dull translucent text styles.",
+    description = "Ensures emoji glyphs in suggestion candidates render at full opacity (alpha 255) and positions suggested emojis in the right slot.",
     use = false,
 ) {
     runCatching {
@@ -383,6 +383,27 @@ val GboardCandidateEmojiVibrancy = patch(
                 }
             }
         )
+    }
+    runCatching {
+        val holderClass = runCatching {
+            classLoader.loadClass("com.google.android.apps.inputmethod.latin.keyboard.widget.LatinFixedCountCandidatesHolderView")
+        }.getOrNull()
+        if (holderClass != null) {
+            for (m in holderClass.declaredMethods) {
+                val pts = m.parameterTypes
+                if (pts.isNotEmpty() && List::class.java.isAssignableFrom(pts[0])) {
+                    XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                        override fun beforeHookedMethod(param: MethodHookParam) {
+                            val list = param.args[0] as? List<*> ?: return
+                            val reordered = GboardCandidateEmojiRuntime.reorderCandidatesForStrip(param.thisObject, list)
+                            if (reordered != null) {
+                                param.args[0] = reordered
+                            }
+                        }
+                    })
+                }
+            }
+        }
     }
     Unit
 }
@@ -603,6 +624,34 @@ val GboardAccessibilityLayout = patch(
     )
 }
 
+val GboardHideIncognitoIcon = patch(
+    name = "Hide incognito icon",
+    description = "Replaces the incognito mask/glasses icon in the toolbar with the standard access point icon while keeping incognito mode active.",
+    use = false,
+) {
+    runCatching {
+        val editorInfoClass = android.view.inputmethod.EditorInfo::class.java
+        val targetClassNames = listOf(
+            "com.google.android.apps.inputmethod.libs.framework.keyboard.widget.AccessPointsPanel",
+            "com.google.android.apps.inputmethod.libs.framework.keyboard.widget.AccessPointsBar",
+        )
+        for (className in targetClassNames) {
+            val cls = runCatching { classLoader.loadClass(className) }.getOrNull() ?: continue
+            for (m in cls.declaredMethods) {
+                val pts = m.parameterTypes
+                if (pts.size == 3 && pts[0] == editorInfoClass && pts[1] == java.lang.Boolean.TYPE && pts[2] == java.lang.Boolean.TYPE) {
+                    XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                        override fun beforeHookedMethod(param: MethodHookParam) {
+                            param.args[2] = false
+                        }
+                    })
+                }
+            }
+        }
+    }
+    Unit
+}
+
 val GboardPatches = arrayOf(
     GboardSettingsMenu,
     GboardRamblerVoiceTyping,
@@ -643,6 +692,7 @@ val GboardPatches = arrayOf(
     GboardEmogen,
     GboardSignToText,
     GboardIncognitoMode,
+    GboardHideIncognitoIcon,
 )
 
 

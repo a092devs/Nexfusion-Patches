@@ -9,7 +9,7 @@ class TwitterPatchesTest {
 
     @Test
     fun `patch list keeps the upstream defaults`() {
-        assertEquals(15, TwitterPatches.size)
+        assertEquals(16, TwitterPatches.size)
         val byName = TwitterPatches.associateBy { it.name }
         for (name in listOf(
             "Remove Ads",
@@ -31,6 +31,7 @@ class TwitterPatchesTest {
             "Hide Timeline Bookmarks",
             "Disable Immersive Player",
             "Disable timeline auto-refresh",
+            "Custom sharing domain",
         )) {
             assertEquals(false, byName.getValue(name).use, name)
         }

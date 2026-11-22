@@ -852,6 +852,34 @@ val HideInteractivePosts = patch(
     }.onFailure { PatcherLog.info(it) { "NexFusion Reddit: Hide interactive posts hook skipped" } }
 }
 
+val HideAutoEnforceBanner = patch(
+    name = "Hide mod queue auto-enforce banner",
+    description = "Hides the auto-enforce promotion banner in the moderator queue.",
+    use = false,
+) {
+    runCatching {
+        val adapterClass = runCatching { classLoader.loadClass("androidx.recyclerview.widget.RecyclerView\$Adapter") }.getOrNull()
+        if (adapterClass != null) {
+            XposedBridge.hookAllMethods(adapterClass, "onBindViewHolder", object : XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    val holder = param.args.firstOrNull() ?: return
+                    val itemView = runCatching {
+                        XposedHelpers.getObjectField(holder, "itemView") as? View
+                    }.getOrNull() ?: return
+                    val holderName = holder.javaClass.name
+                    if (holderName.contains("AutoEnforce", ignoreCase = true) ||
+                        holderName.contains("ModQueueBanner", ignoreCase = true) ||
+                        itemView.contentDescription?.toString()?.contains("auto-enforce", ignoreCase = true) == true
+                    ) {
+                        itemView.visibility = View.GONE
+                        itemView.layoutParams?.height = 0
+                    }
+                }
+            })
+        }
+    }.onFailure { PatcherLog.info(it) { "NexFusion Reddit: Hide auto-enforce banner hook skipped" } }
+}
+
 val RedditPatches = arrayOf(
     RedditSettings,
     DisableScreenshotBanner,
@@ -884,6 +912,7 @@ val RedditPatches = arrayOf(
     HideVideosForYou,
     OpenSystemShareSheet,
     HideInteractivePosts,
+    HideAutoEnforceBanner,
 )
 
 

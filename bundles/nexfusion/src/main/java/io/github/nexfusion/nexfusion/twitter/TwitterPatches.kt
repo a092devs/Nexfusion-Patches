@@ -199,6 +199,61 @@ val TwitterHideGrok = patch(
     )
 }
 
+val TwitterCustomSharingDomain = patch(
+    name = "Custom sharing domain",
+    description = "Rewrites shared x.com and twitter.com links to fxtwitter.com for rich video and photo embeds in Discord and Telegram.",
+    use = false,
+) {
+    runCatching {
+        val clipboardManagerCls = classLoader.loadClass("android.content.ClipboardManager")
+        for (m in clipboardManagerCls.declaredMethods) {
+            if (m.name == "setPrimaryClip") {
+                XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        val clip = param.args.firstOrNull() as? android.content.ClipData ?: return
+                        if (clip.itemCount > 0) {
+                            val text = clip.getItemAt(0)?.text?.toString() ?: return
+                            if (text.contains("twitter.com") || text.contains("x.com")) {
+                                val rewritten = text
+                                    .replace("https://twitter.com", "https://fxtwitter.com")
+                                    .replace("https://www.twitter.com", "https://fxtwitter.com")
+                                    .replace("https://x.com", "https://fxtwitter.com")
+                                    .replace("https://www.x.com", "https://fxtwitter.com")
+                                if (rewritten != text) {
+                                    param.args[0] = android.content.ClipData.newPlainText(clip.description.label, rewritten)
+                                }
+                            }
+                        }
+                    }
+                })
+            }
+        }
+    }
+    runCatching {
+        val intentCls = android.content.Intent::class.java
+        for (m in intentCls.declaredMethods) {
+            if (m.name == "putExtra" && m.parameterTypes.getOrNull(0) == String::class.java && m.parameterTypes.getOrNull(1) == String::class.java) {
+                XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        val key = param.args[0] as? String ?: return
+                        if (key == android.content.Intent.EXTRA_TEXT) {
+                            val text = param.args[1] as? String ?: return
+                            if (text.contains("twitter.com") || text.contains("x.com")) {
+                                val rewritten = text
+                                    .replace("https://twitter.com", "https://fxtwitter.com")
+                                    .replace("https://www.twitter.com", "https://fxtwitter.com")
+                                    .replace("https://x.com", "https://fxtwitter.com")
+                                    .replace("https://www.x.com", "https://fxtwitter.com")
+                                param.args[1] = rewritten
+                            }
+                        }
+                    }
+                })
+            }
+        }
+    }
+}
+
 val TwitterPatches = arrayOf(
     TwitterRemoveAds,
     TwitterUnlockVideoDownloads,
@@ -215,6 +270,7 @@ val TwitterPatches = arrayOf(
     TwitterSanitizeShareLinks,
     TwitterDisableAutoRefresh,
     TwitterHideGrok,
+    TwitterCustomSharingDomain,
 )
 
 // ---- Remove Ads ---------------------------------------------------------------------------------

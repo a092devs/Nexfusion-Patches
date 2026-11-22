@@ -7,6 +7,22 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.5.0-beta1
+
+- `Package ID Migration`:
+  * Aligned patch bundle applicationId to `io.github.a092devs.nexfusion` for unified ecosystem compatibility with NexFusion 4.5.0 and LSPosed module repository listing.
+- `Gboard`:
+  * Added candidate strip emoji layout reordering, positioning primary emoji suggestions into the right slot of the candidate strip (ported from PixelBoard).
+  * Added `Hide incognito icon` patch, replacing the toolbar incognito icon with the standard access point icon while maintaining active incognito session mode (ported from adobo).
+- `Reddit`:
+  * Added `Hide mod queue auto-enforce banner` patch, suppressing automated moderation enforcement promotion banners in the mod queue (ported from adobo).
+- `Twitter / X`:
+  * Added `Custom sharing domain` patch, rewriting shared post links to `fxtwitter.com` for instant media embeds in Discord and Telegram.
+- `Security & Ecosystem Alignment`:
+  * Enforced cybersecurity hardening, safe string sanitization on bundle and package identifiers, and synchronized compatibility series with NexFusion manager v4.5.0-beta1.
+- `Build & CI`:
+  * Bumped patch bundle version to 4.5.0-beta1 (versionCode 119).
+
 ## 4.4.9
 
 - `Telegram`:
