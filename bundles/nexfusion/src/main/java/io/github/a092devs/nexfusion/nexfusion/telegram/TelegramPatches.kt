@@ -659,7 +659,7 @@ val TelegramAntiDelete = patch(
         }
     }
 
-    // 3. Mark deleted messages with cute trash icon indicator in chat bubbles
+    // 3. Mark deleted messages with subtle trash icon indicator in chat bubble timestamp (matching NagramXF)
     runCatching {
         val timeStringMethod = TelegramResolver.findTimeStringMethod(classLoader)
         if (timeStringMethod != null) {
@@ -670,7 +670,7 @@ val TelegramAntiDelete = patch(
                     if (id > 0 && isDeleted(id)) {
                         val orig = (param.result as? CharSequence)?.toString() ?: ""
                         if (!orig.contains("🗑")) {
-                            param.result = if (orig.isEmpty()) "🗑️" else "🗑️ $orig"
+                            param.result = if (orig.isEmpty()) "🗑" else "🗑 $orig"
                         }
                     }
                 }
@@ -679,7 +679,7 @@ val TelegramAntiDelete = patch(
         }
     }.onFailure { PatcherLog.info(it) { "Telegram: failed to hook timeString for deleted mark" } }
 
-    // 4. Slightly grey-out / dim deleted chat bubbles (alpha = 0.78f) matching NagramXF
+    // 4. Slightly grey-out / dim deleted chat bubbles (alpha = 0.72f) matching NagramXF
     runCatching {
         val moClass = TelegramResolver.findMessageObject(classLoader)
         for (name in listOf("org.telegram.ui.Cells.ChatMessageCell", "org.telegram.ui.Cells.q1", "org.telegram.ui.Cells.u0")) {
@@ -694,7 +694,7 @@ val TelegramAntiDelete = patch(
                         val msgObj = param.args.firstOrNull()
                         val id = getMessageId(msgObj)
                         if (id > 0 && isDeleted(id)) {
-                            view.alpha = 0.78f
+                            view.alpha = 0.72f
                         } else {
                             view.alpha = 1.0f
                         }
@@ -709,188 +709,45 @@ val TelegramAntiDisappearingMedia = patch(
     name = "Anti-disappearing media",
     description = "Keeps view-once photos, videos and voice messages viewable indefinitely across foreground and unopened chats.",
 ) {
-    fun neutralizeMessage(msg: Any?) {
-        if (msg == null) return
-        runCatching { XposedHelpers.setIntField(msg, "ttl_period", 0) }
-        runCatching { XposedHelpers.setIntField(msg, "ttl", 0) }
-        runCatching { XposedHelpers.setIntField(msg, "destroyTime", 0) }
-        runCatching { XposedHelpers.setLongField(msg, "destroyTimeMillis", 0L) }
-        runCatching { XposedHelpers.setIntField(msg, "expire_date", 0) }
-        runCatching { XposedHelpers.setBooleanField(msg, "noforwards", false) }
-        val media = runCatching { XposedHelpers.getObjectField(msg, "media") }.getOrNull()
-        if (media != null) {
-            runCatching { XposedHelpers.setIntField(media, "ttl_seconds", 0) }
-        }
-    }
-
-    fun neutralizeMedia(media: Any?) {
-        if (media == null) return
-        runCatching { XposedHelpers.setIntField(media, "ttl_seconds", 0) }
-    }
-
-    fun neutralizeObject(obj: Any?) {
-        if (obj == null) return
-        if (obj is java.util.Collection<*>) {
-            for (item in obj) neutralizeObject(item)
-        } else {
-            neutralizeMessage(obj)
-            neutralizeMedia(obj)
-            val owner = runCatching { XposedHelpers.getObjectField(obj, "messageOwner") }.getOrNull()
-            if (owner != null) neutralizeMessage(owner)
-        }
-    }
-
-    // 1. Hook TLRPC.deserialize (catches ALL incoming objects across all threads/sync routines)
-    runCatching {
-        val tlrpc = runCatching { classLoader.loadClass("org.telegram.tgnet.TLRPC") }.getOrNull()
-        if (tlrpc != null) {
-            tlrpc.declaredMethods.filter {
-                java.lang.reflect.Modifier.isStatic(it.modifiers) && it.name == "deserialize"
-            }.forEach { m ->
-                XposedBridge.hookMethod(m, object : XC_MethodHook() {
-                    override fun afterHookedMethod(param: MethodHookParam) {
-                        neutralizeObject(param.result)
-                    }
-                })
-            }
-        }
-    }
-
-    // 2. Hook TLRPC$Message and TL_message readParams & TLdeserialize
-    runCatching {
-        for (name in listOf(
-            "org.telegram.tgnet.TLRPC\$Message",
-            "org.telegram.tgnet.TLRPC\$TL_message",
-            "org.telegram.tgnet.TLRPC\$TL_message_layer104",
-            "org.telegram.tgnet.TLRPC\$TL_message_layer117",
-            "org.telegram.tgnet.TLRPC\$TL_message_layer72",
-            "org.telegram.tgnet.TLRPC\$TL_message_secret",
-            "org.telegram.tgnet.TLRPC\$TL_message_secret_layer72",
-            "org.telegram.tgnet.TLRPC\$TL_message_secret_old",
-        )) {
-            val cls = runCatching { classLoader.loadClass(name) }.getOrNull() ?: continue
-            cls.declaredMethods.filter { it.name == "readParams" || it.name == "TLdeserialize" }.forEach { m ->
-                XposedBridge.hookMethod(m, object : XC_MethodHook() {
-                    override fun afterHookedMethod(param: MethodHookParam) {
-                        neutralizeMessage(param.result ?: param.thisObject)
-                    }
-                })
-            }
-        }
-    }
-
-    // 3. Hook TLRPC$MessageMedia and all subclasses readParams & TLdeserialize
-    runCatching {
-        for (name in listOf(
-            "org.telegram.tgnet.TLRPC\$MessageMedia",
-            "org.telegram.tgnet.TLRPC\$TL_messageMediaPhoto",
-            "org.telegram.tgnet.TLRPC\$TL_messageMediaPhoto_layer223",
-            "org.telegram.tgnet.TLRPC\$TL_messageMediaPhoto_layer74",
-            "org.telegram.tgnet.TLRPC\$TL_messageMediaDocument",
-            "org.telegram.tgnet.TLRPC\$TL_messageMediaDocument_layer197",
-            "org.telegram.tgnet.TLRPC\$TL_messageMediaDocument_layer187",
-            "org.telegram.tgnet.TLRPC\$TL_messageMediaDocument_layer159",
-            "org.telegram.tgnet.TLRPC\$TL_messageMediaDocument_layer74",
-        )) {
-            val cls = runCatching { classLoader.loadClass(name) }.getOrNull() ?: continue
-            cls.declaredMethods.filter { it.name == "readParams" || it.name == "TLdeserialize" }.forEach { m ->
-                XposedBridge.hookMethod(m, object : XC_MethodHook() {
-                    override fun afterHookedMethod(param: MethodHookParam) {
-                        neutralizeMedia(param.result ?: param.thisObject)
-                    }
-                })
-            }
-        }
-    }
-
-    // 4. Hook MessageObject constructors
+    // 1. Keep view-once messages from expiring or being marked force-expired
     runCatching {
         val mo = TelegramResolver.findMessageObject(classLoader)
         if (mo != null) {
             XposedBridge.hookAllConstructors(mo, object : XC_MethodHook() {
                 override fun afterHookedMethod(param: MethodHookParam) {
                     val obj = param.thisObject ?: return
+                    runCatching { XposedHelpers.setBooleanField(obj, "forceExpired", false) }
                     val owner = runCatching { XposedHelpers.getObjectField(obj, "messageOwner") }.getOrNull()
                         ?: runCatching { XposedHelpers.getObjectField(obj, "k") }.getOrNull()
-                    neutralizeMessage(owner)
-                    runCatching { XposedHelpers.setBooleanField(obj, "forceExpired", false) }
-                    for (f in obj.javaClass.declaredFields) {
-                        if (f.type == java.lang.Boolean.TYPE && f.name == "forceExpired") {
-                            f.isAccessible = true
-                            runCatching { f.setBoolean(obj, false) }
-                        }
+                    if (owner != null) {
+                        runCatching { XposedHelpers.setIntField(owner, "destroyTime", 0) }
+                        runCatching { XposedHelpers.setLongField(owner, "destroyTimeMillis", 0L) }
+                        runCatching { XposedHelpers.setBooleanField(owner, "noforwards", false) }
                     }
                 }
             })
         }
     }
 
-    // 5. Hook MessagesStorage (es / MessagesStorage) to neutralize before persisting and cancel TTL tasks
-    runCatching {
-        val ms = TelegramResolver.findMessagesStorage(classLoader)
-        if (ms != null) {
-            for (m in ms.declaredMethods) {
-                val hasMsgParam = m.parameterTypes.any { pt ->
-                    pt.name.contains("Message") || java.util.Collection::class.java.isAssignableFrom(pt)
-                }
-                if (hasMsgParam) {
-                    XposedBridge.hookMethod(m, object : XC_MethodHook() {
-                        override fun beforeHookedMethod(param: MethodHookParam) {
-                            for (arg in param.args) {
-                                neutralizeObject(arg)
-                            }
-                        }
-                    })
-                }
-
-                // Prevent createTaskForMid (6 params: long, int, int, int, int, boolean)
-                if (m.parameterCount == 6 && m.parameterTypes[0] == java.lang.Long.TYPE && m.parameterTypes[5] == java.lang.Boolean.TYPE) {
-                    XposedBridge.hookMethod(m, XC_MethodReplacement.DO_NOTHING)
-                }
-
-                // Prevent emptyMessagesMedia, checkMessagesTTL, getNewTask
-                if (m.name == "emptyMessagesMedia" || m.name == "checkMessagesTTL" || m.name == "getNewTask" ||
-                    (m.parameterCount == 2 && m.parameterTypes[0] == java.lang.Long.TYPE && java.util.List::class.java.isAssignableFrom(m.parameterTypes[1]))
-                ) {
-                    XposedBridge.hookMethod(m, XC_MethodReplacement.DO_NOTHING)
-                }
-            }
-        }
-
-        // Emptying runners
-        for (qName in listOf("org.telegram.messenger.qr", "org.telegram.messenger.ur")) {
-            val qCls = runCatching { classLoader.loadClass(qName) }.getOrNull()
-            if (qCls != null) {
-                qCls.declaredMethods.filter { it.name == "run" && it.parameterCount == 0 }.forEach { m ->
-                    XposedBridge.hookMethod(m, XC_MethodReplacement.DO_NOTHING)
-                }
-            }
-        }
-    }
-
-    // 6. Hook MessagesController view-once / timer expiration / task processing
+    // 2. Prevent MessagesController from executing view-once deletion tasks
     runCatching {
         val mc = TelegramResolver.findMessagesController(classLoader)
         if (mc != null) {
             mc.declaredMethods.filter {
-                it.name.contains("DeleteShowOnce", ignoreCase = true) || it.name == "createDeleteShowOnceTask"
+                it.name.contains("didViewShowOnce", ignoreCase = true) ||
+                    it.name.contains("DeleteShowOnce", ignoreCase = true) ||
+                    it.name == "createDeleteShowOnceTask"
             }.forEach { m ->
-                XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(0L))
-            }
-            mc.declaredMethods.filter {
-                it.name == "markMessageContentAsRead" || it.name == "markMessageAsRead2" || it.name == "processLoadedDeleteTask"
-            }.forEach { m ->
-                XposedBridge.hookMethod(m, XC_MethodReplacement.DO_NOTHING)
-            }
-            mc.declaredMethods.filter {
-                it.name == "checkDeletingTask" && it.returnType == java.lang.Boolean.TYPE
-            }.forEach { m ->
-                XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(false))
+                if (m.returnType == java.lang.Long.TYPE) {
+                    XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(0L))
+                } else {
+                    XposedBridge.hookMethod(m, XC_MethodReplacement.DO_NOTHING)
+                }
             }
         }
     }
 
-    // 7. Strip FLAG_SECURE on Window so view-once media can always be captured/recorded
+    // 3. Strip FLAG_SECURE on Window so view-once media can always be captured/recorded
     runCatching {
         val windowClass = Class.forName("android.view.Window")
         XposedBridge.hookAllMethods(windowClass, "setFlags", object : XC_MethodHook() {
@@ -909,21 +766,6 @@ val TelegramAntiDisappearingMedia = patch(
                 }
             }
         })
-    }
-
-    // 8. Hook MessageObject secret / voice once getters (l4, S4, g4, m5, R5, m4 in 13.3.0)
-    runCatching {
-        val mo = TelegramResolver.findMessageObject(classLoader)
-        if (mo != null) {
-            mo.declaredMethods.filter {
-                (it.returnType == java.lang.Boolean.TYPE || it.returnType == java.lang.Boolean::class.java) &&
-                    (it.name == "isSecretMedia" || it.name == "isSecretPhotoOrVideo" || it.name == "shouldEncryptPhotoOrVideo" ||
-                     it.name == "isVoiceOnce" || it.name == "isRoundOnce" || it.name == "needDrawBluredPreview" ||
-                     it.name == "l4" || it.name == "S4" || it.name == "g4" || it.name == "m5" || it.name == "R5" || it.name == "m4")
-            }.forEach { m ->
-                XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(false))
-            }
-        }
     }
 }
 
