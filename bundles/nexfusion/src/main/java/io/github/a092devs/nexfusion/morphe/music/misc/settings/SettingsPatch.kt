@@ -34,14 +34,14 @@ val SettingsHook = patch(
     val addPreferencesFromResource = ::PreferenceFragmentCompat_addPreferencesFromResource.method
 
     ::PreferenceFragmentCompat_setPreferencesFromResource.hookMethod {
-        before {
+        before { param ->
             val context = Utils.getContext()
-            val preferencesName = context.resources.getResourceName(it.args[0] as Int)
+            val preferencesName = context.resources.getResourceName(param.args[0] as Int)
             Logger.printDebug { "setPreferencesFromResource $preferencesName" }
             if (!preferencesName.endsWith("settings_headers")) return@before
-            addPreferencesFromResource(it.thisObject, R.xml.yt_morphe_settings_music)
-            addPreferencesFromResource(it.thisObject, it.args[0])
-            it.result = Unit
+            addPreferencesFromResource.invoke(param.thisObject, R.xml.yt_morphe_settings_music)
+            addPreferencesFromResource.invoke(param.thisObject, param.args[0])
+            param.result = Unit
         }
     }
 
@@ -264,6 +264,13 @@ object PreferenceScreen : BasePreferenceScreen() {
         summaryKey = null,
         icon = "@drawable/morphe_settings_screen_11_misc",
         iconBold = "@drawable/morphe_settings_screen_11_misc_bold",
+        layout = "@layout/morphe_preference_with_icon"
+    )
+    val VIDEO = Screen(
+        key = "morphe_settings_music_screen_10_video",
+        summaryKey = null,
+        icon = "@drawable/morphe_settings_screen_12_video",
+        iconBold = "@drawable/morphe_settings_screen_12_video_bold",
         layout = "@layout/morphe_preference_with_icon"
     )
 

@@ -32,11 +32,17 @@ private val afterOnBackPressed = mutableListOf<() -> Unit>()
 private val beforeOnBackInvoked = mutableListOf<() -> Unit>()
 
 fun addBackPressedHook(
-    hook: () -> Unit,
-    afterActivityBackPressed: Boolean = false
+    afterActivityBackPressed: Boolean,
+    hook: () -> Unit
 ) {
     (if (afterActivityBackPressed) afterOnBackPressed else beforeOnBackPressed)
         .add(hook)
+}
+
+fun addBackPressedHook(
+    hook: () -> Unit
+) {
+    addBackPressedHook(false, hook)
 }
 
 fun addPredictiveBackGestureHook(

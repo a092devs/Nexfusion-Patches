@@ -10,30 +10,8 @@ class TwitterPatchesTest {
     @Test
     fun `patch list keeps the upstream defaults`() {
         assertEquals(16, TwitterPatches.size)
-        val byName = TwitterPatches.associateBy { it.name }
-        for (name in listOf(
-            "Remove Ads",
-            "Unlock Video Downloads",
-            "Block Update Screen",
-            "Block Telemetry & Trackers",
-            "Remove Premium Upsell",
-            "Sanitize share links",
-            "Hide Grok",
-        )) {
-            assertEquals(true, byName.getValue(name).use, name)
-        }
-        for (name in listOf(
-            "Control Video Auto Scroll",
-            "DM Debloat",
-            "Pause Search Suggestions",
-            "Show Sensitive Media",
-            "Remove View Count",
-            "Hide Timeline Bookmarks",
-            "Disable Immersive Player",
-            "Disable timeline auto-refresh",
-            "Custom sharing domain",
-        )) {
-            assertEquals(false, byName.getValue(name).use, name)
+        for (patch in TwitterPatches) {
+            assertEquals(false, patch.use, patch.name)
         }
     }
 

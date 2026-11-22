@@ -84,9 +84,6 @@ tasks.withType<JavaCompile>().configureEach {
         "**/OAuth2Preference.java",
         "**/SpoofVideoStreamsSignInPreference.java",
         "**/SpoofSignaturePatch.java",
-        "**/preference/YouTubeGlassNavigationBarPreference.java",
-        "**/preference/MusicGlassNavigationBarPreference.java",
-        "**/preference/GlassNavigationBarSizePreference.java",
     )
 }
 

@@ -7,6 +7,7 @@ package io.github.a092devs.nexfusion.morphe.youtube.misc.commandrouter
 import io.github.a092devs.nexfusion.morphe.AccessFlags
 import io.github.a092devs.nexfusion.morphe.Fingerprint
 import io.github.a092devs.nexfusion.morphe.Opcode
+import io.github.a092devs.nexfusion.morphe.StrictQuery
 import io.github.a092devs.nexfusion.morphe.methodCall
 
 /**
@@ -32,6 +33,7 @@ internal object CommandRouterConstructorFingerprint : Fingerprint(
 /**
  * Runs one command with its context, by the command router itself if no other router handles the command.
  */
+@StrictQuery
 internal object CommandRouterExecuteCommandFingerprint : Fingerprint(
     classFingerprint = CommandRouterFragmentFingerprint,
     returnType = "V",

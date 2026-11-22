@@ -85,8 +85,8 @@ val NavigationBarHook = patch(
 
     // Hook onto back button pressed.  Needed to fix race problem with
     // Litho filtering based on navigation tab before the tab is updated.
-    addBackPressedHook(NavigationBar::onBackPressed)
-    addPredictiveBackGestureHook(NavigationBar::onBackInvoked)
+    addBackPressedHook { NavigationBar.onBackPressed() }
+    addPredictiveBackGestureHook { NavigationBar.onBackInvoked() }
 
     // Hook the search bar.
     DexMethod("Landroid/view/LayoutInflater;->inflate(ILandroid/view/ViewGroup;)Landroid/view/View;").hookMethod {
@@ -123,6 +123,21 @@ val NavigationBarHook = patch(
                 .set(null, java.lang.ref.WeakReference(proxy))
         }
     })
+
+    // Hook bottom bar container layout listener
+    runCatching {
+        InitializeBottomBarContainerFingerprint.hookMethod(scopedHook(
+            DexMethod("Landroid/view/View;->addOnLayoutChangeListener(Landroid/view/View\$OnLayoutChangeListener;)V").toMethod()
+        ) {
+            before {
+                val container = it.thisObject as? View ?: return@before
+                app.morphe.extension.youtube.patches.NavigationBarPatch.setNavigationBarGlass(container)
+                app.morphe.extension.youtube.patches.NavigationBarPatch.setNavigationBarOpaque(container)
+                app.morphe.extension.youtube.patches.NavigationBarPatch.hideNavigationBar(container)
+                app.morphe.extension.youtube.patches.NavigationBarPatch.watchSlimStatusBar(container)
+            }
+        })
+    }
 
     // Fix YT bug of notification tab missing the filled icon.
     val tabActivityCairo = ::navigationEnumClass.clazz.enumValueOf("TAB_ACTIVITY_CAIRO")

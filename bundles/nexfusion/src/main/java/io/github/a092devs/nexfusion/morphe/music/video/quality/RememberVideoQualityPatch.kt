@@ -14,7 +14,7 @@ import io.github.a092devs.nexfusion.patch
 val RememberVideoQuality = patch(
     name = "Remember video quality",
     description = "Remembers the last selected video quality and applies default quality on Wi-Fi and mobile networks.",
-    use = true,
+    use = false,
 ) {
     runCatching {
         MusicVideoIdFingerprint.memberOrNull?.let { member ->

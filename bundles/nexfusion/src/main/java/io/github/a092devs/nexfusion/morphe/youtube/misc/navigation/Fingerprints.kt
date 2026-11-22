@@ -117,6 +117,19 @@ internal object PivotBarDispatchTouchEventFingerprint : Fingerprint(
     parameters = listOf("Landroid/view/MotionEvent;")
 )
 
+object InitializeBottomBarContainerFingerprint : Fingerprint(
+    name = "run",
+    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.FINAL),
+    returnType = "V",
+    filters = listOf(
+        resourceLiteral(ResourceType.ID, "bottom_bar_container"),
+        io.github.a092devs.nexfusion.morphe.methodCall(
+            opcode = io.github.a092devs.nexfusion.morphe.Opcode.INVOKE_VIRTUAL,
+            smali = "Landroid/view/View;->addOnLayoutChangeListener(Landroid/view/View\$OnLayoutChangeListener;)V"
+        )
+    )
+)
+
 val pivotBarConstructorFingerprint = fingerprint {
     accessFlags(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
     strings("com.google.android.apps.youtube.app.endpoint.flags")

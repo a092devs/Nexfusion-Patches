@@ -12,6 +12,7 @@ import io.github.a092devs.nexfusion.morphe.youtube.misc.playservice.is_20_49_or_
 import io.github.a092devs.nexfusion.morphe.youtube.misc.playservice.is_21_15_or_greater
 import io.github.a092devs.nexfusion.morphe.youtube.misc.playservice.is_21_21_or_greater
 import io.github.a092devs.nexfusion.morphe.youtube.misc.playservice.is_21_36_or_greater
+import io.github.a092devs.nexfusion.morphe.youtube.misc.playservice.is_21_46_or_greater
 import io.github.a092devs.nexfusion.morphe.youtube.misc.settings.PreferenceScreen
 import io.github.a092devs.nexfusion.morphe.youtube.video.information.onCreateHook
 import io.github.a092devs.nexfusion.patch
@@ -32,11 +33,7 @@ val BackgroundPlayback = patch(
         ListPreference("morphe_auto_pause_on_screen_lock")
     )
 
-    onCreateHook.add(BackgroundPlaybackPatch::initialize)
-
-    PreferenceScreen.SHORTS.addPreferences(
-        SwitchPreference("morphe_shorts_disable_background_playback"),
-    )
+    onCreateHook.add { BackgroundPlaybackPatch.initialize(it) }
 
     BackgroundPlaybackManagerFingerprint.hookMethod {
         after {
@@ -75,7 +72,11 @@ val BackgroundPlayback = patch(
     insertLiteralOverride(45415425, true)
 
     // Force allowing background play for videos labeled for kids.
-    KidsBackgroundPlaybackPolicyControllerFingerprint.hookMethod(returnConstant(Unit))
+    if (is_21_46_or_greater) {
+        runCatching { KidsBackgroundPlaybackPolicyControllerFingerprint.hookMethod(returnConstant(Unit)) }
+    } else {
+        runCatching { KidsBackgroundPlaybackPolicyControllerLegacyFingerprint.hookMethod(returnConstant(Unit)) }
+    }
 
     // Fix PiP buttons not working after locking/unlocking device screen.
     if (!is_21_21_or_greater) {

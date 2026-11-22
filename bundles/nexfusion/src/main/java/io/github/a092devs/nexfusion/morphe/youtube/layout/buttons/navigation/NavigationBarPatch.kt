@@ -76,11 +76,17 @@ val NavigationBar = patch(
             key = "morphe_navigation_bar_glass_opacity",
             tag = app.morphe.extension.shared.settings.preference.SeekBarPreference::class.java
         ),
+        SwitchPreference("morphe_navigation_bar_glass_round", summary = true),
+        SwitchPreference("morphe_navigation_bar_glass_edge", summary = true),
+        NonInteractivePreference(
+            key = "morphe_navigation_bar_glass_bottom_margin",
+            tag = app.morphe.extension.shared.settings.preference.SeekBarPreference::class.java
+        ),
         NonInteractivePreference(
             key = "morphe_navigation_bar_glass_height",
             titleKey = "morphe_navigation_bar_glass_size_title",
             summaryKey = "morphe_navigation_bar_glass_size_summary",
-            tag = app.morphe.extension.shared.settings.preference.SeekBarPreference::class.java,
+            tag = app.morphe.extension.youtube.settings.preference.YouTubeGlassNavigationBarPreference::class.java,
             selectable = true
         )
     )
@@ -98,10 +104,9 @@ val NavigationBar = patch(
     )
 
     // Swap create with notifications button.
-    addOSNameHook(
-        Endpoint.GUIDE,
-        NavigationBarPatch::swapCreateWithNotificationButton
-    )
+    addOSNameHook(Endpoint.GUIDE) { osName ->
+        NavigationBarPatch.swapCreateWithNotificationButton(osName)
+    }
     setExtensionIsPatchIncluded(NavigationBarPatch::class.java)
 
     // Hide navigation button labels.
@@ -142,6 +147,123 @@ val NavigationBar = patch(
                     }
                 }
             )
+
+            io.github.a092devs.nexfusion.compat.XposedHelpers.findAndHookMethod(
+                pivotBarClass,
+                "setTranslationY",
+                Float::class.javaPrimitiveType,
+                object : io.github.a092devs.nexfusion.compat.XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        val view = param.thisObject as View
+                        param.args[0] = NavigationBarPatch.getNavigationBarTranslationY(view, param.args[0] as Float)
+                    }
+                }
+            )
+
+            val paddingHook = object : io.github.a092devs.nexfusion.compat.XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    val view = param.thisObject as View
+                    param.args[3] = NavigationBarPatch.getNavigationBarPadding(view, param.args[3] as Int)
+                }
+            }
+            io.github.a092devs.nexfusion.compat.XposedHelpers.findAndHookMethod(
+                pivotBarClass,
+                "setPadding",
+                Int::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType,
+                paddingHook
+            )
+            io.github.a092devs.nexfusion.compat.XposedHelpers.findAndHookMethod(
+                pivotBarClass,
+                "setPaddingRelative",
+                Int::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType,
+                paddingHook
+            )
+        }
+    }
+
+    // Build PivotBar items (Search, Settings, Watch Later)
+    runCatching {
+        val factoryMethod = PivotBarRendererFingerprint.method
+        val protoParamType = factoryMethod.parameterTypes[0]
+        val parseMethod = protoParamType.getMethod("parseFrom", ByteArray::class.java, com.google.protobuf.ExtensionRegistryLite::class.java)
+        val registry = runCatching {
+            val m = com.google.protobuf.ExtensionRegistryLite::class.java.getDeclaredMethod("getGeneratedRegistry")
+            m.isAccessible = true
+            m.invoke(null)
+        }.getOrNull() ?: com.google.protobuf.ExtensionRegistryLite.getEmptyRegistry()
+
+        io.github.a092devs.nexfusion.compat.XposedHelpers.findAndHookMethod(
+            NavigationBarPatch::class.java,
+            "buildPivotBarItem",
+            ByteArray::class.java,
+            object : io.github.a092devs.nexfusion.compat.XC_MethodReplacement() {
+                override fun replaceHookedMethod(param: MethodHookParam): Any? {
+                    val bytes = param.args[0] as? ByteArray ?: return null
+                    val proto = runCatching { parseMethod.invoke(null, bytes, registry) }.getOrNull() ?: return null
+                    val optional = runCatching { factoryMethod.invoke(null, proto) }.getOrNull() ?: return null
+                    return runCatching {
+                        optional.javaClass.getMethod("orElse", Any::class.java).invoke(optional, null)
+                    }.getOrNull()
+                }
+            }
+        )
+    }
+
+    // Initialize custom pivot bar buttons
+    runCatching {
+        PivotBarRendererFingerprint.hookMethod {
+            before { param ->
+                val messageLite = param.args[0] as? com.google.protobuf.MessageLite ?: return@before
+                NavigationBarPatch.createPivotBarItems(messageLite)
+            }
+        }
+    }
+    runCatching {
+        PivotBarIconOnlyRendererFingerprint.hookMethod {
+            before { param ->
+                val messageLite = param.args[0] as? com.google.protobuf.MessageLite ?: return@before
+                NavigationBarPatch.createIconOnlyPivotBarItems(messageLite)
+            }
+        }
+    }
+
+    // Apply Navigation Bar buttons ordering and custom items list
+    runCatching {
+        PivotBarRendererListFingerprint.hookMethod {
+            after { param ->
+                val thiz = param.thisObject ?: return@after
+                val listField = thiz.javaClass.declaredFields.firstOrNull {
+                    java.util.List::class.java.isAssignableFrom(it.type)
+                } ?: return@after
+                listField.isAccessible = true
+                val currentList = listField.get(thiz) as? List<Any> ?: return@after
+                val modified = NavigationBarPatch.getPivotBarRendererList(currentList) ?: return@after
+                val copyOf = currentList.javaClass.methods.firstOrNull {
+                    it.name in listOf("copyOf", "j") && it.parameterTypes.size == 1 &&
+                            java.util.Collection::class.java.isAssignableFrom(it.parameterTypes[0])
+                }
+                if (copyOf != null) {
+                    listField.set(thiz, copyOf.invoke(null, modified))
+                } else {
+                    runCatching { listField.set(thiz, modified) }
+                }
+            }
+        }
+    }
+
+    // Clip Live Chat scroll button
+    runCatching {
+        MoreCommentsIconFingerprint.hookMethod {
+            after { param ->
+                val view = param.result as? View ?: return@after
+                NavigationBarPatch.clipLiveChatScrollButton(view)
+            }
         }
     }
 
@@ -152,19 +274,20 @@ val NavigationBar = patch(
     insertLiteralOverride(45630927L, NavigationBarPatch::useTranslucentNavigationBarBackground)
     insertLiteralOverride(45632194L, NavigationBarPatch::useTranslucentNavigationBar)
     insertLiteralOverride(45631257L, NavigationBarPatch::useFeedBehindNavigationBar)
+    insertLiteralOverride(45633329L, NavigationBarPatch::useTranslucentNavigationBarStyle)
     insertLiteralOverride(45752241L, NavigationBarPatch::useFixedBottomBarRoom)
     insertLiteralOverride(45724388L, false)
 
-    // Android 12 and 13 can submit the player surface from two threads while drawing the blur.
-    // The translucent color is retained, and only the duplicate blurred drawing is disabled.
-    if (Build.VERSION.SDK_INT in 31..33) {
-        val canvases = listOf(
+    runCatching {
+        val canvases = listOfNotNull(
             Canvas::class.java,
-            Class.forName("android.graphics.RecordingCanvas")
+            runCatching { Class.forName("android.graphics.RecordingCanvas") }.getOrNull()
         )
         canvases.map { it.getMethod("isHardwareAccelerated") }.distinct().forEach { hardwareAccelerated ->
             NavigationBarBlurDrawFingerprint.hookMethod(scopedHook(hardwareAccelerated) {
-                before { it.result = false }
+                after {
+                    it.result = NavigationBarPatch.useNavigationBarBlur((it.result as? Boolean) ?: false)
+                }
             })
         }
     }

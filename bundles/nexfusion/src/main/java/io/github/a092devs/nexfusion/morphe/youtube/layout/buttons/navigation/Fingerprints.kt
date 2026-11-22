@@ -8,6 +8,7 @@ import io.github.a092devs.nexfusion.morphe.InstructionLocation.MatchAfterImmedia
 import io.github.a092devs.nexfusion.morphe.InstructionLocation.MatchAfterWithin
 import io.github.a092devs.nexfusion.morphe.Opcode
 import io.github.a092devs.nexfusion.morphe.OpcodesFilter
+import io.github.a092devs.nexfusion.morphe.ResourceType
 import io.github.a092devs.nexfusion.morphe.StrictQuery
 import io.github.a092devs.nexfusion.morphe.fieldAccess
 import io.github.a092devs.nexfusion.morphe.findFieldDirect
@@ -16,6 +17,7 @@ import io.github.a092devs.nexfusion.morphe.findMethodListDirect
 import io.github.a092devs.nexfusion.morphe.literal
 import io.github.a092devs.nexfusion.morphe.methodCall
 import io.github.a092devs.nexfusion.morphe.opcode
+import io.github.a092devs.nexfusion.morphe.resourceLiteral
 import io.github.a092devs.nexfusion.morphe.string
 import io.github.a092devs.nexfusion.morphe.youtube.layout.hide.shorts.ShortsBottomBarContainerFingerprint
 
@@ -230,3 +232,76 @@ internal val pageKeyboardInsetsMethod = findMethodDirect {
                 it.methodRef?.paramTypes?.map { it.descriptor } == listOf("Landroid/view/View;")
     }.methodRef!!
 }
+
+object PivotBarRendererFingerprint : Fingerprint(
+    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.STATIC),
+    parameters = listOf("L"),
+    returnType = "Lj$/util/Optional;",
+    filters = listOf(
+        literal(117501096L),
+        opcode(Opcode.IF_NE),
+        opcode(Opcode.CHECK_CAST),
+        methodCall(
+            opcode = Opcode.INVOKE_DIRECT_RANGE,
+            definingClass = "this",
+            name = "<init>",
+            returnType = "V"
+        ),
+        opcode(Opcode.RETURN_OBJECT)
+    )
+)
+
+object PivotBarIconOnlyRendererFingerprint : Fingerprint(
+    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.STATIC),
+    parameters = listOf("L"),
+    returnType = "Lj$/util/Optional;",
+    filters = listOf(
+        literal(117501096L),
+        literal(318370163L),
+        opcode(Opcode.IF_NE, location = MatchAfterWithin(3)),
+        opcode(Opcode.CHECK_CAST, location = MatchAfterWithin(6)),
+        methodCall(
+            opcode = Opcode.INVOKE_DIRECT_RANGE,
+            definingClass = "this",
+            name = "<init>",
+            returnType = "V"
+        )
+    )
+)
+
+object PivotBarRendererListFingerprint : Fingerprint(
+    parameters = listOf("L"),
+    returnType = "V",
+    filters = listOf(
+        fieldAccess(
+            opcode = Opcode.IGET_OBJECT,
+            definingClass = "this",
+            type = "L"
+        ),
+        methodCall(
+            opcode = Opcode.INVOKE_STATIC,
+            parameters = listOf("L"),
+            returnType = "L"
+        ),
+        fieldAccess(
+            opcode = Opcode.IPUT_OBJECT,
+            definingClass = "this",
+            type = "L"
+        ),
+        methodCall(smali = "Ljava/lang/Class;->isInstance(Ljava/lang/Object;)Z")
+    )
+)
+
+object MoreCommentsIconFingerprint : Fingerprint(
+    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.FINAL),
+    returnType = "Landroid/view/View;",
+    parameters = listOf(),
+    filters = listOf(
+        resourceLiteral(ResourceType.ID, "more_comments_icon"),
+        methodCall(
+            opcode = Opcode.INVOKE_VIRTUAL,
+            name = "findViewById"
+        ),
+        opcode(Opcode.MOVE_RESULT_OBJECT, location = MatchAfterImmediately())
+    )
+)

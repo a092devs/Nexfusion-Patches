@@ -100,7 +100,7 @@ internal val isMainProcess: Boolean by lazy {
 private fun igPatch(
     name: String,
     description: String,
-    use: Boolean = true,
+    use: Boolean = false,
     block: PatchExecutor.() -> Unit,
 ) = patch(name, description, use) {
     if (!isMainProcess) return@patch
@@ -786,7 +786,7 @@ val HideOtherStoryRings = igPatch(
 val SendKeyboardGifs = igPatch(
     name = "Send keyboard GIFs",
     description = "Sends GIFs committed from the keyboard's GIF picker as animated media in DMs, instead of showing \"Tap the sticker icon to find and send GIFs\".",
-    use = true,
+    use = false,
 ) {
     runCatching {
         // Allow GIF content types from keyboard in direct messaging

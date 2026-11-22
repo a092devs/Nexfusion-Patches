@@ -581,7 +581,7 @@ val ForceSystemFont = patch(
 val CopyText = patch(
     name = "Copy text",
     description = "Enables text selection and copying in posts and comments.",
-    use = true,
+    use = false,
 ) {
     runCatching {
         XposedBridge.hookAllMethods(
@@ -718,7 +718,7 @@ val DisableModernHome = patch(
 val RememberCollapsedComments = patch(
     name = "Remember collapsed comments",
     description = "Keeps comments you collapsed collapsed when reopening a post.",
-    use = true,
+    use = false,
 ) {
     runCatching {
         val commentClass = runCatching { classLoader.loadClass("com.reddit.domain.model.Comment") }.getOrNull()

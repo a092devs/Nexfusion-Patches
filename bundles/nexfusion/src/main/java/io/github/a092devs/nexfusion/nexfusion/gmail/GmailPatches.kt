@@ -17,7 +17,10 @@ val HideAds = patch(
     description = "Removes the sponsored rows Gmail renders between conversations in Promotions and Social tabs.",
 ) {
     val constructors = ::adViewConstructors.dexMethodList
-    check(constructors.isNotEmpty()) { "No ad view constructor found in $AD_PACKAGE" }
+    if (constructors.isEmpty()) {
+        PatcherLog.info { "No ad view constructor found in $AD_PACKAGE" }
+        return@patch
+    }
 
     val hooked = constructors.mapNotNull { dexMethod ->
         val constructor = dexMethod.toConstructorOrNull(classLoader) ?: return@mapNotNull null
@@ -32,7 +35,10 @@ val HideAds = patch(
         constructor.declaringClass.simpleName
     }
 
-    check(hooked.isNotEmpty()) { "No ad view among ${constructors.size} classes in $AD_PACKAGE" }
+    if (hooked.isEmpty()) {
+        PatcherLog.info { "No ad view among ${constructors.size} classes in $AD_PACKAGE" }
+        return@patch
+    }
     PatcherLog.info { "NexFusion: Gmail ad views hooked: ${hooked.joinToString()}" }
 }
 

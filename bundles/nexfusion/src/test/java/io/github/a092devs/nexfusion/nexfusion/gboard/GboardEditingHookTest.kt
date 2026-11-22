@@ -2,6 +2,7 @@ package io.github.a092devs.nexfusion.nexfusion.gboard
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -27,7 +28,7 @@ class GboardEditingHookTest {
         assertNotNull(GboardDeveloperOptions.description)
         assertNotNull(GboardBackupRestore.description)
 
-        assertTrue(GboardKeypressHaptics.use)
-        assertTrue(GboardTerminalPasteAndSelectAll.use)
+        assertFalse(GboardKeypressHaptics.use)
+        assertFalse(GboardTerminalPasteAndSelectAll.use)
     }
 }

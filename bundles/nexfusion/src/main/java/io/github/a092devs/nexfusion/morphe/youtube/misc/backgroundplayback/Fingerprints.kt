@@ -98,10 +98,24 @@ val backgroundPlaybackSettingsSubFingerprint = findMethodDirect {
 }
 
 object KidsBackgroundPlaybackPolicyControllerFingerprint : Fingerprint(
+    returnType = "V",
+    parameters = listOf("I", "Z", "Z", "Z", "L"),
+    filters = listOf(
+        io.github.a092devs.nexfusion.morphe.opcode(Opcode.IGET),
+        literal(5, location = MatchAfterWithin(8)),
+        literal(2, location = MatchAfterWithin(5)),
+        literal(3, location = MatchAfterWithin(8)),
+        literal(0x13, location = MatchAfterWithin(12)),
+    )
+)
+
+object KidsBackgroundPlaybackPolicyControllerLegacyFingerprint : Fingerprint(
     accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.FINAL),
     returnType = "V",
     parameters = listOf("I", "L", "L"),
-    filters = OpcodesFilter.opcodesToFilters(
+    filters = listOf(
+        literal(5),
+    ) + OpcodesFilter.opcodesToFilters(
         Opcode.CONST_4,
         Opcode.IF_NE,
         Opcode.SGET_OBJECT,

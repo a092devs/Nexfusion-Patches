@@ -3,7 +3,6 @@ package io.github.a092devs.nexfusion.morphe.youtube
 import android.app.Activity
 import app.morphe.extension.shared.Utils
 import io.github.libxposed.api.XposedInterface
-import io.github.a092devs.nexfusion.patches.ExtensionResourceHook
 import io.github.a092devs.nexfusion.addModuleAssets
 import io.github.a092devs.nexfusion.injectHostClassLoaderToSelf
 import io.github.a092devs.nexfusion.hookExtensionClassLoading
@@ -48,6 +47,9 @@ import io.github.a092devs.nexfusion.morphe.youtube.misc.verticalscroll.FixVertic
 import io.github.a092devs.nexfusion.morphe.youtube.shared.YOUTUBE_MAIN_ACTIVITY_CLASS_TYPE
 import io.github.a092devs.nexfusion.morphe.youtube.shared.mainActivityClass
 import io.github.a092devs.nexfusion.morphe.youtube.video.audio.ForceOriginalAudio
+import io.github.a092devs.nexfusion.morphe.youtube.video.audio.DisableDRCAudio
+import io.github.a092devs.nexfusion.morphe.youtube.video.effects.VideoEffects
+import io.github.a092devs.nexfusion.morphe.youtube.layout.glassmenus.GlassMenus
 import io.github.a092devs.nexfusion.morphe.youtube.video.codecs.DisableVideoCodecs
 import io.github.a092devs.nexfusion.morphe.youtube.video.delay.VideoDelay
 import io.github.a092devs.nexfusion.morphe.youtube.video.quality.VideoQuality
@@ -85,8 +87,6 @@ val ExtensionHook = patch(name = "<ExtensionHook>") {
             )
         }
     }
-
-    ExtensionResourceHook.run(this)
 }
 
 private val overrides = mutableMapOf<Long, (Boolean) -> Boolean>()
@@ -104,13 +104,12 @@ val FeatureOverride = patch {
     runCatching {
         ::experimentalBooleanFeatureFlagFingerprint.hookMethod {
             priority = XposedInterface.PRIORITY_DEFAULT - 1
-            after {
-                val args = it.args ?: return@after
-                if (args.size < 2) return@after
-                val id = (args[args.size - 2] as? Long) ?: return@after
-                val orig = (it.result as? Boolean) ?: return@after
+            after { param ->
+                val args = param.args ?: return@after
+                val id = (args.getOrNull(args.size - 2) as? Long) ?: return@after
+                val orig = (param.result as? Boolean) ?: return@after
                 val match = overrides[id] ?: return@after
-                it.result = match(orig)
+                param.result = match(orig)
             }
         }
     }
@@ -119,13 +118,12 @@ val FeatureOverride = patch {
         runCatching {
             ::experimentalIndexedBooleanFeatureFlagFingerprint.hookMethod {
                 priority = XposedInterface.PRIORITY_DEFAULT - 1
-                after {
-                    val args = it.args ?: return@after
-                    if (args.size < 2) return@after
-                    val id = (args[args.size - 2] as? Long) ?: return@after
-                    val orig = (it.result as? Boolean) ?: return@after
+                after { param ->
+                    val args = param.args ?: return@after
+                    val id = (args.getOrNull(args.size - 2) as? Long) ?: return@after
+                    val orig = (param.result as? Boolean) ?: return@after
                     val match = overrides[id] ?: return@after
-                    it.result = match(orig)
+                    param.result = match(orig)
                 }
             }
         }
@@ -173,6 +171,9 @@ val YouTubePatches = arrayOf(
     PlaylistPanelButton,
     FullscreenPlaylistPanel,
     CommandRouterHook,
+    VideoEffects,
+    DisableDRCAudio,
+    GlassMenus,
     // make sure settingsHook at end to build preferences
     SettingsHook,
     FeatureOverride
