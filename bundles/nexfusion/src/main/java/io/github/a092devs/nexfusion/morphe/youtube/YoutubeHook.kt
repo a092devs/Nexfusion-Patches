@@ -1,0 +1,179 @@
+package io.github.a092devs.nexfusion.morphe.youtube
+
+import android.app.Activity
+import app.morphe.extension.shared.Utils
+import io.github.libxposed.api.XposedInterface
+import io.github.a092devs.nexfusion.patches.ExtensionResourceHook
+import io.github.a092devs.nexfusion.addModuleAssets
+import io.github.a092devs.nexfusion.injectHostClassLoaderToSelf
+import io.github.a092devs.nexfusion.hookExtensionClassLoading
+import io.github.a092devs.nexfusion.morphe.shared.misc.debugging.experimentalIndexedBooleanFeatureFlagFingerprint
+import io.github.a092devs.nexfusion.morphe.youtube.misc.playservice.is_21_42_or_greater
+import io.github.a092devs.nexfusion.morphe.shared.misc.CheckRecycleBitmapMediaSession
+import io.github.a092devs.nexfusion.morphe.shared.misc.debugging.experimentalBooleanFeatureFlagFingerprint
+import io.github.a092devs.nexfusion.morphe.youtube.ad.HideAds
+import io.github.a092devs.nexfusion.morphe.youtube.interaction.autoplay.AutoplayControl
+import io.github.a092devs.nexfusion.morphe.youtube.interaction.channelsearch.ChannelSearch
+import io.github.a092devs.nexfusion.morphe.youtube.interaction.copyvideolink.CopyVideoLinkButtonPatch
+import io.github.a092devs.nexfusion.morphe.youtube.interaction.downloads.Downloads
+import io.github.a092devs.nexfusion.morphe.youtube.interaction.doubletap.disableChapterSkipDoubleTapPatch
+import io.github.a092devs.nexfusion.morphe.youtube.interaction.onthego.onTheGoPatch
+import io.github.a092devs.nexfusion.morphe.youtube.interaction.playlistpanel.PlaylistPanelButton
+import io.github.a092devs.nexfusion.morphe.youtube.interaction.seekbar.seekbarPatch
+import io.github.a092devs.nexfusion.morphe.youtube.interaction.shorts.SkipLiveShorts
+import io.github.a092devs.nexfusion.morphe.youtube.interaction.swipecontrols.SwipeControls
+import io.github.a092devs.nexfusion.morphe.youtube.layout.buttons.action.HideVideoActionButtons
+import io.github.a092devs.nexfusion.morphe.youtube.layout.buttons.navigation.NavigationBar
+import io.github.a092devs.nexfusion.morphe.youtube.layout.captions.AutoCaptions
+import io.github.a092devs.nexfusion.morphe.youtube.layout.captions.CaptionsInPip
+import io.github.a092devs.nexfusion.morphe.youtube.layout.dearrow.deArrowPatch
+import io.github.a092devs.nexfusion.morphe.youtube.layout.sponsorblock.SponsorBlock
+import io.github.a092devs.nexfusion.morphe.youtube.layout.hide.ambientmode.AmbientMode
+import io.github.a092devs.nexfusion.morphe.youtube.layout.hide.general.HideLayoutComponents
+import io.github.a092devs.nexfusion.morphe.youtube.layout.hide.shorts.HideShortsComponents
+import io.github.a092devs.nexfusion.morphe.youtube.layout.player.playlistpanel.FullscreenPlaylistPanel
+import io.github.a092devs.nexfusion.morphe.youtube.layout.statusbar.HideStatusBar
+import io.github.a092devs.nexfusion.morphe.youtube.layout.miniplayer.Miniplayer
+import io.github.a092devs.nexfusion.morphe.youtube.layout.player.pip.PipSeekButtons
+import io.github.a092devs.nexfusion.morphe.youtube.layout.playlistautoplay.DisablePlaylistAutoplay
+import io.github.a092devs.nexfusion.morphe.youtube.layout.shortsnoresume.DisableShortsResumingOnStartup
+import io.github.a092devs.nexfusion.morphe.youtube.layout.startpage.changeStartPagePatch
+import io.github.a092devs.nexfusion.morphe.youtube.layout.thumbnails.BypassImageRegionRestrictionsPatch
+import io.github.a092devs.nexfusion.morphe.youtube.misc.backgroundplayback.BackgroundPlayback
+import io.github.a092devs.nexfusion.morphe.youtube.misc.commandrouter.CommandRouterHook
+import io.github.a092devs.nexfusion.morphe.youtube.misc.debugging.EnableDebugging
+import io.github.a092devs.nexfusion.morphe.youtube.misc.privacy.SanitizeSharingLinks
+import io.github.a092devs.nexfusion.morphe.youtube.misc.settings.SettingsHook
+import io.github.a092devs.nexfusion.morphe.youtube.misc.verticalscroll.FixVerticalScroll
+import io.github.a092devs.nexfusion.morphe.youtube.shared.YOUTUBE_MAIN_ACTIVITY_CLASS_TYPE
+import io.github.a092devs.nexfusion.morphe.youtube.shared.mainActivityClass
+import io.github.a092devs.nexfusion.morphe.youtube.video.audio.ForceOriginalAudio
+import io.github.a092devs.nexfusion.morphe.youtube.video.codecs.DisableVideoCodecs
+import io.github.a092devs.nexfusion.morphe.youtube.video.delay.VideoDelay
+import io.github.a092devs.nexfusion.morphe.youtube.video.quality.VideoQuality
+import io.github.a092devs.nexfusion.morphe.youtube.misc.playservice.VersionCheck
+import io.github.a092devs.nexfusion.morphe.youtube.video.speed.PlaybackSpeed
+import io.github.a092devs.nexfusion.patch
+import org.luckypray.dexkit.wrap.DexMethod
+
+val ExtensionHook = patch(name = "<ExtensionHook>") {
+    dependsOn(VersionCheck)
+    injectHostClassLoaderToSelf(bundle.classLoader, classLoader)
+    hookExtensionClassLoading(bundle.classLoader)
+    val hooked = runCatching {
+        DexMethod("$YOUTUBE_MAIN_ACTIVITY_CLASS_TYPE->onCreate(Landroid/os/Bundle;)V").hookMethod {
+            before {
+                val mainActivity = it.thisObject as Activity
+                mainActivity.addModuleAssets()
+                Utils.setContext(mainActivity)
+            }
+        }
+    }.isSuccess
+    if (!hooked) {
+        runCatching {
+            val targetClass = runCatching { classLoader.loadClass("com.google.android.apps.youtube.app.watchwhile.MainActivity") }
+                .getOrNull() ?: ::mainActivityClass.clazz
+            io.github.a092devs.nexfusion.compat.XposedHelpers.findAndHookMethod(
+                targetClass, "onCreate", android.os.Bundle::class.java,
+                object : io.github.a092devs.nexfusion.compat.XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        val mainActivity = param.thisObject as Activity
+                        mainActivity.addModuleAssets()
+                        Utils.setContext(mainActivity)
+                    }
+                }
+            )
+        }
+    }
+
+    ExtensionResourceHook.run(this)
+}
+
+private val overrides = mutableMapOf<Long, (Boolean) -> Boolean>()
+
+fun insertLiteralOverride(id: Long, override: Boolean = false) {
+    overrides[id] = { override }
+}
+
+fun insertLiteralOverride(id: Long, override: (Boolean) -> Boolean) {
+    overrides[id] = override
+}
+
+val FeatureOverride = patch {
+    dependsOn(VersionCheck)
+    runCatching {
+        ::experimentalBooleanFeatureFlagFingerprint.hookMethod {
+            priority = XposedInterface.PRIORITY_DEFAULT - 1
+            after {
+                val args = it.args ?: return@after
+                if (args.size < 2) return@after
+                val id = (args[args.size - 2] as? Long) ?: return@after
+                val orig = (it.result as? Boolean) ?: return@after
+                val match = overrides[id] ?: return@after
+                it.result = match(orig)
+            }
+        }
+    }
+    if (is_21_42_or_greater) {
+        insertLiteralOverride(45857115L, true) // Media session owner check
+        runCatching {
+            ::experimentalIndexedBooleanFeatureFlagFingerprint.hookMethod {
+                priority = XposedInterface.PRIORITY_DEFAULT - 1
+                after {
+                    val args = it.args ?: return@after
+                    if (args.size < 2) return@after
+                    val id = (args[args.size - 2] as? Long) ?: return@after
+                    val orig = (it.result as? Boolean) ?: return@after
+                    val match = overrides[id] ?: return@after
+                    it.result = match(orig)
+                }
+            }
+        }
+    }
+}
+
+val YouTubePatches = arrayOf(
+    ExtensionHook,
+    BackgroundPlayback,
+    SanitizeSharingLinks,
+    HideAds,
+    CopyVideoLinkButtonPatch,
+    Downloads,
+    ChannelSearch,
+    HideShortsComponents,
+    DisableShortsResumingOnStartup,
+    SkipLiveShorts,
+    NavigationBar,
+    SwipeControls,
+    seekbarPatch,
+    onTheGoPatch,
+    disableChapterSkipDoubleTapPatch,
+    VideoQuality,
+    HideLayoutComponents,
+    HideVideoActionButtons,
+    PlaybackSpeed,
+    AutoCaptions,
+    CaptionsInPip,
+    EnableDebugging,
+    ForceOriginalAudio,
+    DisableVideoCodecs,
+    deArrowPatch,
+    SponsorBlock,
+    VideoDelay,
+    BypassImageRegionRestrictionsPatch,
+    AmbientMode,
+    HideStatusBar,
+    Miniplayer,
+    PipSeekButtons,
+    DisablePlaylistAutoplay,
+    CheckRecycleBitmapMediaSession,
+    changeStartPagePatch,
+    FixVerticalScroll,
+    AutoplayControl,
+    PlaylistPanelButton,
+    FullscreenPlaylistPanel,
+    CommandRouterHook,
+    // make sure settingsHook at end to build preferences
+    SettingsHook,
+    FeatureOverride
+)

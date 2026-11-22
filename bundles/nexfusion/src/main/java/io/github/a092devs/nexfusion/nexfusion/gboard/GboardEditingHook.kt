@@ -1,0 +1,119 @@
+package io.github.a092devs.nexfusion.nexfusion.gboard
+
+import android.content.ClipboardManager
+import android.content.Context
+import android.inputmethodservice.InputMethodService
+import android.text.InputType
+import android.util.Log
+import android.view.inputmethod.InputConnection
+import io.github.a092devs.nexfusion.compat.XC_MethodHook
+import io.github.a092devs.nexfusion.compat.XposedBridge
+import java.lang.ref.WeakReference
+
+/**
+ * Ported from jasonwu1994/Gboard-patches (GPL-3.0) GboardEditorActions:
+ *
+ * 1. Terminal Paste Fallback: In raw terminal input fields (e.g. Termux, where
+ *    (inputType and TYPE_MASK_CLASS) == TYPE_NULL), standard context-menu paste fails.
+ *    We commit plain text directly via InputConnection.commitText.
+ *
+ * 2. Auto Select-All: When copy or cut is dispatched without any text selected,
+ *    automatically selects all text first before performing the copy/cut.
+ */
+object GboardEditingHook {
+
+    private const val TAG = "NexFusion"
+    private var currentIme = WeakReference<InputMethodService?>(null)
+
+    fun install(classLoader: ClassLoader) {
+        val imeClass = runCatching {
+            classLoader.loadClass("android.inputmethodservice.InputMethodService")
+        }.getOrNull() ?: return
+
+        runCatching {
+            XposedBridge.hookAllMethods(imeClass, "onStartInputView", object : XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    val service = param.thisObject as? InputMethodService ?: return
+                    currentIme = WeakReference(service)
+                }
+            })
+
+            XposedBridge.hookAllMethods(imeClass, "onFinishInputView", object : XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    currentIme.clear()
+                }
+            })
+        }
+
+        // Hook InputConnectionWrapper.performContextMenuAction
+        runCatching {
+            val icWrapper = classLoader.loadClass("android.view.inputmethod.InputConnectionWrapper")
+            val method = icWrapper.getDeclaredMethod("performContextMenuAction", Int::class.javaPrimitiveType)
+            XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    val actionId = param.args[0] as? Int ?: return
+                    val connection = param.thisObject as? InputConnection ?: return
+                    val service = currentIme.get()
+
+                    if (actionId == android.R.id.paste) {
+                        val editorInfo = service?.currentInputEditorInfo
+                        if (editorInfo != null && (editorInfo.inputType and InputType.TYPE_MASK_CLASS) == InputType.TYPE_NULL) {
+                            if (pasteRawText(service, connection)) {
+                                param.result = true
+                            }
+                        }
+                    } else if (actionId == android.R.id.copy || actionId == android.R.id.cut) {
+                        val selected = connection.getSelectedText(0)
+                        if (selected.isNullOrEmpty()) {
+                            connection.performContextMenuAction(android.R.id.selectAll)
+                        }
+                    }
+                }
+            })
+            Log.i(TAG, "NexFusion: Hooked Gboard terminal paste & auto select-all")
+        }
+
+        // Intercept commitText to strip leaking XML resource tags (e.g. "?attr/") or escaped question marks
+        runCatching {
+            val icWrapper = classLoader.loadClass("android.view.inputmethod.InputConnectionWrapper")
+            val commitMethod = icWrapper.getDeclaredMethod("commitText", CharSequence::class.java, Int::class.javaPrimitiveType)
+            XposedBridge.hookMethod(commitMethod, object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    val raw = param.args[0] as? CharSequence ?: return
+                    param.args[0] = sanitizeCommitText(raw)
+                }
+            })
+            Log.i(TAG, "NexFusion: Hooked Gboard commitText sanitizer")
+        }
+    }
+
+    fun sanitizeCommitText(text: CharSequence?): CharSequence? {
+        if (text == null) return null
+        val s = text.toString()
+        var result = s
+        if (result.contains("?attr/")) {
+            result = result.replace("?attr/", "?")
+        }
+        if (result.indexOf('\\') != -1 && (result.contains("\\?") || result.contains("\\\u061f"))) {
+            result = result.replace(Regex("\\\\+([?\\u061f])"), "$1")
+        }
+        return if (result == s) text else result
+    }
+
+    internal fun pasteRawText(service: InputMethodService, connection: InputConnection): Boolean {
+        val clipboard = service.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return false
+        val clip = clipboard.primaryClip ?: return false
+        if (clip.itemCount == 0) return false
+        val text = clip.getItemAt(0).text ?: return false
+        if (text.isEmpty()) return false
+
+        connection.beginBatchEdit()
+        return try {
+            connection.finishComposingText()
+            connection.commitText(text, 1)
+        } finally {
+            connection.endBatchEdit()
+        }
+    }
+}
+

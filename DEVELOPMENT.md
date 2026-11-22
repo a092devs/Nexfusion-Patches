@@ -14,7 +14,7 @@ loaded, the bundle format and the rules for bundles are described in its
  └ stub/           Stubs of YouTube classes used by the Morphe extensions
 ```
 
-The bundles compile against the patcher API `io.github.nexfusion:patcher` (version `patcher` in
+The bundles compile against the patcher API `io.github.a092devs.nexfusion:patcher` (version `patcher` in
 [libs.versions.toml](gradle/libs.versions.toml)), published to `https://raw.githubusercontent.com/a092devs/NexFusion/maven`.
 To build against a local NexFusion checkout, run `./gradlew :patcher:publishAllPublicationsToReleaseRepository`
 there and pass `-PnexfusionMaven=file:///path/to/NexFusion/build/maven` here.
@@ -47,7 +47,7 @@ release. Both are intentionally excluded from version control.
 
 ### Adding an app
 
-Add the app to the bundle's entry point, e.g. [NexFusionPatches.kt](bundles/nexfusion/src/main/java/io/github/nexfusion/patches/NexFusionPatches.kt):
+Add the app to the bundle's entry point, e.g. [NexFusionPatches.kt](bundles/nexfusion/src/main/java/io/github/a092devs/nexfusion/patches/NexFusionPatches.kt):
 
 ```kotlin
 app("Contoso", "com.contoso.app", ContosoPatches),
@@ -67,7 +67,7 @@ Patches follow this structure:
 ```kotlin
 package com.example.patches.contoso.misc.unlock.plus
 
-import io.github.nexfusion.morphe.Fingerprint
+import io.github.a092devs.nexfusion.morphe.Fingerprint
 
 object IsPlusUnlockedFingerprint : Fingerprint(
     returnType = "Z",
@@ -80,7 +80,7 @@ object IsPlusUnlockedFingerprint : Fingerprint(
 package com.example.patches.contoso.misc.unlock.plus
 
 import de.robv.android.xposed.XC_MethodReplacement.returnConstant
-import io.github.nexfusion.patch
+import io.github.a092devs.nexfusion.patch
 
 val UnlockPlus = patch(name = "Unlock Plus") {
     IsPlusUnlockedFingerprint.hookMethod(returnConstant(true))
@@ -91,7 +91,7 @@ Patches named `""` or starting with `<` are internal: they always run and are hi
 
 ### Porting Upstream Patches
 
-The [FingerprintCompat.kt](patcher/src/main/java/io/github/nexfusion/morphe/FingerprintCompat.kt) utility assists in translating ReVanced Patcher API calls to DexKit Matchers. While simple fingerprints can often be directly copied, consider the following translation patterns for complex cases:
+The [FingerprintCompat.kt](patcher/src/main/java/io/github/a092devs/nexfusion/morphe/FingerprintCompat.kt) utility assists in translating ReVanced Patcher API calls to DexKit Matchers. While simple fingerprints can often be directly copied, consider the following translation patterns for complex cases:
 
 1.  **Literal Mapping:**
     If an upstream patch defines a literal within the patch file (e.g., `aLiteral = resourceMappings["id", "aLiteral"]`) for use in a fingerprint, convert it to a getter property in the corresponding `Fingerprints.kt` file.
@@ -193,7 +193,7 @@ The NexFusion Patches bundle compiles the extensions of the `morphe-patches` and
 ## Unit Testing
 
 Bundles test their fingerprints against real APKs with
-[FingerprintsKtTest.kt](bundles/testing/java/io/github/nexfusion/FingerprintsKtTest.kt). Place APKs into the bundle's
+[FingerprintsKtTest.kt](bundles/testing/java/io/github/a092devs/nexfusion/FingerprintsKtTest.kt). Place APKs into the bundle's
 `binaries/` directory (e.g. `bundles/nexfusion/binaries/`), prefixed with their package name
 (e.g. `com.google.android.youtube-20.10.38.apk`), and list the app in the bundle's `FingerprintTestTargets.kt`.
 

@@ -7,6 +7,23 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 4.5.0-beta2
+
+- `Complete Package & Namespace Migration`:
+  * Migrated all package structures, namespaces, patch bundle manifests, entry definitions, and test targets from `io.github.nexfusion` to `io.github.a092devs.nexfusion`.
+  * Updated patcher dependency coordinates to `io.github.a092devs.nexfusion:patcher:2.1.2`.
+- `YouTube, YouTube Music & Reddit (Upstream Dev Sync)`:
+  * Merged latest upstream dev updates for YouTube, YouTube Music, and Reddit.
+  * Added `Glass menus` patch with modern blur region and Litho fill protection.
+  * Added `Apple Music animated artwork` patch and `Hold gesture` patch.
+  * Resolved video quality selection delays and VP9 low-quality playback fallbacks in YouTube Music.
+  * Suppressed Litho fill flash before draw in YouTube and YouTube Music.
+  * Resolved feed stuttering during fling and layout recalculation in YouTube.
+  * Fixed DeArrow thumbnail re-mounting and branding persistence.
+  * Fixed Reddit feed auto-scroll compatibility with Reddit 2026.24.0.
+- `Build & CI`:
+  * Bumped patch bundle version to 4.5.0-beta2 (versionCode 120).
+
 ## 4.5.0-beta1
 
 - `Package ID Migration`:
@@ -559,7 +576,7 @@ bundles after CI succeeds.
 
 - `NexFusion` 4.3.0:
   * libxposed API 101 & 102 Compatibility:
-    - Migrated bundle codebase to link cleanly against `io.github.nexfusion.compat.*`.
+    - Migrated bundle codebase to link cleanly against `io.github.a092devs.nexfusion.compat.*`.
     - Support for both **API 101** and **API 102** environments.
     - Verified all 22 patch modules compile and pass 100% unit tests against target app binaries.
   * YouTube Ad-Blocking & Sponsored Feed Elimination:
@@ -857,7 +874,7 @@ bundles after CI succeeds.
 - `NexFusion` 4.0.0:
   * Inaugural Nexfusion-Patches Rebranding & Package Migration:
     - Renamed bundle architecture to Nexfusion-Patches across all patch definitions, extension bindings, and build configurations.
-    - Fully migrated package namespaces, extension loaders, and bytecode references to `io.github.nexfusion.*`.
+    - Fully migrated package namespaces, extension loaders, and bytecode references to `io.github.a092devs.nexfusion.*`.
   * Reddit Quality of Life:
     - Transparent Navigation Bar: Enforced fully transparent system navigation bar across all Reddit screens by hooking Reddit's EdgeToEdge setup, activity window focus changes, and platform Window APIs with contrast enforcement disabled.
     - Colorize Comment Indent Lines: Added color-coded indentation guidelines per nesting depth, cycling through 8 distinct theme hues with full opacity in Jetpack Compose drawScope.
@@ -1201,7 +1218,7 @@ bundles after CI succeeds.
 - `NexFusion` 3.4.0:
   * Settings UI: Fixed `sortPreferenceGroups` NullPointerException when encountering null-key preference groups or null items, adding full null-safety with collation fallback and automated regression tests.
   * Patch Set Curation: Completely removed discontinued patches (`Kleinanzeigen`, `Untappd`, and `InterPals`) along with their exclusive resources, tests, and build definitions.
-  * NexFusion Modernization: Relocated remaining `2eno` extension packages (googleads, shared, spotify) to `io.github.nexfusion.nexfusion.extension`, unified runtime logger tag to NexFusion, and preserved upstream attribution.
+  * NexFusion Modernization: Relocated remaining `2eno` extension packages (googleads, shared, spotify) to `io.github.a092devs.nexfusion.nexfusion.extension`, unified runtime logger tag to NexFusion, and preserved upstream attribution.
   * Reddit: Added `RedgifsAudioPatch` for unmuting embedded Redgifs audio streams on Reddit 2026.42.0+.
   * Upstream Feature Ports: Integrated Picture-in-Picture captions toggle, Skip Live Shorts filter, Ambient Mode override controls, and Video Delay adjustments.
   * Build & CI: Submodule pointers and public fork references updated to ensure fully reproducible, verified CI builds.
@@ -1354,7 +1371,7 @@ bundles after CI succeeds.
 ## 3.2.0
 
 - `NexFusion` 3.2.0:
-  * Renamed the custom `a092devs` bundle to `NexFusion Patches` (`nexfusion.nxb`, `io.github.nexfusion.patches`).
+  * Renamed the custom `a092devs` bundle to `NexFusion Patches` (`nexfusion.nxb`, `io.github.a092devs.nexfusion.patches`).
   * Initiated coordinated versioning series `3.2` matching NexFusion manager `3.2.0`.
   * Added compatibility series (`3.2`) and minimum manager version (`3.2.0`) metadata for semantic compatibility validation in the manager app.
   * Preserved full support for all existing patch collections and ported features:
@@ -1421,7 +1438,7 @@ bundles after CI succeeds.
   match the maintained X builds, and its Instagram side had already moved to `a092devs` in 2.6.0.
   X coverage is superseded by the kveld9 port in `a092devs` 1.7.0 (`12.35.0-prod.01`). The Piko
   NOTICE is retained verbatim as
-  `bundles/a092devs/src/main/java/io/github/nexfusion/a092devs/NOTICE-piko` (the `a092devs` NOTICE
+  `bundles/a092devs/src/main/java/io/github/a092devs/nexfusion/a092devs/NOTICE-piko` (the `a092devs` NOTICE
   now points there), so the upstream attribution requirement survives the removal.
 - Docs updated for the removal: the README bundle list, the DEVELOPMENT module tree and the
   installed-app audit now credit `a092devs` for Instagram and X instead of the removed bundle.

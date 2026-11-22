@@ -85,7 +85,7 @@ A `.nxb` file is a signed APK container loaded directly into process memory by N
 
 | `meta-data` Key | Value Type | Description |
 |---|---|---|
-| `nexfusion.bundle.entry` | FQCN Class | Class implementing `io.github.nexfusion.PatchBundle` (entry point) |
+| `nexfusion.bundle.entry` | FQCN Class | Class implementing `io.github.a092devs.nexfusion.PatchBundle` (entry point) |
 | `nexfusion.bundle.apiVersion` | Integer | Patcher API version the bundle was compiled against (e.g. `1`) |
 | `nexfusion.bundle.author` | String | Bundle author displayed in the NexFusion manager |
 | `nexfusion.bundle.description` | `@string` | String resource describing the bundle's capabilities |
@@ -94,7 +94,7 @@ A `.nxb` file is a signed APK container loaded directly into process memory by N
 | `nexfusion.bundle.maxManagerVersion` | String | Maximum supported manager version (or empty for forward compatibility) |
 
 ### Manifest Contract & Resource Isolation
-- **Entry Point:** The entry class implements `io.github.nexfusion.PatchBundle`, returning the list of supported applications (`AppPatchInfo`) and their verified versions.
+- **Entry Point:** The entry class implements `io.github.a092devs.nexfusion.PatchBundle`, returning the list of supported applications (`AppPatchInfo`) and their verified versions.
 - **Resource Partitioning:** Custom UI resources are assigned dedicated package IDs (`0x02`–`0x7e`, never the application ID `0x7f`) to prevent resource collision when multiple bundles hook into the same process.
 
 </details>

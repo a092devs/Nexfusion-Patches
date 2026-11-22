@@ -11,7 +11,7 @@ plugins {
 }
 
 android {
-    namespace = "io.github.nexfusion.patches"
+    namespace = "io.github.a092devs.nexfusion.patches"
 
     lint {
         abortOnError = false
@@ -25,11 +25,11 @@ android {
 
     defaultConfig {
         applicationId = "io.github.a092devs.nexfusion"
-        versionCode = 119
+        versionCode = 120
         val patchVersion = Properties().apply {
             rootProject.file("morphe-patches/gradle.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
         }["version"]
-        versionName = "4.5.0-beta1"
+        versionName = "4.5.0-beta2"
         buildConfigField("String", "PATCH_VERSION", "\"$patchVersion\"")
     }
     packaging {
@@ -67,7 +67,7 @@ android {
 }
 
 nexfusionBundle {
-    entry = "io.github.nexfusion.nexfusion.NexFusionPatches"
+    entry = "io.github.a092devs.nexfusion.nexfusion.NexFusionPatches"
     author = "a092devs"
     descriptionResource = "bundle_description"
     resourcePackageId = 0x4e
@@ -79,8 +79,8 @@ nexfusionBundle {
 // which are not available in the Xposed module build context.
 tasks.withType<JavaCompile>().configureEach {
     exclude(
-        "**/patches/HideRelatedVideosPatch.java",
-        "**/patches/playback/quality/PrioritizeVideoQualityPatch.java",
+        "**/HideRelatedVideosPatch.java",
+        "**/PrioritizeVideoQualityPatch.java",
         "**/OAuth2Preference.java",
         "**/SpoofVideoStreamsSignInPreference.java",
         "**/SpoofSignaturePatch.java",
@@ -100,6 +100,7 @@ dependencies {
     implementation(libs.protobuf.javalite)
     implementation(libs.collections4)
     implementation(libs.lang3)
+    implementation(libs.hiddenapi)
 }
 
 protobuf {

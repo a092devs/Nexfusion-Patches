@@ -11,7 +11,7 @@ them in from the `nexfusionBundle { … }` block:
 
 | `meta-data` key | Filled from | Purpose |
 |---|---|---|
-| `nexfusion.bundle.entry` | `entry` | Fully-qualified class implementing `io.github.nexfusion.PatchBundle` |
+| `nexfusion.bundle.entry` | `entry` | Fully-qualified class implementing `io.github.a092devs.nexfusion.PatchBundle` |
 | `nexfusion.bundle.apiVersion` | `patcherApiVersion` (default `1`) | Patcher API version the bundle was built against |
 | `nexfusion.bundle.author` | `author` | Author shown in the NexFusion manager |
 | `nexfusion.bundle.description` | `descriptionResource` | String resource describing the bundle |
@@ -30,16 +30,16 @@ plugins {
 }
 
 android {
-    namespace = "io.github.nexfusion.patches.example"
+    namespace = "io.github.a092devs.nexfusion.patches.example"
     defaultConfig {
-        applicationId = "io.github.nexfusion.patches.example"
+        applicationId = "io.github.a092devs.nexfusion.patches.example"
         versionCode = 1
         versionName = "1.0.0"
     }
 }
 
 nexfusionBundle {
-    entry = "io.github.nexfusion.example.ExamplePatches"
+    entry = "io.github.a092devs.nexfusion.example.ExamplePatches"
     author = "Example"
     descriptionResource = "bundle_description"
     resourcePackageId = 0x51
@@ -148,4 +148,4 @@ Bundles that port or adapt upstream code must record the upstream repository and
 license notices. Code derived from Morphe, ReVanced, Piko, or other GPL-3.0 projects remains
 GPL-3.0 and is credited in the repository README. A worked example is the `nexfusion` bundle,
 which lists every ported source, its license and the ported files in
-`bundles/nexfusion/src/main/java/io/github/nexfusion/nexfusion/NOTICE`.
+`bundles/nexfusion/src/main/java/io/github/a092devs/nexfusion/nexfusion/NOTICE`.

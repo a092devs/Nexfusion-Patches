@@ -17,11 +17,16 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
+        // The NexFusion patcher API, published by https://github.com/a092devs/NexFusion.
+        providers.gradleProperty("nexfusionMaven").orNull?.let { maven(url = uri(it)) }
+        maven(url = "https://raw.githubusercontent.com/a092devs/NexFusion/maven")
         google()
         mavenCentral()
-        maven(url = "https://api.xposed.info")
-        // The NexFusion patcher API, published by https://github.com/a092devs/NexFusion.
-        maven(url = providers.gradleProperty("nexfusionMaven").get())
+        maven(url = "https://api.xposed.info") {
+            content {
+                includeGroup("de.robv.android.xposed")
+            }
+        }
     }
 }
 
