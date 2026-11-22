@@ -7,6 +7,35 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.0.0
+
+- `Unified Package Architecture & Namespace Migration`:
+  * Migrated all package structures, namespaces, patch bundle manifests, entry definitions, and test targets to `io.github.a092devs.nexfusion`.
+  * Updated patcher dependency coordinates to `io.github.a092devs.nexfusion:patcher:2.1.2`.
+- `Telegram Patches Overhaul`:
+  * Fixed phantom "Deleted Account" entries under account settings by eliminating uninitialized account preference creation and properly gating client premium status to authenticated accounts.
+  * Revamped anti-delete message styling: deleted messages are subtly indicated with a clean trash icon (`🗑`) in the chat bubble timestamp matching NagramXF, accompanied by smooth cell dimming (`alpha = 0.72f`) and instant UI refresh.
+  * Resolved media auto-downloading bug: removed aggressive wildcard hooks on `MessagesStorage` and internal `MessageObject` getters to strictly preserve user auto-download configurations.
+  * Fixed disappearing media in unopened chats by pre-caching incoming view-once and self-destructing media via FileLoader prior to remote deletion.
+  * Hardened view-once media protection: prevented view-once countdown destruction, suppressed `didViewShowOnce` callbacks, and stripped `FLAG_SECURE` window restrictions.
+- `YouTube, YouTube Music & Reddit (Upstream Dev Sync)`:
+  * Merged upstream dev updates for YouTube, YouTube Music, and Reddit.
+  * Added `Glass menus` patch with modern blur region and Litho fill protection.
+  * Added `Apple Music animated artwork` patch and `Hold gesture` patch for YouTube Music.
+  * Resolved video quality selection delays and VP9 low-quality playback fallbacks in YouTube Music.
+  * Suppressed Litho fill flash before draw in YouTube and YouTube Music.
+  * Resolved feed stuttering during fling and layout recalculation in YouTube.
+  * Fixed DeArrow thumbnail re-mounting and branding persistence.
+  * Fixed Reddit feed auto-scroll compatibility with Reddit 2026.24.0.
+- `Gboard & Twitter / X`:
+  * Added candidate strip emoji layout reordering, positioning primary emoji suggestions into the right slot of the candidate strip.
+  * Added `Hide incognito icon` patch, replacing the toolbar incognito icon with the standard access point icon while maintaining active incognito session mode.
+  * Added `Hide mod queue auto-enforce banner` patch in Reddit, suppressing automated moderation enforcement promotion banners in the mod queue.
+  * Added `Custom sharing domain` patch in Twitter / X, rewriting shared post links to `fxtwitter.com` for instant media embeds.
+- `Security & Build`:
+  * Enforced cybersecurity hardening, safe string sanitization on bundle and package identifiers, and synchronized compatibility series with NexFusion manager v5.0.0.
+  * Bumped patch bundle version to 5.0.0 (versionCode 121).
+
 ## 4.5.0-beta2
 
 - `Complete Package & Namespace Migration`:
