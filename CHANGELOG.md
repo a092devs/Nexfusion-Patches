@@ -7,6 +7,22 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.0.2
+
+- `YouTube AMOLED Dark Theme`:
+  * Enforced true pitch black surfaces across top action bar and neutral dark backgrounds.
+- `About Screen & Branding`:
+  * Integrated native NexFusion Silicon Die Monogram icon into the classic full-screen settings experience.
+  * Preserved info icon navigation in YouTube Morphe settings without modal popups.
+- `Player Controls & Resource Resolution`:
+  * Added missing string resources for player toggles and toolbar controls.
+  * Suppressed unnecessary toast alerts for missing preference lookups.
+- `Navigation Bar`:
+  * Restored Subscriptions tab to its natural layout.
+- `Ecosystem Synchronization`:
+  * Upgraded patch bundle version to 5.0.2 (versionCode 123).
+  * Synchronized with NexFusion manager v5.0.3.
+
 ## 5.0.1
 
 - `YouTube & YouTube Music (Upstream Sync)`:
