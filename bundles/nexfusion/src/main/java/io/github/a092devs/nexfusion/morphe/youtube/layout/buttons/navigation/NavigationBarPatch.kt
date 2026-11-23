@@ -106,8 +106,8 @@ val NavigationBar = patch(
         SwitchPreference("morphe_show_toolbar_settings_button", titleKey = "morphe_show_settings_button_title"),
         SwitchPreference(
             "morphe_show_toolbar_settings_button_type",
-            titleKey = "morphe_show_toolbar_settings_button_type_title",
-            summary = true
+            titleKey = "morphe_show_settings_button_type_title",
+            summaryKey = "morphe_show_settings_button_type_summary"
         ),
         NonInteractivePreference(
             "morphe_toolbar_buttons_order",

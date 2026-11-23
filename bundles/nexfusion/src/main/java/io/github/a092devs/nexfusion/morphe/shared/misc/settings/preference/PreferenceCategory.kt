@@ -7,6 +7,7 @@ import android.preference.Preference
 import android.preference.PreferenceCategory
 import android.preference.PreferenceGroup
 import android.preference.PreferenceManager
+import app.morphe.extension.shared.Logger
 import app.morphe.extension.shared.settings.preference.NoTitlePreferenceCategory
 import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.PreferenceScreenPreference.Sorting
 
@@ -23,16 +24,24 @@ open class PreferenceCategory(
     lateinit var children: List<Preference>
     lateinit var preferenceGroup: PreferenceGroup
     override fun build(ctx: Context, prefMgr: PreferenceManager): Preference {
-        return (super.build(ctx, prefMgr) as PreferenceGroup).apply {
+        val group = (super.build(ctx, prefMgr) as? PreferenceGroup) ?: PreferenceCategory(ctx)
+        return group.apply {
             preferenceGroup = this
-            children = preferences.map { it.build(ctx, prefMgr) }
+            children = preferences.mapNotNull {
+                runCatching { it.build(ctx, prefMgr) }
+                    .onFailure { e -> Logger.printDebug { "Failed to build category child ${it.key}: ${e.message}" } }
+                    .getOrNull()
+            }
         }
     }
 
     override fun onAttachedToHierarchy() {
+        if (!::preferenceGroup.isInitialized) return
         preferenceGroup.apply {
-            children.forEach { addPreference(it) }
-            preferences.forEach { it.onAttachedToHierarchy() }
+            if (::children.isInitialized) {
+                children.forEach { addPreference(it) }
+            }
+            preferences.forEach { runCatching { it.onAttachedToHierarchy() } }
         }
     }
 }

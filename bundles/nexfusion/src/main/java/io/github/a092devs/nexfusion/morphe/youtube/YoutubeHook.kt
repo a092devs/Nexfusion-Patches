@@ -52,6 +52,7 @@ import io.github.a092devs.nexfusion.morphe.youtube.video.effects.VideoEffects
 import io.github.a092devs.nexfusion.morphe.youtube.layout.glassmenus.GlassMenus
 import io.github.a092devs.nexfusion.morphe.youtube.video.codecs.DisableVideoCodecs
 import io.github.a092devs.nexfusion.morphe.youtube.video.delay.VideoDelay
+import io.github.a092devs.nexfusion.morphe.youtube.layout.theme.Theme
 import io.github.a092devs.nexfusion.morphe.youtube.video.quality.VideoQuality
 import io.github.a092devs.nexfusion.morphe.youtube.misc.playservice.VersionCheck
 import io.github.a092devs.nexfusion.morphe.youtube.video.speed.PlaybackSpeed
@@ -322,6 +323,7 @@ val YouTubePatches = arrayOf(
     VideoEffects,
     DisableDRCAudio,
     GlassMenus,
+    Theme,
     // make sure settingsHook at end to build preferences
     SettingsHook,
     FeatureOverride

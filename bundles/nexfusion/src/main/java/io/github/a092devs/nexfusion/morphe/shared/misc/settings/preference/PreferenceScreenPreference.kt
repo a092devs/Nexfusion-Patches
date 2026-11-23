@@ -36,16 +36,19 @@ open class PreferenceScreenPreference(
             preferenceScreen = this
             children = preferences.mapNotNull {
                 runCatching { it.build(ctx, prefMgr) }
-                    .onFailure { e -> Logger.printException({ "Failed to build preference ${it.key}" }, e) }
+                    .onFailure { e -> Logger.printDebug { "Failed to build preference ${it.key}: ${e.message}" } }
                     .getOrNull()
             }
         }
     }
 
     override fun onAttachedToHierarchy() {
+        if (!::preferenceScreen.isInitialized) return
         preferenceScreen.apply {
-            children.forEach { addPreference(it) }
-            preferences.forEach { it.onAttachedToHierarchy() }
+            if (::children.isInitialized) {
+                children.forEach { addPreference(it) }
+            }
+            preferences.forEach { runCatching { it.onAttachedToHierarchy() } }
         }
     }
 

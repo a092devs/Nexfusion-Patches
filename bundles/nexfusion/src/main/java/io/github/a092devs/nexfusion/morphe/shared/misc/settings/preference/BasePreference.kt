@@ -29,7 +29,18 @@ abstract class BasePreference(
         resources: Resources = Utils.getContext().resources,
         pkg: String = BuildConfig.APPLICATION_ID,
         setString: (str: String) -> Unit
-    ) = trySetRes(key, "string", resources, pkg) { res, id -> setString(resources.getString(id)) }
+    ) {
+        if (key == null) return
+        val cleanKey = key.removePrefix("@string/")
+        val str = runCatching { ResourceUtils.getString(cleanKey) }.getOrNull()
+        if (!str.isNullOrEmpty() && str != cleanKey) {
+            setString(str)
+            return
+        }
+        trySetRes(cleanKey, "string", resources, pkg) { res, id ->
+            runCatching { setString(res.getString(id)) }
+        }
+    }
 
     fun trySetRes(
         key: String?,
@@ -39,8 +50,19 @@ abstract class BasePreference(
         setRes: (res: Resources, id: Int) -> Unit,
     ) {
         if (key == null) return
-        when (val id = resources.getIdentifier(key, type, pkg)) {
-            0 -> Logger.printDebug { "$key not found." }
+        val cleanKey = key.removePrefix("@$type/").removePrefix("@drawable/").removePrefix("@layout/").removePrefix("@string/")
+        val idFromUtils = when (type) {
+            "drawable" -> runCatching { ResourceUtils.getDrawableIdentifier(cleanKey) }.getOrDefault(0)
+            "layout" -> runCatching { ResourceUtils.getLayoutIdentifier(cleanKey) }.getOrDefault(0)
+            "string" -> runCatching { ResourceUtils.getStringIdentifier(cleanKey) }.getOrDefault(0)
+            else -> 0
+        }
+        if (idFromUtils != 0) {
+            setRes(resources, idFromUtils)
+            return
+        }
+        when (val id = resources.getIdentifier(cleanKey, type, pkg)) {
+            0 -> Logger.printDebug { "$cleanKey not found." }
             else -> setRes(resources, id)
         }
     }
@@ -53,34 +75,38 @@ abstract class BasePreference(
 
             val iconUsed = if (Utils.appIsUsingBoldIcons()) iconBold else icon
             trySetRes(iconUsed, "drawable") { res, id ->
-                pref.icon = res.getDrawable(id, res.newTheme().apply {
-                    applyStyle(R.style.MainTheme, true)
-                })
+                runCatching {
+                    pref.icon = res.getDrawable(id, res.newTheme().apply {
+                        applyStyle(R.style.MainTheme, true)
+                    })
+                }
             }
             layout?.let {
-                pref.layoutResource = ResourceUtils.getLayoutIdentifier(layout)
+                val cleanLayout = it.removePrefix("@layout/")
+                val layoutId = ResourceUtils.getLayoutIdentifier(cleanLayout)
+                if (layoutId != 0) {
+                    pref.layoutResource = layoutId
+                }
             }
         }
     }
 
     open fun build(ctx: Context, prefMgr: PreferenceManager): Preference {
         Logger.printDebug { "build $key" }
-        val pref = try {
+        val pref = runCatching {
             tag.new(
                 arrayOf(Context::class.java, AttributeSet::class.java),
                 ctx, null
             )
-        } catch (e: Exception) {
-            try {
-                tag.new(
-                    arrayOf(Context::class.java),
-                    ctx
-                )
-            } catch (e2: Exception) {
-                tag.getDeclaredConstructor().newInstance()
-            }
-        } as Preference
-        return pref.apply {
+        }.recoverCatching {
+            tag.new(
+                arrayOf(Context::class.java),
+                ctx
+            )
+        }.recoverCatching {
+            tag.getDeclaredConstructor().newInstance()
+        }.getOrNull() ?: Preference(ctx)
+        return (pref as Preference).apply {
             applyBaseAttrs(this)
         }
     }

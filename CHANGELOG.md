@@ -524,7 +524,6 @@ bundles after CI succeeds.
   * Instagram:
     - Added "Start feed videos with sound" patch (`StartFeedVideosWithSound`) respecting ringer mode and media volume.
   * CI & Repository Maintenance:
-    - Removed redundant Crowdin workflows and configuration from `morphe-patches` (maintained by parent upstream).
     - Streamlined CI pipeline with auto-cancellation for duplicate beta workflow runs.
 
 ## 4.3.6
@@ -554,7 +553,6 @@ bundles after CI succeeds.
     - Added "Hide 'You may also like' section" (`morphe_music_hide_you_may_also_like_section`) and "Hide 'Your downloads' shelf" (`morphe_music_hide_your_downloads_shelf`) to Feed settings.
   * Upstream Morphe Patches Sync (v2.3.0-dev.2):
     - Merged upstream `SpoofVideoStreamsPatch` fix for feed video inline playback preventing `isOfflinePlayerResponse failure` errors.
-    - Cleaned up Crowdin synchronization workflows to skip gracefully when API secrets are unconfigured.
 
 ## 4.3.4
 
@@ -708,7 +706,7 @@ bundles after CI succeeds.
   * Upstream YouTube Music Sync:
     - Fixed Downloads page header matching on older YouTube Music versions.
   * Community Translations:
-    - Synced latest translations from Crowdin across all supported language resources.
+    - Updated translations across all supported language resources.
 
 ## 4.2.9
 

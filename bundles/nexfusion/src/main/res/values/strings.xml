@@ -26,4 +26,19 @@
     <string name="morphe_language_title">NexFusion language</string>
     <string name="morphe_pref_import_export_summary">Import / Export NexFusion settings</string>
     <string name="morphe_settings_about_component">Modular Patches</string>
+
+    <!-- Player settings strings -->
+    <string name="morphe_reverse_playlist_autoplay_title">Reverse playlist autoplay</string>
+    <string name="morphe_reverse_playlist_autoplay_summary">Autoplay playlists in reverse order, from the last video to the first</string>
+    <string name="morphe_restore_old_player_buttons_title">Restore old player buttons</string>
+    <string name="morphe_restore_old_player_buttons_summary">Restore the classic video player button controls</string>
+    <string name="morphe_disable_playlist_autoplay_title">Disable playlist autoplay</string>
+    <string name="morphe_disable_playlist_autoplay_summary">Prevent playlists from automatically playing the next video</string>
+
+    <!-- Toolbar and navigation button settings strings -->
+    <string name="menu_notifications">Notifications</string>
+    <string name="morphe_show_settings_button_type_title">Settings button action</string>
+    <string name="morphe_show_settings_button_type_summary">When enabled, tap opens Morphe settings and long press opens YouTube settings, disable to swap</string>
+    <string name="morphe_show_toolbar_settings_button_type_title">Settings button action</string>
+    <string name="morphe_show_toolbar_settings_button_type_summary">When enabled, tap opens Morphe settings and long press opens YouTube settings, disable to swap</string>
 </resources>
