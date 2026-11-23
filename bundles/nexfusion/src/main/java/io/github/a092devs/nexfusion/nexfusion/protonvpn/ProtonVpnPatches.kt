@@ -19,6 +19,7 @@ import io.github.a092devs.nexfusion.patch
 val ProtonVpnDisableTelemetry = patch(
     name = "Disable telemetry",
     description = "Blocks telemetry, analytics, and observability data collection in Proton VPN.",
+    use = false,
 ) {
     // Block Proton Core telemetry worker scheduling
     runCatching {
@@ -85,6 +86,7 @@ val ProtonVpnDisableTelemetry = patch(
 val ProtonVpnServerChangeDelay = patch(
     name = "Remove server change delay",
     description = "Removes the wait period and cooldown between server changes on free plans.",
+    use = false,
 ) {
     runCatching {
         val configClass = classLoader.loadClass("com.protonvpn.android.appconfig.AppConfigResponse")
@@ -120,6 +122,7 @@ val ProtonVpnServerChangeDelay = patch(
 val ProtonVpnShowFreeServerLocations = patch(
     name = "Show free server locations",
     description = "Allows users on free tier plans to browse, search, and connect directly to free server locations/countries instead of random assignment.",
+    use = false,
 ) {
     // Enable direct country selection and server browsing
     runCatching {
@@ -172,6 +175,7 @@ val ProtonVpnShowFreeServerLocations = patch(
 val ProtonVpnUnlockConnectionPreferences = patch(
     name = "Unlock connection preferences",
     description = "Unlocks default connection protocol (WireGuard, OpenVPN, Stealth) and profile settings on free plans.",
+    use = false,
 ) {
     runCatching {
         val settingsClasses = listOf(
@@ -199,6 +203,7 @@ val ProtonVpnUnlockConnectionPreferences = patch(
 val ProtonVpnUnlockSettings = patch(
     name = "Unlock advanced settings & NetShield",
     description = "Unlocks NetShield ad/tracker blocking, split tunneling, custom DNS, and LAN connections.",
+    use = false,
 ) {
     // NetShield availability -> AVAILABLE
     runCatching {
@@ -263,6 +268,7 @@ val ProtonVpnUnlockSettings = patch(
 val ProtonVpnHidePromotions = patch(
     name = "Hide upgrade promotions",
     description = "Hides upgrade dialogs, onboarding prompts, and account upgrade banners.",
+    use = false,
 ) {
     // 1. Skip upgrade onboarding dialog after login
     runCatching {
@@ -423,6 +429,7 @@ val ProtonVpnHidePromotions = patch(
 val ProtonVpnPremiumUi = patch(
     name = "Plus UI badge",
     description = "Displays Plus plan UI indicators.",
+    use = false,
 ) {
     runCatching {
         val userCandidates = listOf("com.protonvpn.android.auth.data.VpnUser", "hi.a")

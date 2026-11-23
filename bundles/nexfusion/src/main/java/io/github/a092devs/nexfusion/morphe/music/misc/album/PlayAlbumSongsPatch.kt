@@ -33,6 +33,7 @@ internal object CommandResolverFingerprint : Fingerprint(
 val PlayAlbumSongs = patch(
     name = "Play album songs",
     description = "Adds an option to play the songs of albums instead of their music videos.",
+    use = false,
 ) {
     PreferenceScreen.MISC.addPreferences(
         SwitchPreference("morphe_music_play_album_songs", summary = true)

@@ -39,6 +39,7 @@ import java.util.concurrent.Executors
 val ViewerTapToHide = patch(
     name = "Tap to hide in viewers",
     description = "Tap a video or document in full screen to hide captions and buttons.",
+    use = false,
 ) {
     installViewerStateHooks()
 }
@@ -46,6 +47,7 @@ val ViewerTapToHide = patch(
 val DocumentPdfDownload = patch(
     name = "Save document as PDF",
     description = "Saves multi-page documents and carousels as a unified PDF in Downloads.",
+    use = false,
 ) {
     installDocumentCaptureHook()
 }

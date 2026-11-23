@@ -6,6 +6,7 @@ import app.morphe.extension.youtube.patches.VideoInformation
 import io.github.a092devs.nexfusion.compat.XC_MethodHook
 import io.github.a092devs.nexfusion.compat.XposedBridge
 import io.github.a092devs.nexfusion.compat.XposedHelpers
+import io.github.a092devs.nexfusion.PatcherLog
 import io.github.a092devs.nexfusion.PatchExecutor
 import io.github.a092devs.nexfusion.bindProxy
 import io.github.a092devs.nexfusion.createProxy
@@ -104,6 +105,7 @@ class PlaybackSpeedMenu(
 val VideoInformationPatch = patch(
     name = "VideoInformationPatch",
     description = "Hooks YouTube to get information about the current playing video.",
+    use = false,
 ) {
     dependsOn(
         VideoId,
@@ -137,25 +139,29 @@ val VideoInformationPatch = patch(
     //endregion
 
     //region mdxPlayerDirector
-    MdxPlayerDirectorSetVideoStageFingerprint.apply {
-        val seekSourceType = ::mdxSeekSourceType.clazz
-        val seekSourceNone = seekSourceType.getStaticObjectField("a")!!
-        hookMethod {
-            val mdxSeekFingerprint = MdxSeekFingerprint.method
-            val mdxSeekRelativeFingerprint = MdxSeekRelativeFingerprint.method
-            val getVideoTime = ::mdxGetVideoTime.method
+    runCatching {
+        MdxPlayerDirectorSetVideoStageFingerprint.apply {
+            val seekSourceType = ::mdxSeekSourceType.clazz
+            val seekSourceNone = seekSourceType.getStaticObjectField("a") ?: return@apply
+            hookMethod {
+                val mdxSeekFingerprint = MdxSeekFingerprint.method
+                val mdxSeekRelativeFingerprint = MdxSeekRelativeFingerprint.method
+                val getVideoTime = ::mdxGetVideoTime.method
 
-            after { param ->
-                val playerController = PlaybackController(
-                    param.thisObject,
-                    mdxSeekFingerprint,
-                    mdxSeekRelativeFingerprint,
-                    getVideoTime,
-                    seekSourceNone
-                )
-                VideoInformation.initializeMDX(playerController)
+                after { param ->
+                    val playerController = PlaybackController(
+                        param.thisObject,
+                        mdxSeekFingerprint,
+                        mdxSeekRelativeFingerprint,
+                        getVideoTime,
+                        seekSourceNone
+                    )
+                    VideoInformation.initializeMDX(playerController)
+                }
             }
         }
+    }.onFailure {
+        PatcherLog.info(it) { "VideoInformation: MDX hooks skipped" }
     }
     //endregion
 

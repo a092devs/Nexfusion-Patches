@@ -15,6 +15,7 @@ import io.github.a092devs.nexfusion.patch
 val HideVideoActionButtons = patch(
     name = "Hide video action buttons",
     description = "Adds options to hide video action buttons in fullscreen and portrait modes.",
+    use = false,
 ) {
     dependsOn(
         LithoFilter,

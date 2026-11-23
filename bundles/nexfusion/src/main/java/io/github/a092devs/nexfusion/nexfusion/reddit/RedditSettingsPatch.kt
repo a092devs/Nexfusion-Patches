@@ -43,6 +43,7 @@ private fun findActivity(obj: Any?): Activity? {
 val RedditSettings = patch(
     name = "Reddit Settings",
     description = "Adds Morphe settings into Reddit's settings menu.",
+    use = false,
 ) {
     // 0. Enable modern Compose settings style for Reddit 2026.25+
     runCatching {
@@ -50,6 +51,71 @@ val RedditSettings = patch(
             RedditSettingsStyle::class.java.getMethod("isModernStyle"),
             XC_MethodReplacement.returnConstant(true)
         )
+    }
+
+    // 0.1 Enable all Morphe extension settings categories by hooking isPatchIncluded
+    val redditExtensionPatches = listOf(
+        "app.morphe.extension.reddit.patches.AppDowngradeNoticePatch",
+        "app.morphe.extension.reddit.patches.AppIconPatch",
+        "app.morphe.extension.reddit.patches.AutoModeratorCommentsPatch",
+        "app.morphe.extension.reddit.patches.CopyTextPatch",
+        "app.morphe.extension.reddit.patches.CustomFontPatch",
+        "app.morphe.extension.reddit.patches.DisableModernHomePatch",
+        "app.morphe.extension.reddit.patches.DisableScreenshotPopupPatch",
+        "app.morphe.extension.reddit.patches.DownloadAllFromGalleryPatch",
+        "app.morphe.extension.reddit.patches.DownloadLocationPatch",
+        "app.morphe.extension.reddit.patches.FeedAutoScrollPatch",
+        "app.morphe.extension.reddit.patches.FeedMediaMaxHeightPatch",
+        "app.morphe.extension.reddit.patches.FlairFiltersPatch",
+        "app.morphe.extension.reddit.patches.FlipPostActionBarPatch",
+        "app.morphe.extension.reddit.patches.ForceSystemFontPatch",
+        "app.morphe.extension.reddit.patches.FullScreenReplyPatch",
+        "app.morphe.extension.reddit.patches.FullWidthFeedMediaPatch",
+        "app.morphe.extension.reddit.patches.HideAdsPatch",
+        "app.morphe.extension.reddit.patches.HideAskButtonPatch",
+        "app.morphe.extension.reddit.patches.HideCommunitiesShelfPatch",
+        "app.morphe.extension.reddit.patches.HideHomeTabsPatch",
+        "app.morphe.extension.reddit.patches.HideInteractivePostsPatch",
+        "app.morphe.extension.reddit.patches.HideMediaViewerComponentsPatch",
+        "app.morphe.extension.reddit.patches.HideNavigationButtonsPatch",
+        "app.morphe.extension.reddit.patches.HidePostButtonsPatch",
+        "app.morphe.extension.reddit.patches.HideRelatedPostsSectionPatch",
+        "app.morphe.extension.reddit.patches.HideSidebarComponentsPatch",
+        "app.morphe.extension.reddit.patches.HideTrendingShelvesPatch",
+        "app.morphe.extension.reddit.patches.HideVideosForYouShelfPatch",
+        "app.morphe.extension.reddit.patches.HighQualityAvatarsPatch",
+        "app.morphe.extension.reddit.patches.HomeFeedTabsPatch",
+        "app.morphe.extension.reddit.patches.KeepFeedPositionPatch",
+        "app.morphe.extension.reddit.patches.KeepMediaViewerInSubredditPatch",
+        "app.morphe.extension.reddit.patches.KeywordFiltersPatch",
+        "app.morphe.extension.reddit.patches.MediaViewerBlackBackgroundPatch",
+        "app.morphe.extension.reddit.patches.MediaViewerFadePatch",
+        "app.morphe.extension.reddit.patches.OpenLinksDirectlyPatch",
+        "app.morphe.extension.reddit.patches.OpenLinksExternallyPatch",
+        "app.morphe.extension.reddit.patches.OpenSystemShareSheetPatch",
+        "app.morphe.extension.reddit.patches.PostSidePanelPatch",
+        "app.morphe.extension.reddit.patches.PrivateBrowsingModePatch",
+        "app.morphe.extension.reddit.patches.RedgifsAudioPatch",
+        "app.morphe.extension.reddit.patches.RememberCollapsedCommentsPatch",
+        "app.morphe.extension.reddit.patches.RemoveSubRedditDialogPatch",
+        "app.morphe.extension.reddit.patches.SanitizeSharingLinksPatch",
+        "app.morphe.extension.reddit.patches.SearchHiddenProfilesPatch",
+        "app.morphe.extension.reddit.patches.SharePostContentPatch",
+        "app.morphe.extension.reddit.patches.ShowFlairsInHomeFeedPatch",
+        "app.morphe.extension.reddit.patches.ShowViewCountPatch",
+        "app.morphe.extension.reddit.patches.SwipeUpForCommentsPatch",
+        "app.morphe.extension.reddit.patches.TabletGridFeedPatch",
+        "app.morphe.extension.reddit.patches.VersionCheckPatch",
+    )
+    for (className in redditExtensionPatches) {
+        runCatching {
+            val cls = runCatching { Class.forName(className, false, XposedBridge::class.java.classLoader) }.getOrNull()
+                ?: runCatching { classLoader.loadClass(className) }.getOrNull()
+            if (cls != null) {
+                val method = cls.getDeclaredMethod("isPatchIncluded")
+                XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(true))
+            }
+        }
     }
 
     // 1. Hook WebBrowserActivity to host Morphe settings

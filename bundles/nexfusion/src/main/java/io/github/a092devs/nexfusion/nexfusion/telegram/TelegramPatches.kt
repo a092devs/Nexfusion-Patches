@@ -132,6 +132,7 @@ internal object TelegramResolver {
 val TelegramAmoledBlack = patch(
     name = "AMOLED black",
     description = "Gives Telegram's dark themes pure black screens, bars, chats and dialogs for AMOLED displays.",
+    use = false,
 ) {
     runCatching {
         val themeClass = TelegramResolver.findThemeClass(classLoader)
@@ -291,6 +292,7 @@ val TelegramAmoledBlack = patch(
 val TelegramUnlockPremium = patch(
     name = "Unlock Premium",
     description = "Unlocks Telegram Premium features for the current account.",
+    use = false,
 ) {
     fun unlockUser(user: Any?) {
         if (user == null) return
@@ -405,6 +407,7 @@ val TelegramUnlockPremium = patch(
 val TelegramRemoveAds = patch(
     name = "Remove ads",
     description = "Removes sponsored messages and video ads in channels.",
+    use = false,
 ) {
     // 1. Intercept sponsored network requests in ConnectionsManager
     runCatching {
@@ -472,6 +475,7 @@ val TelegramRemoveAds = patch(
 val TelegramAntiDelete = patch(
     name = "Anti-delete messages",
     description = "Prevents messages deleted by other users from being removed locally and marks them with an indicator icon in the chat bubble.",
+    use = false,
 ) {
     val deletedMessageIds = java.util.concurrent.ConcurrentHashMap.newKeySet<Int>()
     var prefsLoaded = false
@@ -708,6 +712,7 @@ val TelegramAntiDelete = patch(
 val TelegramAntiDisappearingMedia = patch(
     name = "Anti-disappearing media",
     description = "Keeps view-once photos, videos and voice messages viewable indefinitely across foreground and unopened chats.",
+    use = false,
 ) {
     // 1. Keep view-once messages from expiring or being marked force-expired
     runCatching {
@@ -772,6 +777,7 @@ val TelegramAntiDisappearingMedia = patch(
 val TelegramHideStories = patch(
     name = "Hide stories",
     description = "Completely removes stories bar, story rings on avatars, and stops story network fetching.",
+    use = false,
 ) {
     // 1. Suppress story list network requests in ConnectionsManager
     runCatching {
@@ -831,6 +837,7 @@ val TelegramHideStories = patch(
 val TelegramHideStoriesRead = patch(
     name = "Hide Stories read status",
     description = "Prevents the client from sending Stories read receipts.",
+    use = false,
 ) {
     runCatching {
         val cm = runCatching { classLoader.loadClass("org.telegram.tgnet.ConnectionsManager") }.getOrNull()
@@ -861,6 +868,7 @@ val TelegramHideStoriesRead = patch(
 val TelegramBypassContentRestrictions = patch(
     name = "Bypass content restrictions",
     description = "Allows saving and forwarding content from restricted channels, chats, and users.",
+    use = false,
 ) {
     // 1. Clear noforwards on Message, Chat, UserFull and StoryItem deserialization
     runCatching {
@@ -930,6 +938,7 @@ val TelegramBypassContentRestrictions = patch(
 val TelegramBypassChannelRestrictions = patch(
     name = "Bypass channel restrictions",
     description = "Allows viewing restricted and sensitive channels and content.",
+    use = false,
 ) {
     runCatching {
         val mc = TelegramResolver.findMessagesController(classLoader)
@@ -965,6 +974,7 @@ val TelegramBypassChannelRestrictions = patch(
 val TelegramDownloadBoost = patch(
     name = "Download speed boost",
     description = "Accelerates downloads by enabling 512 KB chunks and 8 concurrent parallel connections.",
+    use = false,
 ) {
     if (!isOfficialTelegram(classLoader)) return@patch
 
@@ -1061,6 +1071,7 @@ val TelegramDownloadBoost = patch(
 val TelegramHideTyping = patch(
     name = "Hide typing indicator",
     description = "Blocks sending typing status and indicators to other users.",
+    use = false,
 ) {
     runCatching {
         val cm = runCatching { classLoader.loadClass("org.telegram.tgnet.ConnectionsManager") }.getOrNull()
@@ -1093,6 +1104,7 @@ val TelegramHideTyping = patch(
 val TelegramDisableAutoUpdate = patch(
     name = "Disable auto-update",
     description = "Disables Telegram update availability and in-app update prompts.",
+    use = false,
 ) {
     runCatching {
         for (name in listOf("org.telegram.messenger.SharedConfig", "org.telegram.messenger.tz")) {
@@ -1118,6 +1130,7 @@ val TelegramDisableAutoUpdate = patch(
 val TelegramDisableAnalytics = patch(
     name = "Disable analytics",
     description = "Prevents sending telemetry, crashlytics and diagnostic events to Telegram.",
+    use = false,
 ) {
     runCatching {
         val appLoader = runCatching { classLoader.loadClass("org.telegram.messenger.ApplicationLoader") }.getOrNull()
@@ -1134,6 +1147,7 @@ val TelegramDisableAnalytics = patch(
 val TelegramDisableDoubleTapReaction = patch(
     name = "Disable double-tap reaction",
     description = "Prevents sending accidental message reactions on double tap in chat view.",
+    use = false,
 ) {
     runCatching {
         for (name in listOf("org.telegram.ui.Cells.ChatMessageCell", "org.telegram.ui.Cells.u0")) {
@@ -1155,6 +1169,7 @@ val TelegramDisableDoubleTapReaction = patch(
 val TelegramRevealSpoilers = patch(
     name = "Auto-reveal spoilers",
     description = "Automatically reveals hidden spoiler text without tapping.",
+    use = false,
 ) {
     runCatching {
         val spoilerClass = runCatching { classLoader.loadClass("org.telegram.ui.Components.spoilers.SpoilerEffect") }.getOrNull()
@@ -1167,6 +1182,7 @@ val TelegramRevealSpoilers = patch(
 val TelegramDisableVibration = patch(
     name = "Disable vibration",
     description = "Turns off haptic vibration feedback for in-app gestures.",
+    use = false,
 ) {
     if (!isOfficialTelegram(classLoader)) return@patch
     runCatching {
@@ -1188,6 +1204,7 @@ val TelegramDisableVibration = patch(
 val TelegramShowSeconds = patch(
     name = "Show message seconds",
     description = "Displays seconds in message time stamps.",
+    use = false,
 ) {
     runCatching {
         for (name in listOf("org.telegram.messenger.LocaleController", "org.telegram.messenger.dd")) {
@@ -1214,6 +1231,7 @@ val TelegramShowSeconds = patch(
 val TelegramExactNumbers = patch(
     name = "Exact numbers",
     description = "Displays exact subscriber and member counts without rounding (e.g. 4812 instead of 4.8K).",
+    use = false,
 ) {
     runCatching {
         for (name in listOf("org.telegram.messenger.LocaleController", "org.telegram.messenger.dd")) {
@@ -1235,6 +1253,7 @@ val TelegramExactNumbers = patch(
 val TelegramAntiScreenshotNotification = patch(
     name = "Anti-screenshot notification",
     description = "Prevents sending screenshot notifications in secret chats.",
+    use = false,
 ) {
     runCatching {
         for (name in listOf("org.telegram.messenger.SendMessagesHelper", "org.telegram.messenger.rz")) {
@@ -1257,6 +1276,7 @@ val TelegramAntiScreenshotNotification = patch(
 val TelegramVoiceToMusic = patch(
     name = "Voice to music player",
     description = "Plays voice and audio notes in the Telegram background music player.",
+    use = false,
 ) {
     runCatching {
         val mo = TelegramResolver.findMessageObject(classLoader)
@@ -1278,6 +1298,7 @@ val TelegramVoiceToMusic = patch(
 val TelegramAllowChatBlur = patch(
     name = "Allow chat blur",
     description = "Enables blurred chat header and panels on all devices regardless of performance tier.",
+    use = false,
 ) {
     runCatching {
         for (name in listOf("org.telegram.messenger.SharedConfig", "org.telegram.messenger.tz")) {
@@ -1295,6 +1316,7 @@ val TelegramAllowChatBlur = patch(
 val TelegramDisableReactionEffects = patch(
     name = "Disable reaction effects",
     description = "Disables full-screen emoji burst and fly-in animations when reactions are added.",
+    use = false,
 ) {
     runCatching {
         for (name in listOf(
@@ -1312,6 +1334,7 @@ val TelegramDisableReactionEffects = patch(
 val TelegramSwipeBack = patch(
     name = "Swipe back on profiles",
     description = "Enables right swipe on profile photos and media tabs to return to previous screen.",
+    use = false,
 ) {
     runCatching {
         val ppv = runCatching { classLoader.loadClass("org.telegram.ui.ProfileActivity") }.getOrNull()
@@ -1326,6 +1349,7 @@ val TelegramSwipeBack = patch(
 val TelegramStripLinkTracking = patch(
     name = "Strip link tracking",
     description = "Removes tracking parameters (utm_*, fbclid, gclid) from links.",
+    use = false,
 ) {
     runCatching {
         val browser = runCatching { classLoader.loadClass("org.telegram.messenger.browser.Browser") }.getOrNull()
@@ -1360,6 +1384,7 @@ val TelegramStripLinkTracking = patch(
 val TelegramDisableChatSwipe = patch(
     name = "Disable chat swipe actions",
     description = "Disables sideways swipe gesture on chat rows to prevent accidental archive, mute or delete.",
+    use = false,
 ) {
     runCatching {
         for (name in listOf("org.telegram.ui.DialogsActivity", "org.telegram.ui.Components.ChatListItemAnimator")) {
@@ -1374,6 +1399,7 @@ val TelegramDisableChatSwipe = patch(
 val TelegramBypassIntegrity = patch(
     name = "Bypass integrity check",
     description = "Spoofs certificate fingerprint so login works on patched APK.",
+    use = false,
 ) {
     runCatching {
         val au = runCatching { classLoader.loadClass("org.telegram.messenger.AndroidUtilities") }.getOrNull()

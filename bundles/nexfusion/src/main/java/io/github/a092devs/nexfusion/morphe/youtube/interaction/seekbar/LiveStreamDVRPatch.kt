@@ -43,6 +43,7 @@ internal object FormatStreamModelMaxDVRDurationFingerprint : Fingerprint(
 val liveStreamDVRPatch = patch(
     name = "Live stream DVR",
     description = "Enables video seeking on live streams that have disabled DVR (Digital Video Recorder).",
+    use = false,
 ) {
     PreferenceScreen.SEEKBAR.addPreferences(
         noTitleUnsortedPreferenceCategory(

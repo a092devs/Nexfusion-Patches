@@ -36,6 +36,7 @@ private const val SEEK_FORWARD_TITLE = "+5 s"
 val PipSeekButtons = patch(
     name = "Picture-in-picture seek buttons",
     description = "Adds rewind and forward (±5 seconds) buttons to the Picture-in-picture window.",
+    use = false,
 ) {
     dependsOn(VideoInformationPatch)
 

@@ -9,6 +9,7 @@ import io.github.a092devs.nexfusion.patch
 val HideStatusBar = patch(
     name = "Hide status bar",
     description = "Adds an option to hide the system status bar. Swipe down from the top edge to show it for a moment.",
+    use = false,
 ) {
     PreferenceScreen.GENERAL.addPreferences(
         SwitchPreference("morphe_hide_status_bar", summary = true),

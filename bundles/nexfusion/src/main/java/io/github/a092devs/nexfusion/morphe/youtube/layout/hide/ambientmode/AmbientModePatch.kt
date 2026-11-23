@@ -308,6 +308,7 @@ val AmbientMode = patch(
     name = "Ambient mode",
     description = "Forces Ambient mode on and adds options to bypass power saving restrictions " +
             "for Ambient mode and disable it entirely or in fullscreen.",
+    use = false,
 ) {
     PreferenceScreen.PLAYER.addPreferences(
         PreferenceScreenPreference(

@@ -40,6 +40,7 @@ internal object TimeCounterFingerprint : Fingerprint(
 val hideTimestampPatch = patch(
     name = "Hide timestamp",
     description = "Adds an option to hide the timestamp in the bottom left of the video player.",
+    use = false,
 ) {
     PreferenceScreen.SEEKBAR.addPreferences(
         SwitchPreference("morphe_hide_timestamp"),

@@ -8,6 +8,7 @@ import io.github.a092devs.nexfusion.patch
 val EnableExclusiveAudioPlayback = patch(
     name = "Enable exclusive audio playback",
     description = "Enables the option to play audio without video.",
+    use = false,
 ) {
     dependsOn(
         versionCheckPatch

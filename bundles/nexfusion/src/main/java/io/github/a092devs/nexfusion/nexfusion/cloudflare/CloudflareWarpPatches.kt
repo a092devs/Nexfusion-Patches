@@ -14,6 +14,7 @@ import java.lang.reflect.Modifier
 val CloudflareWarpUnlockWarpPlus = patch(
     name = "Spoof WARP+ Unlimited UI",
     description = "Forces WarpPlusState to UNLIMITED on every AccountData instance in the 1.1.1.1 user interface.",
+    use = false,
 ) {
     runCatching {
         val accountDataClass = classLoader.loadClass("com.cloudflare.app.data.warpapi.AccountData")
@@ -53,6 +54,7 @@ val CloudflareWarpUnlockWarpPlus = patch(
 val CloudflareWarpDisableTelemetry = patch(
     name = "Disable telemetry",
     description = "Disables Cloudflare analytics and Firebase telemetry event dispatchers.",
+    use = false,
 ) {
     // 1. Hook AnalyticsService static event dispatcher
     runCatching {

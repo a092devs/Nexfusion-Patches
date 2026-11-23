@@ -12,6 +12,7 @@ import io.github.a092devs.nexfusion.patch
 val SanitizeSharingLinks = patch(
     name = "Sanitize Reddit sharing links",
     description = "Removes tracking query parameters from shared links.",
+    use = false,
 ) {
     runCatching {
         ShareLinkFormatterFingerprint.hookMethod {

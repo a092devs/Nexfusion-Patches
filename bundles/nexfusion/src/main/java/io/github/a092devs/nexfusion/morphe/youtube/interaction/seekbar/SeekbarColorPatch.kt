@@ -45,6 +45,7 @@ val lithoLinearGradientMethod = findMethodDirect {
 val seekbarColorPatch = patch(
     name = "Seekbar color",
     description = "Hide or set a custom seekbar color.",
+    use = false,
 ) {
     PreferenceScreen.SEEKBAR.addPreferences(
         noTitleUnsortedPreferenceCategory(

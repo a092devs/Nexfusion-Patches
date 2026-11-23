@@ -41,6 +41,7 @@ internal object PassthroughShaderConstructorFingerprint : Fingerprint(
 val VideoEffects = patch(
     name = "Video effects",
     description = "Adds shader and post-processing video effects options and controls.",
+    use = false,
 ) {
     dependsOn(VersionCheck)
 

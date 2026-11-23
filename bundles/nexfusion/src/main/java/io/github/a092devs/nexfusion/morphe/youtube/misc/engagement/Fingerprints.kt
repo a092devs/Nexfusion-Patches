@@ -23,15 +23,18 @@ internal object EngagementPanelUpdateFingerprint : Fingerprint(
 )
 
 val panelInitFingerprint = findMethodDirect {
-    panelClass().findMethod {
+    val inits = panelClass().findMethod {
         matcher {
             name = "<init>"
         }
-    }.single()
+    }
+    inits.firstOrNull { it.paramTypeNames.isNotEmpty() && it.paramTypeNames[0] == "java.lang.String" }
+        ?: inits.firstOrNull() ?: throw NoSuchElementException("panelInitFingerprint not found")
 }
 
 val panelIdField = findFieldDirect {
-    panelClass().fields.single { it.typeName == "java.lang.String" }
+    panelClass().fields.firstOrNull { it.typeName == "java.lang.String" }
+        ?: throw NoSuchElementException("panelIdField not found")
 }
 
 val panelClass = findClassDirect {

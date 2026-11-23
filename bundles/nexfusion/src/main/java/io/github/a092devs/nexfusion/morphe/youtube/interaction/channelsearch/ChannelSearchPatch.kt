@@ -20,6 +20,7 @@ import org.luckypray.dexkit.wrap.DexMethod
 val ChannelSearch = patch(
     name = "Channel search",
     description = "Adds an option to search inside the channel that is currently open instead of searching all of YouTube.",
+    use = false,
 ) {
     PreferenceScreen.GENERAL.addPreferences(
         SwitchPreference("morphe_channel_search", summary = true)

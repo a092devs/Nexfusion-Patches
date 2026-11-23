@@ -18,4 +18,12 @@
     <!-- Custom seekbar thumb scale type entries -->
     <string name="morphe_custom_seekbar_thumb_scale_type_entry_fit_seekbar" translatable="false">Fit seekbar</string>
     <string name="morphe_custom_seekbar_thumb_scale_type_entry_original" translatable="false">Original</string>
+
+    <!-- NexFusion Settings branding overrides -->
+    <string name="morphe_settings_title" translatable="false">NexFusion</string>
+    <string name="morphe_settings_name_title">NexFusion settings name</string>
+    <string name="morphe_show_menu_icons_title">Show NexFusion setting icons</string>
+    <string name="morphe_language_title">NexFusion language</string>
+    <string name="morphe_pref_import_export_summary">Import / Export NexFusion settings</string>
+    <string name="morphe_settings_about_component">Modular Patches</string>
 </resources>

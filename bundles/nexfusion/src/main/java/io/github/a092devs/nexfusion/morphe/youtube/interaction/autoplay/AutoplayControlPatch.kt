@@ -23,6 +23,7 @@ import io.github.a092devs.nexfusion.patch
 val AutoplayControl = patch(
     name = "Autoplay control",
     description = "Adds a player button and a rule for the next video: playlists and queues go on, a Mix stops after a number of videos, a suggested video never plays.",
+    use = false,
 ) {
     dependsOn(
         DisablePlaylistAutoplay,

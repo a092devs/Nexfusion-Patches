@@ -27,6 +27,7 @@ val deArrowPatch = patch(
     name = "DeArrow",
     description = "Adds options to replace video thumbnails and titles using the DeArrow API, " +
             "or replace video thumbnails with image captures from the video.",
+    use = false,
 ) {
     dependsOn(
         cronetImageUrlHookPatch,

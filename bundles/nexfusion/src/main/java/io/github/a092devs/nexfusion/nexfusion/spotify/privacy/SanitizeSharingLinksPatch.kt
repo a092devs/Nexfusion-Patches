@@ -11,6 +11,7 @@ import io.github.a092devs.nexfusion.nexfusion.spotify.shareCopyUrlMethod
 val SanitizeSharingLinks = patch(
     name = "Sanitize sharing links",
     description = "Removes the tracking parameters (si, utm_source) from shared and copied links.",
+    use = false,
 ) {
     // "Copy link": sanitize the clip created while copying.
     val newPlainText = ClipData::class.java.getMethod(

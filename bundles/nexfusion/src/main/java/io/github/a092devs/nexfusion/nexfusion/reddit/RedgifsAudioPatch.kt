@@ -264,6 +264,7 @@ internal object RedgifsAudioHelper {
 val RedgifsAudio = patch(
     name = "Play Redgifs with audio",
     description = "Plays original Redgifs video with audio instead of Reddit's silent copy.",
+    use = false,
 ) {
     // 1. Post creation: map post's Reddit video to Redgifs ID and prefetch
     val linkClass = LinkToStringFingerprint.memberOrNull?.declaringClass

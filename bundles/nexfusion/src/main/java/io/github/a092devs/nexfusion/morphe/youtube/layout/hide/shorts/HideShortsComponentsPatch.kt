@@ -18,6 +18,7 @@ import org.luckypray.dexkit.wrap.DexMethod
 val HideShortsComponents = patch(
     name = "Hide Shorts components",
     description = "Adds options to hide components related to Shorts.",
+    use = false,
 ) {
     dependsOn(
         EngagementPanelHook,

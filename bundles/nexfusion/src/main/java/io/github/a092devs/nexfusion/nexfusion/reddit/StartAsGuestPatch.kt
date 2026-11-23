@@ -9,6 +9,7 @@ import io.github.a092devs.nexfusion.patch
 val StartAsGuest = patch(
     name = "Start Reddit as guest",
     description = "Skips the forced startup login screen using Reddit's native guest browsing mode.",
+    use = false,
 ) {
     runCatching {
         ::FrontPageApplicationHasFinishedOnboarding.hookMethod(

@@ -17,6 +17,7 @@ import io.github.a092devs.nexfusion.patch
 val FullscreenPlaylistPanel = patch(
     name = "Fullscreen playlist panel",
     description = "Adds an option to show the playlist panel over the fullscreen player on tablets, instead of exiting fullscreen.",
+    use = false,
 ) {
     dependsOn(
         EngagementPanelHook,

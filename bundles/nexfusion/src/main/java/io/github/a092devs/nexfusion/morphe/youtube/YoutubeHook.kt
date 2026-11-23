@@ -55,6 +55,13 @@ import io.github.a092devs.nexfusion.morphe.youtube.video.delay.VideoDelay
 import io.github.a092devs.nexfusion.morphe.youtube.video.quality.VideoQuality
 import io.github.a092devs.nexfusion.morphe.youtube.misc.playservice.VersionCheck
 import io.github.a092devs.nexfusion.morphe.youtube.video.speed.PlaybackSpeed
+import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.InputType
+import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.ListPreference
+import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.PreferenceScreenPreference
+import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.PreferenceScreenPreference.Sorting
+import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.SwitchPreference
+import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.TextPreference
+import io.github.a092devs.nexfusion.morphe.youtube.misc.settings.PreferenceScreen
 import io.github.a092devs.nexfusion.patch
 import org.luckypray.dexkit.wrap.DexMethod
 
@@ -130,6 +137,72 @@ val FeatureOverride = patch {
     }
 }
 
+val HoldGesture = patch(
+    name = "Hold gesture",
+    description = "Adds options to change the playback speed, to keep it and to run actions by dragging after tapping and holding the video player.",
+    use = false,
+) {
+    PreferenceScreen.PLAYER.addPreferences(
+        PreferenceScreenPreference(
+            key = "morphe_hold_gesture_screen",
+            sorting = Sorting.UNSORTED,
+            preferences = setOf(
+                SwitchPreference(
+                    key = "morphe_hold_gesture",
+                    summary = true,
+                    tag = app.morphe.extension.youtube.settings.preference.HoldGestureSwitchPreference::class.java
+                ),
+                SwitchPreference("morphe_hold_gesture_haptic_feedback", summary = true),
+                SwitchPreference("morphe_hold_gesture_speed_swipe", summary = true),
+                ListPreference("morphe_hold_gesture_speed_step"),
+                ListPreference("morphe_hold_gesture_speed_sensitivity"),
+                TextPreference("morphe_hold_gesture_speed_min", inputType = InputType.NUMBER_DECIMAL),
+                TextPreference("morphe_hold_gesture_speed_max", inputType = InputType.NUMBER_DECIMAL),
+                SwitchPreference("morphe_hold_gesture_lock", summary = true),
+                SwitchPreference("morphe_hold_gesture_lock_badge_always", summary = true),
+                SwitchPreference("morphe_hold_gesture_unlock_on_video_change", summary = true),
+                SwitchPreference("morphe_hold_gesture_launcher", summary = true),
+                ListPreference("morphe_hold_gesture_launcher_slot_count"),
+                *(1..5).map { slot ->
+                    ListPreference(
+                        key = "morphe_hold_gesture_launcher_slot_$slot",
+                        tag = app.morphe.extension.youtube.settings.preference.HoldGestureLauncherActionPreference::class.java,
+                        entriesKey = "morphe_hold_gesture_launcher_action_entries",
+                        entryValuesKey = "morphe_hold_gesture_launcher_action_entry_values"
+                    )
+                }.toTypedArray(),
+            )
+        )
+    )
+}
+
+val ReturnYouTubeUsername = patch(
+    name = "Return YouTube Username",
+    description = "Adds an option to show channel names instead of handles in comments, below the video title and in Shorts.",
+    use = false,
+) {
+    PreferenceScreen.GENERAL.addPreferences(
+        PreferenceScreenPreference(
+            key = "morphe_return_youtube_username_screen",
+            sorting = Sorting.UNSORTED,
+            preferences = setOf(
+                SwitchPreference("morphe_return_youtube_username", summary = true),
+                ListPreference("morphe_return_youtube_username_display_format"),
+            )
+        )
+    )
+}
+
+val ReversePlaylistAutoplay = patch(
+    name = "Reverse playlist autoplay",
+    description = "Adds an option to autoplay playlists in reverse order, from the last video to the first.",
+    use = false,
+) {
+    PreferenceScreen.PLAYER.addPreferences(
+        SwitchPreference("morphe_reverse_playlist_autoplay", summary = true)
+    )
+}
+
 val YouTubePatches = arrayOf(
     ExtensionHook,
     BackgroundPlayback,
@@ -164,6 +237,9 @@ val YouTubePatches = arrayOf(
     Miniplayer,
     PipSeekButtons,
     DisablePlaylistAutoplay,
+    ReversePlaylistAutoplay,
+    HoldGesture,
+    ReturnYouTubeUsername,
     CheckRecycleBitmapMediaSession,
     changeStartPagePatch,
     FixVerticalScroll,

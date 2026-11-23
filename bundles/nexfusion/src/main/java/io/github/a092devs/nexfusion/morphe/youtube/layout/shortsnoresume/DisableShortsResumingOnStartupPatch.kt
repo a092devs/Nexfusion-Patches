@@ -14,6 +14,7 @@ import io.github.a092devs.nexfusion.scopedHook
 val DisableShortsResumingOnStartup = patch(
     name = "Disable Shorts resuming on startup",
     description = "Adds an option to disable Shorts from resuming on app startup when Shorts were last being watched.",
+    use = false,
 ) {
     dependsOn(VersionCheck)
 
@@ -22,19 +23,19 @@ val DisableShortsResumingOnStartup = patch(
     )
 
     if (is_21_03_or_greater) {
-        (if (is_21_41_or_greater) UserWasInShortsEvaluateFingerprint
-        else if (is_21_30_or_greater) UserWasInShortsEvaluateLegacy2130Fingerprint
-        else UserWasInShortsEvaluateLegacyFingerprint).hookMethod(
-            scopedHook(
-                UserWasInShortsEvaluateAnchorFingerprint.method
-            ) {
-                after {
-                    it.result =
-                        DisableShortsResumingOnStartupPatch.disableShortsResumingOnStartup(it.result as Boolean)
-                }
-            })
-    } else {
-        // TODO
+        runCatching {
+            (if (is_21_41_or_greater) UserWasInShortsEvaluateFingerprint
+            else if (is_21_30_or_greater) UserWasInShortsEvaluateLegacy2130Fingerprint
+            else UserWasInShortsEvaluateLegacyFingerprint).hookMethod(
+                scopedHook(
+                    UserWasInShortsEvaluateAnchorFingerprint.method
+                ) {
+                    after {
+                        val result = it.result as? Boolean ?: return@after
+                        it.result = DisableShortsResumingOnStartupPatch.disableShortsResumingOnStartup(result)
+                    }
+                })
+        }
     }
 
     insertLiteralOverride(

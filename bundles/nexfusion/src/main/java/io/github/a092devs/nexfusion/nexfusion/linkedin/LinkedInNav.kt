@@ -20,6 +20,7 @@ import java.util.WeakHashMap
 val KeepFeed = patch(
     name = "Keep feed on reopen",
     description = "Keeps your place in the feed when you return to LinkedIn instead of reloading it.",
+    use = false,
 ) {
     try {
         val prefsClass = classLoader.loadClass("com.linkedin.android.infra.data.FlagshipSharedPreferences")
@@ -53,6 +54,7 @@ val KeepFeed = patch(
 val CustomizeNavigationBar = patch(
     name = "Customize navigation bar",
     description = "Removes selected bottom navigation tabs (My Network, Post, Notifications, Jobs, Video, News) while keeping at least 3 tabs.",
+    use = false,
 ) {
     installNavigationBarFilter()
 }
@@ -205,6 +207,7 @@ private fun findChildById(parent: View, name: String): View? {
 val SwipeFeeds = patch(
     name = "Swipe between feeds",
     description = "Swipe left and right on the home feed to switch between For you and Network.",
+    use = false,
 ) {
     try {
         val composeViewClass = classLoader.loadClass("androidx.compose.ui.platform.AndroidComposeView")

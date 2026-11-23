@@ -315,7 +315,8 @@ private fun PatchExecutor.resolveReelSkipMembers() {
 
 val SkipLiveShorts = patch(
     name = "Skip live Shorts",
-    description = "Automatically skips live streams that appear in the Shorts feed."
+    description = "Automatically skips live streams that appear in the Shorts feed.",
+    use = false,
 ) {
     dependsOn(
         VideoId,

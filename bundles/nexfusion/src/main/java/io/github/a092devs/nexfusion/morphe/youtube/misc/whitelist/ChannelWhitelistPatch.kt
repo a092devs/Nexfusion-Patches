@@ -13,7 +13,8 @@ import io.github.a092devs.nexfusion.patch
 /* unused */
 val channelWhitelistPatch = patch(
     name = "Channel whitelist",
-    description = "Adds options to allow whitelisting specific channels to show ads or override playback speeds."
+    description = "Adds options to allow whitelisting specific channels to show ads or override playback speeds.",
+    use = false,
 ) {
     dependsOn(
         flyoutPatch,

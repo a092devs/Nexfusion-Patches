@@ -15,6 +15,7 @@ import java.lang.reflect.Constructor
 val HideAds = patch(
     name = "Hide ads",
     description = "Removes the sponsored rows Gmail renders between conversations in Promotions and Social tabs.",
+    use = false,
 ) {
     val constructors = ::adViewConstructors.dexMethodList
     if (constructors.isEmpty()) {

@@ -14,7 +14,8 @@ val seekbarPatch = patch(
             "live stream DVR, " +
             "hiding the timestamp, " +
             "hiding the seekbar, " +
-            "and tapping the player seekbar to seek."
+            "and tapping the player seekbar to seek.",
+    use = false,
 ) {
     dependsOn(
         disablePreciseSeekingGesturePatch,

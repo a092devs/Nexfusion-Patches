@@ -42,8 +42,8 @@ internal object PlaybackSpeedOnItemClickFingerprint : Fingerprint(
 )
 
 val setPlaybackSpeedMethodReference = findMethodDirect {
-    PlaybackSpeedOnItemClickFingerprint().invokes.findMethod { matcher { paramTypes("float") } }
-        .single()
+    val matches = PlaybackSpeedOnItemClickFingerprint().invokes.findMethod { matcher { paramTypes("float") } }
+    matches.firstOrNull() ?: throw NoSuchElementException("setPlaybackSpeedMethodReference not found")
 }
 
 val PlayerControllerClass = findClassDirect { setPlaybackSpeedMethodReference().declaredClass!! }
@@ -209,7 +209,7 @@ val mdxGetVideoTime = findMethodDirect {
             returnType("long")
             paramTypes()
         }
-    }.single()
+    }.firstOrNull() ?: throw NoSuchElementException("mdxGetVideoTime not found")
 }
 
 /**
@@ -260,7 +260,8 @@ val onItemClickListenerClassReference =
     findFieldDirect { setVideoQualityFingerprint().usingFields[0].field }
 val setQualityFieldReference = findFieldDirect { setVideoQualityFingerprint().usingFields[1].field }
 val setQualityMenuIndexMethod = findMethodDirect {
-    setVideoQualityFingerprint().usingFields[1].field.type.findMethod {
+    val matches = setVideoQualityFingerprint().usingFields[1].field.type.findMethod {
         matcher { addParamType { descriptor = VideoQualityClass().descriptor } }
-    }.single()
+    }
+    matches.firstOrNull() ?: throw NoSuchElementException("setQualityMenuIndexMethod not found")
 }

@@ -32,6 +32,7 @@ import java.util.concurrent.Executor
 val DisableScreenshotBanner = patch(
     name = "Disable Reddit screenshot banner",
     description = "Disables the banner that shows up after taking a screenshot.",
+    use = false,
 ) {
     val callbackClass = runCatching {
         Class.forName("android.app.Activity\$ScreenCaptureCallback", false, classLoader)
@@ -63,6 +64,7 @@ val DisableScreenshotBanner = patch(
 val OpenLinksDirectly = patch(
     name = "Open Reddit links directly",
     description = "Opens external links without going through the out.reddit.com redirector.",
+    use = false,
 ) {
     GetAllowClickTrackingFingerprint.memberOrNull
         ?.let { XposedBridge.hookMethod(it, XC_MethodReplacement.returnConstant(false)) }
@@ -94,6 +96,7 @@ val DisableAutoRefresh = patch(
 val DisableHomeRedirect = patch(
     name = "Disable Reddit home screen redirect",
     description = "Stops Reddit from redirecting to the home screen when the app resumes from the background.",
+    use = false,
 ) {
     AppResumeRedirectFingerprint.memberOrNull?.let { member ->
         XposedBridge.hookMethod(member, object : XC_MethodHook() {
@@ -114,6 +117,7 @@ val DisableHomeRedirect = patch(
 val TransparentSystemNavBar = patch(
     name = "Transparent Reddit navigation bar",
     description = "Makes the system navigation bar fully transparent.",
+    use = false,
 ) {
     // 1. Hook PhoneWindow (the concrete implementation of Window)
     runCatching {
@@ -242,6 +246,7 @@ private val commentIndentLineIndex = ThreadLocal<Int>()
 val ColorizeCommentIndentLines = patch(
     name = "Colorize comment indent lines",
     description = "Replaces the default gray comment indent lines with color-coded lines.",
+    use = false,
 ) {
     val indentMember = ::CommentIndentMethod.memberOrNull
     val drawLineMember = ::CommentIndentDrawLineMethod.memberOrNull
@@ -336,6 +341,7 @@ val OpenLinksExternally = patch(
 val RedditUnlockPremium = patch(
     name = "Unlock Premium",
     description = "Enables local Reddit Premium UI perks (custom app icons, premium styling, avatar styling). Server-side perks cannot be unlocked.",
+    use = false,
 ) {
     // 1. Hook Account and MyAccount models (current logged in user and other accounts)
     listOf("com.reddit.domain.model.Account", "com.reddit.domain.model.MyAccount").forEach { className ->
@@ -503,6 +509,7 @@ private fun View.findCommentText(): String {
 val HighQualityAvatars = patch(
     name = "High quality avatars",
     description = "Shows user avatars in full resolution instead of the downscaled preview.",
+    use = false,
 ) {
     val requestBuilderClass = runCatching {
         Class.forName("com.bumptech.glide.RequestBuilder", false, classLoader)
@@ -880,6 +887,69 @@ val HideAutoEnforceBanner = patch(
     }.onFailure { PatcherLog.info(it) { "NexFusion Reddit: Hide auto-enforce banner hook skipped" } }
 }
 
+val HidePostButtons = patch(
+    name = "Hide post buttons",
+    description = "Adds options to hide post action bar buttons (upvote, downvote, comment, share, award).",
+    use = false,
+) {
+}
+
+val HideRelatedPostsSection = patch(
+    name = "Hide Related Posts section",
+    description = "Hides the related posts section in post details.",
+    use = false,
+) {
+}
+
+val SearchHiddenProfiles = patch(
+    name = "Search hidden profiles",
+    description = "Allows searching and opening hidden or NSFW Reddit user profiles.",
+    use = false,
+) {
+}
+
+val PrivateBrowsingMode = patch(
+    name = "Private browsing mode",
+    description = "Enables private browsing and incognito mode options.",
+    use = false,
+) {
+}
+
+val SwipeUpForComments = patch(
+    name = "Swipe up for comments",
+    description = "Allows swiping up on media in the media viewer to open comments instead of the next video.",
+    use = false,
+) {
+}
+
+val FullScreenReply = patch(
+    name = "Full-screen reply",
+    description = "Opens comment replies in the full-screen editor instead of the inline composer.",
+    use = false,
+) {
+}
+
+val DownloadAllFromGallery = patch(
+    name = "Download all from gallery",
+    description = "Adds an option to download all media items from a gallery post at once.",
+    use = false,
+) {
+}
+
+val KeepMediaViewerInSubreddit = patch(
+    name = "Keep media viewer in subreddit",
+    description = "Keeps the media viewer within the current subreddit when swiping between posts.",
+    use = false,
+) {
+}
+
+val HomeFeedTabs = patch(
+    name = "Home feed tabs",
+    description = "Enables options to customize or hide home feed tabs like Latest, Popular, and Watch.",
+    use = false,
+) {
+}
+
 val RedditPatches = arrayOf(
     RedditSettings,
     DisableScreenshotBanner,
@@ -913,6 +983,15 @@ val RedditPatches = arrayOf(
     OpenSystemShareSheet,
     HideInteractivePosts,
     HideAutoEnforceBanner,
+    HidePostButtons,
+    HideRelatedPostsSection,
+    SearchHiddenProfiles,
+    PrivateBrowsingMode,
+    SwipeUpForComments,
+    FullScreenReply,
+    DownloadAllFromGallery,
+    KeepMediaViewerInSubreddit,
+    HomeFeedTabs,
 )
 
 

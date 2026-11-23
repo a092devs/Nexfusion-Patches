@@ -9,6 +9,7 @@ import io.github.a092devs.nexfusion.patch
 val hideSeekbarPatch = patch(
     name = "Hide seekbar",
     description = "Adds an option to hide the seekbar.",
+    use = false,
 ) {
     PreferenceScreen.SEEKBAR.addPreferences(
         SwitchPreference("morphe_fullscreen_large_seekbar"),

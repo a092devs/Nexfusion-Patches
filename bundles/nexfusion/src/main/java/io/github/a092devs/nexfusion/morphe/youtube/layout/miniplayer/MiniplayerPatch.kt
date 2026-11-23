@@ -21,6 +21,7 @@ import io.github.a092devs.nexfusion.patch
 val Miniplayer = patch(
     name = "Miniplayer",
     description = "Adds options to change the in-app minimized player.",
+    use = false,
 ) {
     PreferenceScreen.PLAYER.addPreferences(
         PreferenceScreenPreference(

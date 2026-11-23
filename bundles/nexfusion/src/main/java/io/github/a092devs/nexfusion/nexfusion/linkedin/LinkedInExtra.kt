@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap
 val HideSponsoredMessages = patch(
     name = "Hide sponsored messages",
     description = "Removes sponsored InMail conversations from the messaging list.",
+    use = false,
 ) {
     try {
         val input = classLoader.loadClass(
@@ -59,6 +60,7 @@ val HideSponsoredMessages = patch(
 val GhostNoTypingIndicator = patch(
     name = "Ghost mode: hide typing indicator",
     description = "Stops LinkedIn from sending the \"typing...\" state to the other person.",
+    use = false,
 ) {
     try {
         val store = classLoader.loadClass(
@@ -84,6 +86,7 @@ val GhostNoTypingIndicator = patch(
 val GhostNoReadReceipts = patch(
     name = "Ghost mode: no read receipts",
     description = "Keeps conversations unread on the other side while you are chatting.",
+    use = false,
 ) {
     try {
         val impl = classLoader.loadClass("com.linkedin.android.messaging.sdk.MessagingSdkWriteFlowFeatureImpl")
@@ -111,6 +114,7 @@ val GhostNoReadReceipts = patch(
 val DisableDoubleTapLike = patch(
     name = "Disable double-tap like",
     description = "Stops a double tap on a feed post from liking it.",
+    use = false,
 ) {
     try {
         val clickActions = classLoader.loadClass("com.linkedin.sdui.viewdata.action.ClickActions")
@@ -134,6 +138,7 @@ val DisableDoubleTapLike = patch(
 val HideFeedAds = patch(
     name = "Hide feed ads",
     description = "Removes promoted posts from the feed, in the server-driven and legacy lists.",
+    use = false,
 ) {
     hookSduiTransformer { component -> isSponsoredComponent(component) }
 
@@ -159,6 +164,7 @@ val HideFeedAds = patch(
 val HideSuggestedPosts = patch(
     name = "Hide suggested posts",
     description = "Removes \"Suggested\" posts from outside your network from the feed.",
+    use = false,
 ) {
     hookSduiTransformer { component -> isSuggestedComponent(component) }
 }
@@ -166,6 +172,7 @@ val HideSuggestedPosts = patch(
 val HidePromotedJobs = patch(
     name = "Hide promoted jobs",
     description = "Removes promoted job listings from the Jobs tab and job search.",
+    use = false,
 ) {
     hookSduiTransformer { component -> isPromotedJobComponent(component) }
 }
@@ -173,6 +180,7 @@ val HidePromotedJobs = patch(
 val HidePremiumUpsells = patch(
     name = "Hide Premium upsells",
     description = "Removes Premium and AI upsell cards and banners, including on profiles and the Me panel.",
+    use = false,
 ) {
     hookSduiTransformer { component -> isPremiumUpsellComponent(component) }
 
@@ -195,6 +203,7 @@ val HidePremiumUpsells = patch(
 val ExpandPosts = patch(
     name = "Expand posts",
     description = "Shows posts fully expanded by default without having to tap '...see more'.",
+    use = false,
 ) {
     registerSduiTransformer { component, viewName, payload ->
         if (viewName == "feed-commentary" && payload != null) {

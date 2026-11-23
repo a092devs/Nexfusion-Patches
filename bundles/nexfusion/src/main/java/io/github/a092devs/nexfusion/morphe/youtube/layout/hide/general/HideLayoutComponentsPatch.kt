@@ -66,6 +66,7 @@ val HideHorizontalShelves = patch {
 val HideLayoutComponents = patch(
     name = "Hide layout components",
     description = "Adds options to hide general layout components.",
+    use = false,
 ) {
     dependsOn(
         LithoFilter,

@@ -13,6 +13,7 @@ import io.github.a092devs.nexfusion.patch
 val hideInfoCardsPatch = patch(
     name = "Hide info cards",
     description = "Adds an option to hide info cards that creators add in the video player.",
+    use = false,
 ) {
     dependsOn(VersionCheck)
 

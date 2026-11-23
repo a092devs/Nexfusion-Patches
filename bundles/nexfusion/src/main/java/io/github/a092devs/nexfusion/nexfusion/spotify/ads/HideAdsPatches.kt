@@ -27,6 +27,7 @@ val MuteAudioAds = patch(
     name = "Mute audio ads",
     description = "Mutes the music stream while an audio ad plays and restores the volume afterwards. " +
         "Enabling \"Device broadcast status\" in the Spotify settings improves the ad detection.",
+    use = false,
 ) {
     MuteAudioAdsPatch.initialize(appContext)
 
@@ -38,6 +39,7 @@ val MuteAudioAds = patch(
 val HideAdSections = patch(
     name = "Hide ad sections",
     description = "Removes brand ad sections from the home, search and now playing pages.",
+    use = false,
 ) {
     val homeGetters = ::homeSectionsGetters.dexMethodList
     val browseGetters = ::browseSectionsGetters.dexMethodList
@@ -70,6 +72,7 @@ val HideAdSections = patch(
 val HideContextMenuUpsells = patch(
     name = "Hide context menu upsells",
     description = "Removes \"Premium\" entries from the context menus of songs, albums and playlists.",
+    use = false,
 ) {
     val isPremiumUpsell = runCatching { ::premiumUpsellField.field }.getOrNull()
     if (isPremiumUpsell == null) {
@@ -93,6 +96,7 @@ val HideContextMenuUpsells = patch(
 val BlockPopupAds = patch(
     name = "Block popup ads",
     description = "Blocks fullscreen promotions (\"Pendragon\" messages) shown when opening the app.",
+    use = false,
 ) {
     val requests = ::pendragonRequestMethods.dexMethodList
     if (requests.isEmpty()) throw Exception("Pendragon message requests not found")
@@ -111,6 +115,7 @@ val BlockPopupAds = patch(
 val HidePlaylistAds = patch(
     name = "Hide playlist ads",
     description = "Removes ads embedded into playlists.",
+    use = false,
 ) {
     ::embeddedAdPlaylistPropertiesConstructor.hookMethod {
         before { param ->
@@ -126,6 +131,7 @@ val HidePlaylistAds = patch(
 val HideVideoAds = patch(
     name = "Hide video ads",
     description = "Disables the video ad plugin of the now playing view.",
+    use = false,
 ) {
     val entries = ::npvPluginEntryConstructors.dexMethodList
     if (entries.isEmpty()) throw Exception("Now playing view plugin entries not found")

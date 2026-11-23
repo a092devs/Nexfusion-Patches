@@ -22,6 +22,7 @@ val PlaybackSpeed = patch(
     name = "Playback speed",
     description = "Adds options to customize available playback speeds, set a default playback speed, " +
             "and show a speed dialog button in the video player.",
+    use = false,
 ) {
     dependsOn(
         CustomPlaybackSpeed,

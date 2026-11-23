@@ -72,6 +72,7 @@ fun hookPlayerResponseVideoId(method :(videoId: String, isShortAndOpeningOrPlayi
 val VideoId = patch(
     name = "VideoId",
     description = "Hooks to detect when the video id changes.",
+    use = false,
 ) {
     dependsOn(
         PlayerResponseMethodHook

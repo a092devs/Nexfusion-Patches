@@ -9,6 +9,7 @@ import io.github.a092devs.nexfusion.nexfusion.spotify.canBindAppWidgetPermission
 val FixThirdPartyLaunchersWidgets = patch(
     name = "Fix third party launchers widgets",
     description = "Allows the Spotify widgets to be added to third party launchers.",
+    use = false,
 ) {
     // Only the stock launcher has the BIND_APPWIDGET permission Spotify checks for.
     val method = runCatching { ::canBindAppWidgetPermissionMethod.member }.getOrNull()

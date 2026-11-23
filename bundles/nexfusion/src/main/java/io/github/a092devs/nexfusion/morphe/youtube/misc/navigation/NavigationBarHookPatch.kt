@@ -125,16 +125,25 @@ val NavigationBarHook = patch(
     })
 
     // Hook bottom bar container layout listener
+    val handledContainers = java.util.Collections.newSetFromMap(java.util.WeakHashMap<View, Boolean>())
+    var isHandling = false
     runCatching {
         InitializeBottomBarContainerFingerprint.hookMethod(scopedHook(
             DexMethod("Landroid/view/View;->addOnLayoutChangeListener(Landroid/view/View\$OnLayoutChangeListener;)V").toMethod()
         ) {
             before {
+                if (isHandling) return@before
                 val container = it.thisObject as? View ?: return@before
-                app.morphe.extension.youtube.patches.NavigationBarPatch.setNavigationBarGlass(container)
-                app.morphe.extension.youtube.patches.NavigationBarPatch.setNavigationBarOpaque(container)
-                app.morphe.extension.youtube.patches.NavigationBarPatch.hideNavigationBar(container)
-                app.morphe.extension.youtube.patches.NavigationBarPatch.watchSlimStatusBar(container)
+                if (!handledContainers.add(container)) return@before
+                isHandling = true
+                try {
+                    app.morphe.extension.youtube.patches.NavigationBarPatch.setNavigationBarGlass(container)
+                    app.morphe.extension.youtube.patches.NavigationBarPatch.setNavigationBarOpaque(container)
+                    app.morphe.extension.youtube.patches.NavigationBarPatch.hideNavigationBar(container)
+                    app.morphe.extension.youtube.patches.NavigationBarPatch.watchSlimStatusBar(container)
+                } finally {
+                    isHandling = false
+                }
             }
         })
     }

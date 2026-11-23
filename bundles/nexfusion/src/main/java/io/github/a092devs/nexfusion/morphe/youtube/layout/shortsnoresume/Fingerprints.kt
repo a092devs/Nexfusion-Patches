@@ -1,6 +1,7 @@
 package io.github.a092devs.nexfusion.morphe.youtube.layout.shortsnoresume
 
 import io.github.a092devs.nexfusion.RequireAppVersion
+import io.github.a092devs.nexfusion.morphe.AccessFlags
 import io.github.a092devs.nexfusion.morphe.Fingerprint
 import io.github.a092devs.nexfusion.morphe.InstructionLocation
 import io.github.a092devs.nexfusion.morphe.Opcode
@@ -25,14 +26,18 @@ internal object UserWasInShortsEvaluateAnchorFingerprint: Fingerprint(
  */
 @RequireAppVersion("21.41.000")
 internal object UserWasInShortsEvaluateFingerprint : Fingerprint(
+    classFingerprint = UserWasInShortsEvaluateAnchorFingerprint,
+    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.FINAL),
+    returnType = "L",
+    parameters = listOf(
+        "Ljava/util/function/Supplier;", "L", "Ljava/lang/String;"
+    ),
     filters = listOf(
         methodCall(
-            opcode = Opcode.INVOKE_DIRECT_RANGE,
             name = "<init>",
             parameters = listOf("L", "Z", "Z", "L", "Z")
         ),
         methodCall(
-            opcode = Opcode.INVOKE_DIRECT_RANGE,
             name = "<init>",
             parameters = listOf("L", "L", "L", "L", "L", "Ljava/lang/String;"),
             location = InstructionLocation.MatchAfterWithin(50)
@@ -45,6 +50,7 @@ internal object UserWasInShortsEvaluateFingerprint : Fingerprint(
  */
 @RequireAppVersion(minVersion = "21.30.000", maxVersion = "21.41.000")
 internal object UserWasInShortsEvaluateLegacy2130Fingerprint : Fingerprint(
+    classFingerprint = UserWasInShortsEvaluateAnchorFingerprint,
     filters = listOf(
         methodCall(
             opcode = Opcode.INVOKE_DIRECT_RANGE,
@@ -65,6 +71,7 @@ internal object UserWasInShortsEvaluateLegacy2130Fingerprint : Fingerprint(
  */
 @RequireAppVersion(minVersion="21.03.00", maxVersion = "21.30.000")
 internal object UserWasInShortsEvaluateLegacyFingerprint : Fingerprint(
+    classFingerprint = UserWasInShortsEvaluateAnchorFingerprint,
     filters = listOf(
         methodCall(
             opcode = Opcode.INVOKE_DIRECT_RANGE,

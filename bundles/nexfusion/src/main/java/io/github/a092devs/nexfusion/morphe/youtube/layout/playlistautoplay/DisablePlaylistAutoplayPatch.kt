@@ -11,6 +11,7 @@ import io.github.a092devs.nexfusion.patch
 val DisablePlaylistAutoplay = patch(
     name = "Disable playlist autoplay",
     description = "Adds an option to stop a playlist from automatically advancing to the next video.",
+    use = false,
 ) {
     PreferenceScreen.PLAYER.addPreferences(
         SwitchPreference("morphe_disable_playlist_autoplay", summary = true),

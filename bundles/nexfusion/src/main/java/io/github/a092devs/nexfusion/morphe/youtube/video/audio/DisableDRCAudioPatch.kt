@@ -6,6 +6,7 @@ import io.github.a092devs.nexfusion.morphe.Fingerprint
 import io.github.a092devs.nexfusion.morphe.InstructionLocation.MatchAfterWithin
 import io.github.a092devs.nexfusion.morphe.Opcode
 import io.github.a092devs.nexfusion.morphe.anyInstruction
+import io.github.a092devs.nexfusion.morphe.findMethodDirect
 import io.github.a092devs.nexfusion.morphe.methodCall
 import io.github.a092devs.nexfusion.morphe.newInstance
 import io.github.a092devs.nexfusion.morphe.setExtensionIsPatchIncluded
@@ -14,7 +15,26 @@ import io.github.a092devs.nexfusion.morphe.youtube.misc.playservice.VersionCheck
 import io.github.a092devs.nexfusion.morphe.youtube.misc.settings.PreferenceScreen
 import io.github.a092devs.nexfusion.patch
 
+import org.luckypray.dexkit.query.matchers.MethodMatcher
+
+private const val PLAYBACK_AGNOSTIC_USER_PREFERENCES =
+    "Lcom/google/android/libraries/youtube/media/interfaces/PlaybackAgnosticUserPreferences;"
+private const val PLAYBACK_AGNOSTIC_USER_PREFERENCES_NAME =
+    "com.google.android.libraries.youtube.media.interfaces.PlaybackAgnosticUserPreferences"
+
 internal object PlaybackAgnosticUserPreferencesFingerprint : Fingerprint(
+    custom = {
+        addAnyOf {
+            addInvoke {
+                declaredClass(PLAYBACK_AGNOSTIC_USER_PREFERENCES_NAME)
+            }
+        }
+        addAnyOf {
+            addInvoke {
+                returnType(PLAYBACK_AGNOSTIC_USER_PREFERENCES_NAME)
+            }
+        }
+    },
     filters = listOf(
         methodCall(
             opcode = Opcode.INVOKE_VIRTUAL,
@@ -27,16 +47,22 @@ internal object PlaybackAgnosticUserPreferencesFingerprint : Fingerprint(
             location = MatchAfterWithin(3)
         ),
         anyInstruction(
-            newInstance("Lcom/google/android/libraries/youtube/media/interfaces/PlaybackAgnosticUserPreferences;"),
-            methodCall(returnType = "Lcom/google/android/libraries/youtube/media/interfaces/PlaybackAgnosticUserPreferences;"),
+            newInstance(PLAYBACK_AGNOSTIC_USER_PREFERENCES),
+            methodCall(returnType = PLAYBACK_AGNOSTIC_USER_PREFERENCES),
             location = MatchAfterWithin(15)
         )
     )
 )
 
+internal val drcAudioMethod = findMethodDirect {
+    val match = PlaybackAgnosticUserPreferencesFingerprint.match()
+    match.instructionMatches[0].instruction.methodRef!!
+}
+
 val DisableDRCAudio = patch(
     name = "Disable DRC audio",
     description = "Adds options to disable DRC (Dynamic Range Compression) audio and loudness normalization.",
+    use = false,
 ) {
     dependsOn(VersionCheck)
 
@@ -46,7 +72,7 @@ val DisableDRCAudio = patch(
     )
 
     runCatching {
-        PlaybackAgnosticUserPreferencesFingerprint.hookMethod {
+        ::drcAudioMethod.dexMethod.hookMethod {
             after {
                 if (DisableDRCAudioExt.disableDrcAudio()) {
                     it.result = false

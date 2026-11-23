@@ -19,6 +19,7 @@ import io.github.a092devs.nexfusion.patch
 val MapsHideAds = patch(
     name = "Hide ads",
     description = "Hides promoted map pins, sponsored search result rows, navigation ad labels, and ad impression beacons in Google Maps.",
+    use = false,
 ) {
     // 1. Suppress ad impression beacons and telemetry pings
     runCatching {
@@ -121,6 +122,7 @@ val MapsHideAds = patch(
 val MapsHighRefreshRate = patch(
     name = "High refresh rate",
     description = "Removes Google Maps' 60 Hz window cap and unlocks 90 Hz / 120 Hz display refresh rate and map rendering.",
+    use = false,
 ) {
     // 1. Remove 60.0 Hz preferredRefreshRate cap on Window.setAttributes
     runCatching {
@@ -207,6 +209,7 @@ val MapsHighRefreshRate = patch(
 val MapsEnableSpeedometer = patch(
     name = "Enable speedometer & speed limits",
     description = "Forces the real-time driving speedometer and speed limit indicators to be permanently enabled and visible regardless of country or regional restrictions.",
+    use = false,
 ) {
     val speedometerKeys = setOf(
         "speedometer_enabled",
@@ -244,6 +247,7 @@ val MapsEnableSpeedometer = patch(
 val MapsKeepScreenOn = patch(
     name = "Keep screen awake",
     description = "Prevents the screen from dimming or turning off during active navigation and map exploration.",
+    use = false,
 ) {
     runCatching {
         XposedBridge.hookAllMethods(
@@ -290,6 +294,7 @@ val MapsKeepScreenOn = patch(
 val MapsAlwaysShowCompass = patch(
     name = "Always show compass",
     description = "Keeps the compass needle and bearing indicator permanently visible on the map instead of automatically hiding when facing North.",
+    use = false,
 ) {
     runCatching {
         val compassButtonClasses = listOf(
@@ -345,6 +350,7 @@ val MapsAlwaysShowCompass = patch(
 val MapsZoomButtons = patch(
     name = "Force zoom buttons",
     description = "Forces dedicated zoom in and zoom out (+/-) buttons to always appear on map screens for easier one-handed navigation.",
+    use = false,
 ) {
     runCatching {
         val spImplClass = runCatching { Class.forName("android.app.SharedPreferencesImpl") }.getOrNull()
@@ -370,6 +376,7 @@ val MapsZoomButtons = patch(
 val MapsDisablePrompts = patch(
     name = "Suppress calibration prompts",
     description = "Suppresses repetitive compass figure-8 calibration popups and location accuracy alert dialogs.",
+    use = false,
 ) {
     runCatching {
         val spImplClass = runCatching { Class.forName("android.app.SharedPreferencesImpl") }.getOrNull()
@@ -409,6 +416,7 @@ val MapsDisablePrompts = patch(
 val MapsDisableTelemetry = patch(
     name = "Disable telemetry",
     description = "Disables Clearcut logging, Firebase analytics, Play services compliance check-ins, and performance monitoring in Google Maps.",
+    use = false,
 ) {
     // 1. Clearcut Logger
     runCatching {
@@ -457,6 +465,7 @@ val MapsDisableTelemetry = patch(
 val MapsHideClutter = patch(
     name = "Hide clutter & AI summaries",
     description = "Hides Gemini AI summaries, Ask Maps navigation entrypoints, promotional sign-in prompts, and place sheet clutter.",
+    use = false,
 ) {
     // 1. Disable Ask Maps in navigation
     runCatching {

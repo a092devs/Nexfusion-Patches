@@ -30,6 +30,7 @@ internal object BottomSheetDialogOnAttachedToWindowFingerprint : Fingerprint(
 )
 
 internal object DialogFragmentOnStartFingerprint : Fingerprint(
+    name = "onStart",
     returnType = "V",
     parameters = listOf(),
     filters = listOf(
@@ -42,6 +43,7 @@ internal object DialogFragmentOnStartFingerprint : Fingerprint(
 val GlassMenus = patch(
     name = "Glass menus",
     description = "Adds an option to show menus as frosted glass with blurred backgrounds on Android 12+.",
+    use = false,
 ) {
     dependsOn(VersionCheck)
 

@@ -10,6 +10,7 @@ import io.github.a092devs.nexfusion.patch
 val PlayerTypeHook = patch(
     name = "PlayerTypeHook",
     description = "Hook to get the current player type and video playback state.",
+    use = false,
 ) {
     dependsOn(VersionCheck)
 

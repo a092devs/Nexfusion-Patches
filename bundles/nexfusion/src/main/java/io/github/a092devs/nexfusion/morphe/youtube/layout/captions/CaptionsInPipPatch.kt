@@ -374,6 +374,7 @@ private fun PatchExecutor.resolveCaptionsInPipMembers() {
 val CaptionsInPip = patch(
     name = "Captions in picture-in-picture",
     description = "Adds an option to show captions in picture-in-picture mode.",
+    use = false,
 ) {
     dependsOn(VersionCheck)
 

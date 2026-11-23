@@ -244,14 +244,24 @@ val NavigationBar = patch(
                 listField.isAccessible = true
                 val currentList = listField.get(thiz) as? List<Any> ?: return@after
                 val modified = NavigationBarPatch.getPivotBarRendererList(currentList) ?: return@after
-                val copyOf = currentList.javaClass.methods.firstOrNull {
+
+                val converterMethod = listField.type.methods.firstOrNull {
+                    java.lang.reflect.Modifier.isStatic(it.modifiers) &&
+                            listField.type.isAssignableFrom(it.returnType) &&
+                            it.parameterTypes.size == 1 &&
+                            java.util.Collection::class.java.isAssignableFrom(it.parameterTypes[0])
+                } ?: currentList.javaClass.methods.firstOrNull {
                     it.name in listOf("copyOf", "j") && it.parameterTypes.size == 1 &&
                             java.util.Collection::class.java.isAssignableFrom(it.parameterTypes[0])
                 }
-                if (copyOf != null) {
-                    listField.set(thiz, copyOf.invoke(null, modified))
-                } else {
-                    runCatching { listField.set(thiz, modified) }
+
+                runCatching {
+                    if (converterMethod != null) {
+                        converterMethod.isAccessible = true
+                        listField.set(thiz, converterMethod.invoke(null, modified))
+                    } else {
+                        listField.set(thiz, modified)
+                    }
                 }
             }
         }
@@ -259,7 +269,7 @@ val NavigationBar = patch(
 
     // Clip Live Chat scroll button
     runCatching {
-        MoreCommentsIconFingerprint.hookMethod {
+        MoreCommentsIconFingerprint.hookAllMethods {
             after { param ->
                 val view = param.result as? View ?: return@after
                 NavigationBarPatch.clipLiveChatScrollButton(view)

@@ -8,7 +8,8 @@ import io.github.a092devs.nexfusion.patch
 
 val textComponentPatch = patch(
     name = "textComponentPatch",
-    description = "Provides hooks into text components for extension filtering."
+    description = "Provides hooks into text components for extension filtering.",
+    use = false,
 ) {
     SpannableStringBuilderFingerprint.hookMethod {
         val getSpannedMethod = ::spannableStringBuilderGetSpannedMethod.method

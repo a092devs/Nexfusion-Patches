@@ -23,6 +23,7 @@ val ShowUnavailableTracks = patch(
     description = "Forces Spotify's own \"Show unplayable songs\" setting on, so tracks that " +
         "cannot be played (wrong market, removed, …) stay visible in collections instead of " +
         "being hidden. Playing them still depends on the account.",
+    use = false,
 ) {
     val field = runCatching { ::showUnavailableTracksField.field }.getOrNull()
     if (field == null) {

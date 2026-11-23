@@ -26,6 +26,7 @@ import io.github.a092devs.nexfusion.patch
 val HideAds = patch(
     name = "Hide ads",
     description = "Adds options to hide general ads, Premium promotions and video ads.",
+    use = false,
 ) {
     dependsOn(
         LithoFilter,

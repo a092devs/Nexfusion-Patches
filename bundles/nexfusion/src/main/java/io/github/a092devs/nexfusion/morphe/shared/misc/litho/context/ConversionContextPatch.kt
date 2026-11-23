@@ -30,7 +30,8 @@ data class ConversionContext(val conversion: Any) : ContextInterface {
  */
 internal val conversionContextPatch = patch(
     name = "conversionContextPatch",
-    description = "Hooks the method to use the conversion context in an extension."
+    description = "Hooks the method to use the conversion context in an extension.",
+    use = false,
 ) {
     identifierField = ::identifierFieldData.field
     pathBuilderField = ::stringBuilderFieldData.field

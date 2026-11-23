@@ -17,6 +17,7 @@ import java.lang.reflect.Method
 val CommandRouterHook = patch(
     name = "CommandRouterHook",
     description = "Hooks the command router of each activity so the extension can run commands.",
+    use = false,
 ) {
     runCatching {
         val executeMethod = runCatching { CommandRouterExecuteCommandFingerprint.memberOrNull as? Method }.getOrNull()

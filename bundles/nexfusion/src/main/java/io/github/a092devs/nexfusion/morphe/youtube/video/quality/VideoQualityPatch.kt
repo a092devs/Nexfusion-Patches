@@ -14,7 +14,8 @@ val settingsMenuVideoQualityGroup = mutableSetOf<BasePreference>()
 
 val VideoQuality = patch(
     name = "Video quality",
-    description = "Adds options to set default video qualities and always use the advanced video quality menu."
+    description = "Adds options to set default video qualities and always use the advanced video quality menu.",
+    use = false,
 ) {
     dependsOn(
         RememberVideoQuality,

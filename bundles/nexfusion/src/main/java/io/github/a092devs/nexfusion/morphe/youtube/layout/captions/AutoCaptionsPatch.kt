@@ -12,6 +12,7 @@ import io.github.a092devs.nexfusion.patch
 val AutoCaptions = patch(
     name = "Auto captions",
     description = "Adds an option to disable captions from being automatically enabled.",
+    use = false,
 ) {
     dependsOn(VersionCheck)
 

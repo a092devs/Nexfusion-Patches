@@ -7,6 +7,7 @@ import io.github.a092devs.nexfusion.patch
 val disableChapterSkipDoubleTapPatch = patch(
     name = "Disable chapter skip double tap",
     description = "Adds an option to disable chapter skipping when double-tapping with two fingers.",
+    use = false,
 ) {
     PreferenceScreen.PLAYER.addPreferences(
         SwitchPreference("morphe_disable_chapter_skip_double_tap", summary = true),

@@ -13,6 +13,7 @@ import io.github.a092devs.nexfusion.scopedHook
 val changeStartPagePatch = patch(
     name = "Change start page",
     description = "Adds an option to set which page the app opens in instead of the homepage.",
+    use = false,
 ) {
     PreferenceScreen.GENERAL.addPreferences(
         noTitleUnsortedPreferenceCategory(

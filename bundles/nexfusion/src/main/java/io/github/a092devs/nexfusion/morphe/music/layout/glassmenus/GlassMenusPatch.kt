@@ -16,6 +16,7 @@ import io.github.a092devs.nexfusion.patch
 val GlassMenus = patch(
     name = "Glass menus",
     description = "Adds an option to show menus as frosted glass with blurred backgrounds on Android 12+.",
+    use = false,
 ) {
     PreferenceScreen.GENERAL.addPreferences(
         PreferenceScreenPreference(

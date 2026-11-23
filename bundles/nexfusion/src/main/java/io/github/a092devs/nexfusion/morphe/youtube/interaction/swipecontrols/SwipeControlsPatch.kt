@@ -23,6 +23,7 @@ import io.github.a092devs.nexfusion.patch
 val SwipeControls = patch(
     name = "Swipe controls",
     description = "Adds options to enable and configure volume and brightness swipe controls.",
+    use = false,
 ) {
     dependsOn(
         PlayerTypeHook,

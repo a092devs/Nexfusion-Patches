@@ -17,6 +17,7 @@ import io.github.a092devs.nexfusion.patch
 val CopyVideoLinkButtonPatch = patch(
     name = "Copy video link",
     description = "Adds options to display buttons in the video player to copy video links.",
+    use = false,
 ) {
     dependsOn(
         LegacyPlayerControls,

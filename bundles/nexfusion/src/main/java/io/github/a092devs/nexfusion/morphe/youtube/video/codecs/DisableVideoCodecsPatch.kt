@@ -11,6 +11,7 @@ import org.luckypray.dexkit.wrap.DexMethod
 val DisableVideoCodecs = patch(
     name = "Disable video codecs",
     description = "Adds options to disable or force HDR, and to disable VP9 codecs.",
+    use = false,
 ) {
     PreferenceScreen.VIDEO.addPreferences(
         SwitchPreference("morphe_disable_hdr_video"),

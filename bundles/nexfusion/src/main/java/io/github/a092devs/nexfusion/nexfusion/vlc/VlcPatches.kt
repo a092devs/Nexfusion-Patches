@@ -14,6 +14,7 @@ import java.util.ArrayList
 val VlcAmoledBlackTheme = patch(
     name = "AMOLED black theme",
     description = "Repaints every dark surface — background, cards, dialogs, popups, header and the navigation bar — to true black.",
+    use = false,
 ) {
     runCatching {
         val activityClass = classLoader.loadClass("android.app.Activity")
@@ -42,6 +43,7 @@ val VlcAmoledBlackTheme = patch(
 val VlcSkipWhatsNew = patch(
     name = "Skip \"What's New\" dialog",
     description = "Suppresses the What's New changelog dialog shown after app updates.",
+    use = false,
 ) {
     runCatching {
         val clazz = classLoader.loadClass("org.videolan.vlc.util.WhatsNewManager")

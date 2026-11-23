@@ -21,6 +21,7 @@ import io.github.a092devs.nexfusion.patch
 val PlaylistPanelButton = patch(
     name = "Playlist button",
     description = "Adds an option to display a button in the video player that opens the playlist panel.",
+    use = false,
 ) {
     dependsOn(
         LegacyPlayerControls,

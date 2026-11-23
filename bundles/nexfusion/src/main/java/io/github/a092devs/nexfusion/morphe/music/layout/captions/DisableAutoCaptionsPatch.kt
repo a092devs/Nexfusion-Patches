@@ -14,6 +14,7 @@ import io.github.a092devs.nexfusion.patch
 val DisableAutoCaptions = patch(
     name = "Disable auto captions",
     description = "Adds an option to disable captions from being automatically enabled.",
+    use = false,
 ) {
     runCatching {
         SetCaptionTrackFingerprint.memberOrNull?.let { member ->

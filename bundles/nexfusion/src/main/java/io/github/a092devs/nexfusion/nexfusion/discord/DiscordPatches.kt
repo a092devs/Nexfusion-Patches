@@ -17,6 +17,7 @@ import java.lang.reflect.Method
 val DisableCrashReporting = patch(
     name = "Disable crash reporting",
     description = "Stops crash reports, screenshots and system logs from being sent to Sentry. Always on once patched.",
+    use = false,
 ) {
     installPrivacyStubs(PrivacyTargets.crash)
 }
@@ -24,6 +25,7 @@ val DisableCrashReporting = patch(
 val DisableTelemetry = patch(
     name = "Disable telemetry and touch logging",
     description = "Stops performance tracking, per-screen smoothness stats and records of what you tap. Always on once patched.",
+    use = false,
 ) {
     installPrivacyStubs(PrivacyTargets.telemetry)
 }
@@ -31,6 +33,7 @@ val DisableTelemetry = patch(
 val DisableInstallAttribution = patch(
     name = "Disable install attribution",
     description = "Stops AppsFlyer from tracking how you installed the app. Some invite links that open before install may not work.",
+    use = false,
 ) {
     installPrivacyStubs(PrivacyTargets.attribution)
 }
@@ -38,6 +41,7 @@ val DisableInstallAttribution = patch(
 val DisableAdvertisingIdentifiers = patch(
     name = "Disable advertising identifiers",
     description = "Stops Discord and AppsFlyer from reading your Google advertising ID. Always on once patched.",
+    use = false,
 ) {
     installPrivacyStubs(PrivacyTargets.advertising)
 }
@@ -62,6 +66,7 @@ val KeepBluetoothAudioClear = patch(
 val DiscordBackgroundAudio = patch(
     name = "Background audio playback",
     description = "Keeps voice messages and audio playing when Discord is sent to the background or the screen is turned off.",
+    use = false,
 ) {
     runCatching {
         val audioManagerCls = classLoader.loadClass("com.discord.chat.presentation.message.view.voicemessages.AudioPlayerManager")
@@ -83,6 +88,7 @@ val DiscordBackgroundAudio = patch(
 val DiscordPasskeyHint = patch(
     name = "Passkey error hint",
     description = "Explains why security keys and passkeys cannot be validated in modified Discord and recommends authenticator apps or SMS.",
+    use = false,
 ) {
     runCatching {
         val securityCls = classLoader.loadClass("com.discord.security_key.SecurityKeyManagerModule")

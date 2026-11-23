@@ -14,6 +14,7 @@ import io.github.a092devs.nexfusion.patch
 val VideoEffects = patch(
     name = "Video effects",
     description = "Adds shader and post-processing video effects options and controls.",
+    use = false,
 ) {
     PreferenceScreen.VIDEO.addPreferences(
         ListPreference(

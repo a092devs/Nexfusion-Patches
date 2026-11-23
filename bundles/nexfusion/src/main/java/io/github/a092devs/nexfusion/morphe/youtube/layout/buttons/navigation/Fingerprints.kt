@@ -142,7 +142,15 @@ internal object PageBottomMarginFingerprint : Fingerprint(
             opcode = Opcode.IGET,
             definingClass = "Landroid/graphics/Rect;",
             name = "bottom"
-        )
+        ),
+        // Keyboard height.
+        methodCall(
+            opcode = Opcode.INVOKE_STATIC,
+            parameters = listOf("Landroid/view/View;"),
+            returnType = "I",
+            location = MatchAfterWithin(10)
+        ),
+        opcode(Opcode.MOVE_RESULT, location = MatchAfterImmediately())
     )
 )
 

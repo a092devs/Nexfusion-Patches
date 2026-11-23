@@ -60,20 +60,20 @@ fun enableDebuggingPatch(
     // Hook the methods that look up if a feature flag is active.
     ::experimentalBooleanFeatureFlagFingerprint.memberOrNull?.hookMethod {
         after {
-            it.result = EnableDebuggingPatch.isBooleanFeatureFlagEnabled(
-                it.result as Boolean,
-                it.args.atLast(2) as Long
-            )
+            val result = it.result as? Boolean ?: return@after
+            val args = it.args ?: return@after
+            val flag = (args.getOrNull(args.size - 2) as? Long) ?: return@after
+            it.result = EnableDebuggingPatch.isBooleanFeatureFlagEnabled(result, flag)
         }
     }
 
     if (hookIndexedBooleanFeatureFlag()) {
         ::experimentalIndexedBooleanFeatureFlagFingerprint.memberOrNull?.hookMethod {
             after {
-                it.result = EnableDebuggingPatch.isBooleanFeatureFlagEnabled(
-                    it.result as Boolean,
-                    it.args.atLast(2) as Long
-                )
+                val result = it.result as? Boolean ?: return@after
+                val args = it.args ?: return@after
+                val flag = (args.getOrNull(args.size - 2) as? Long) ?: return@after
+                it.result = EnableDebuggingPatch.isBooleanFeatureFlagEnabled(result, flag)
             }
         }
     }
@@ -81,11 +81,11 @@ fun enableDebuggingPatch(
     if (hookDoubleFeatureFlag()) {
         ::experimentalDoubleFeatureFlagFingerprint.memberOrNull?.hookMethod {
             after {
-                it.result = EnableDebuggingPatch.isDoubleFeatureFlagEnabled(
-                    it.result as Double,
-                    it.args.atLast(2) as Long,
-                    it.args.atLast(1) as Double
-                )
+                val result = it.result as? Double ?: return@after
+                val args = it.args ?: return@after
+                val flag = (args.getOrNull(args.size - 2) as? Long) ?: return@after
+                val def = (args.getOrNull(args.size - 1) as? Double) ?: return@after
+                it.result = EnableDebuggingPatch.isDoubleFeatureFlagEnabled(result, flag, def)
             }
         }
     }
@@ -93,11 +93,11 @@ fun enableDebuggingPatch(
     if (hookLongFeatureFlag()) {
         ::experimentalLongFeatureFlagFingerprint.memberOrNull?.hookMethod {
             after {
-                it.result = EnableDebuggingPatch.isLongFeatureFlagEnabled(
-                    it.result as Long,
-                    it.args.atLast(2) as Long,
-                    it.args.atLast(1) as Long
-                )
+                val result = it.result as? Long ?: return@after
+                val args = it.args ?: return@after
+                val flag = (args.getOrNull(args.size - 2) as? Long) ?: return@after
+                val def = (args.getOrNull(args.size - 1) as? Long) ?: return@after
+                it.result = EnableDebuggingPatch.isLongFeatureFlagEnabled(result, flag, def)
             }
         }
     }
@@ -105,11 +105,11 @@ fun enableDebuggingPatch(
     if (hookStringFeatureFlag()) {
         ::experimentalStringFeatureFlagFingerprint.memberOrNull?.hookMethod {
             after {
-                it.result = EnableDebuggingPatch.isStringFeatureFlagEnabled(
-                    it.result as String,
-                    it.args.atLast(2) as Long,
-                    it.args.atLast(1) as String
-                )
+                val result = it.result as? String ?: return@after
+                val args = it.args ?: return@after
+                val flag = (args.getOrNull(args.size - 2) as? Long) ?: return@after
+                val def = (args.getOrNull(args.size - 1) as? String) ?: return@after
+                it.result = EnableDebuggingPatch.isStringFeatureFlagEnabled(result, flag, def)
             }
         }
     }

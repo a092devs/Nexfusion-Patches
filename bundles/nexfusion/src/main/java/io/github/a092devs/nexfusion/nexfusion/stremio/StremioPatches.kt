@@ -17,6 +17,7 @@ import java.util.Locale
 val StremioIntroSkip = patch(
     name = "Intro & credits skip",
     description = "Automatically or contextually skips intros, recaps, and credits using embedded chapter marks and video metadata.",
+    use = false,
 ) {
     runCatching {
         val playerViewClass = runCatching { classLoader.loadClass("androidx.media3.ui.PlayerView") }.getOrNull()
@@ -92,6 +93,7 @@ val StremioSpoilerPrevention = patch(
 val StremioAvoidSdhSubtitles = patch(
     name = "Avoid SDH subtitles",
     description = "Prefers clean dialogue subtitle tracks over hearing-impaired [SDH] tracks whenever available.",
+    use = false,
 ) {
     runCatching {
         val trackSelectorClass = runCatching {
@@ -118,6 +120,7 @@ val StremioAvoidSdhSubtitles = patch(
 val StremioTrackMemory = patch(
     name = "Remember audio & subtitle tracks",
     description = "Persists your preferred audio and subtitle languages per show, automatically applying them to future episodes.",
+    use = false,
 ) {
     runCatching {
         val prefsName = "nexfusion_stremio_track_memory"
@@ -149,6 +152,7 @@ val StremioTrackMemory = patch(
 val StremioPlayerTuning = patch(
     name = "Smoother playback & larger buffer",
     description = "Expands the playback network buffer up to 120 seconds for seamless 4K HDR playback and smooth seek recovery.",
+    use = false,
 ) {
     runCatching {
         val loadControlBuilder = runCatching {
@@ -176,6 +180,7 @@ val StremioPlayerTuning = patch(
 val StremioBingeWatching = patch(
     name = "Binge watching & auto-next",
     description = "Prepares and automatically transitions to the next episode when current playback finishes.",
+    use = false,
 ) {
     runCatching {
         val playerClass = runCatching { classLoader.loadClass("androidx.media3.common.Player") }.getOrNull()
@@ -196,6 +201,7 @@ val StremioBingeWatching = patch(
 val StremioExternalPlayerProgress = patch(
     name = "External player progress",
     description = "Saves watch progress in Stremio when playing in an external player (MX Player, VLC, Vimu), and resumes playback seamlessly at the saved position.",
+    use = false,
 ) {
     runCatching {
         val activityClass = runCatching { classLoader.loadClass("android.app.Activity") }.getOrNull()

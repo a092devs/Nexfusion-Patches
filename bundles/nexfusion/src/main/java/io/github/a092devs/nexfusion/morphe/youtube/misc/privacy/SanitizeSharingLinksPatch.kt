@@ -6,7 +6,8 @@ import io.github.a092devs.nexfusion.patch
 
 val SanitizeSharingLinks = patch(
     name = "Sanitize sharing links",
-    description = "Removes the tracking query parameters from shared links."
+    description = "Removes the tracking query parameters from shared links.",
+    use = false,
 ) {
     SanitizeSharingLinks(
         preferenceScreen = PreferenceScreen.MISC,

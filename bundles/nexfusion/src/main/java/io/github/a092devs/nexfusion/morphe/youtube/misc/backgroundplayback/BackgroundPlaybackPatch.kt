@@ -20,6 +20,7 @@ import io.github.a092devs.nexfusion.patch
 val BackgroundPlayback = patch(
     name = "Remove background playback restrictions",
     description = "Removes restrictions on background playback, including playing kids videos in the background.",
+    use = false,
 ) {
 
     dependsOn(VersionCheck)

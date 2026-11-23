@@ -11,7 +11,8 @@ import io.github.a092devs.nexfusion.patch
 
 val HideAds = patch(
     name = "Hide ads",
-    description = "Adds options to hide fullscreen ads, Premium promotions and video ads."
+    description = "Adds options to hide fullscreen ads, Premium promotions and video ads.",
+    use = false,
 ) {
     dependsOn(
         HideFullscreenAds(PreferenceScreen.ADS),

@@ -31,6 +31,7 @@ private fun versionAtLeast(versionName: String, target: String): Boolean {
 val HideAds = patch(
     name = "Hide Reddit ads",
     description = "Hides promoted posts, comment ads and their placeholders.",
+    use = false,
 ) {
     val versionName = runCatching {
         appContext.packageManager.getPackageInfo(appContext.packageName, 0).versionName.orEmpty()

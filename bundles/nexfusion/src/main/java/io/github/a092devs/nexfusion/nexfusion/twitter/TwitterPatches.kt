@@ -25,6 +25,7 @@ import java.lang.reflect.Method
 val TwitterRemoveAds = patch(
     name = "Remove Ads",
     description = "Removes promoted posts, trends, and ads from timeline feeds.",
+    use = false,
 ) {
     installTwitterAdSuppressor()
 }
@@ -32,6 +33,7 @@ val TwitterRemoveAds = patch(
 val TwitterUnlockVideoDownloads = patch(
     name = "Unlock Video Downloads",
     description = "Lets you save videos and GIFs with the app's built-in download option without Premium.",
+    use = false,
 ) {
     installVideoDownloadUnlock()
 }
@@ -39,6 +41,7 @@ val TwitterUnlockVideoDownloads = patch(
 val TwitterBlockUpdateScreen = patch(
     name = "Block Update Screen",
     description = "Blocks the outdated app screen and suppresses in-app update prompts on launch.",
+    use = false,
 ) {
     installUpdateScreenBlock()
 }
@@ -47,6 +50,7 @@ val TwitterBlockTelemetry = patch(
     name = "Block Telemetry & Trackers",
     description = "Redirects Braze, Sentry, Google Ads, Crashlytics and Firebase Analytics endpoints " +
         "to a blackhole address and drops Firebase Performance traces.",
+    use = false,
 ) {
     installTelemetryFilters()
 }
@@ -54,6 +58,7 @@ val TwitterBlockTelemetry = patch(
 val TwitterRemovePremiumUpsell = patch(
     name = "Remove Premium Upsell",
     description = "Removes Premium subscription prompts and verification upsell surfaces across the app.",
+    use = false,
 ) {
     neutralizeTwitterFlags(
         "subscriptions_upsells_premium_home_nav_enabled",
@@ -121,6 +126,7 @@ val TwitterDisableImmersivePlayer = patch(
 val TwitterSanitizeShareLinks = patch(
     name = "Sanitize share links",
     description = "Removes tracking query parameters (such as ?s=... and &t=...) when sharing tweets or copying links.",
+    use = false,
 ) {
     runCatching {
         val clipboardManagerCls = classLoader.loadClass("android.content.ClipboardManager")
@@ -188,6 +194,7 @@ val TwitterDisableAutoRefresh = patch(
 val TwitterHideGrok = patch(
     name = "Hide Grok",
     description = "Hides Grok tab, drawer entry, and related AI shortcuts.",
+    use = false,
 ) {
     neutralizeTwitterFlags(
         "grok_enabled",

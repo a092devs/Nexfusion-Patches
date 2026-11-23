@@ -9,6 +9,7 @@ import org.luckypray.dexkit.wrap.DexMethod
 val SpoofFeaturesPatch = patch(
     name = "Spoof features",
     description = "Spoofs the device to enable Google Pixel exclusive features, including unlimited storage.",
+    use = false,
 ) {
     val buildInfo = mapOf(
         "BRAND" to "google",

@@ -7,6 +7,7 @@ import io.github.a092devs.nexfusion.patch
 val seekbarThumbnailPreviewPatch = patch(
     name = "Seekbar thumbnail preview",
     description = "Adds an option to restore the seekbar thumbnail preview.",
+    use = false,
 ) {
     PreferenceScreen.SEEKBAR.addPreferences(
         SwitchPreference("morphe_seekbar_thumbnail_preview", summary = true),

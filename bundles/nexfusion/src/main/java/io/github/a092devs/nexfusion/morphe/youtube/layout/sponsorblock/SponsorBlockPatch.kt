@@ -56,6 +56,7 @@ public fun categoryPreference(settingKey: String): BasePreference =
 val SponsorBlock = patch(
     name = "SponsorBlock",
     description = "Adds options to enable and configure SponsorBlock, which can skip undesired video segments such as sponsored content.",
+    use = false,
 ) {
     dependsOn(
         VideoInformationPatch,

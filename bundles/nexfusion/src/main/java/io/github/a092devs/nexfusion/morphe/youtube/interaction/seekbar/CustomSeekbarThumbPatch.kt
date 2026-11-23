@@ -19,6 +19,7 @@ import org.luckypray.dexkit.wrap.DexMethod
 val customSeekbarThumbPatch = patch(
     name = "Custom seekbar thumb",
     description = "Adds an option to customize the seekbar thumb with a custom image or animated GIF.",
+    use = false,
 ) {
     PreferenceScreen.SEEKBAR.addPreferences(
         noTitleUnsortedPreferenceCategory(

@@ -8,6 +8,7 @@ import io.github.a092devs.nexfusion.nexfusion.spotify.navigationTabSetConstructo
 val HidePremiumTab = patch(
     name = "Hide Premium tab",
     description = "Removes the \"Premium\" tab from the bottom navigation bar.",
+    use = false,
 ) {
     ::navigationTabSetConstructor.hookMethod {
         before { param ->
