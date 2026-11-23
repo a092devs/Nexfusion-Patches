@@ -19,6 +19,7 @@ import app.morphe.extension.youtube.patches.components.LayoutComponentsFilter
 import app.morphe.extension.youtube.settings.preference.AiSListStatsPreferenceCategory
 import app.morphe.extension.youtube.settings.preference.HTMLPreference
 import app.morphe.extension.youtube.settings.preference.KeywordContentStatsPreferenceCategory
+import app.morphe.extension.youtube.patches.components.ViewCountFilter
 import io.github.a092devs.nexfusion.morphe.shared.misc.litho.filter.addLithoFilter
 import io.github.a092devs.nexfusion.morphe.shared.misc.litho.filter.emptyComponentClass
 import io.github.a092devs.nexfusion.morphe.shared.misc.litho.node.hookTreeNodeResult
@@ -143,7 +144,7 @@ val HideLayoutComponents = patch(
                 SwitchPreference("morphe_hide_comments_menu_button", summary = true),
 //                SwitchPreference("morphe_hide_comments_preview_comment", summary = true),
                 SwitchPreference("morphe_minimal_comments_button", summary = true),
-                SwitchPreference("morphe_hide_comments_thanks_button"),
+                SwitchPreference("morphe_hide_comments_thanks_button", titleKey = "morphe_hide_thanks_button_title"),
                 SwitchPreference("morphe_hide_comments_timestamp_button"),
                 SwitchPreference("morphe_hide_comments_top_fans_button"),
                 SwitchPreference("morphe_hide_comments_translate_button"),
@@ -153,11 +154,12 @@ val HideLayoutComponents = patch(
         ),
         SwitchPreference("morphe_hide_channel_bar"),
         SwitchPreference("morphe_hide_channel_watermark"),
-        SwitchPreference("morphe_hide_chapters_timeline_button"),
+        SwitchPreference("morphe_hide_chapters_button"),
         SwitchPreference("morphe_hide_crowdfunding_box"),
         SwitchPreference("morphe_hide_emergency_box"),
+        SwitchPreference("morphe_hide_in_this_video_button"),
         SwitchPreference("morphe_hide_info_panels", summary = true),
-        SwitchPreference("morphe_hide_join_membership_button"),
+        SwitchPreference("morphe_hide_join_membership_button", titleKey = "morphe_hide_join_button_title"),
         SwitchPreference("morphe_hide_live_chat_replay_button", summary = true),
         SwitchPreference("morphe_hide_medical_panels"),
         SwitchPreference("morphe_hide_player_gesture_hints", summary = true),
@@ -308,6 +310,27 @@ val HideLayoutComponents = patch(
             )
         ),
         PreferenceScreenPreference(
+            key = "morphe_hide_videos_by_views_screen",
+            sorting = Sorting.UNSORTED,
+            preferences = setOf(
+                SwitchPreference("morphe_hide_videos_by_views_home"),
+                SwitchPreference("morphe_hide_videos_by_views_search"),
+                SwitchPreference("morphe_hide_videos_by_views_subscriptions"),
+                TextPreference("morphe_hide_videos_by_views_minimum", inputType = InputType.NUMBER),
+                TextPreference("morphe_hide_videos_by_views_maximum", inputType = InputType.NUMBER),
+                screenInfoPreferenceCategory(
+                    key = "morphe_hide_videos_by_views_about_category",
+                    preferences = setOf(
+                        NonInteractivePreference(
+                            key = "morphe_hide_videos_by_views_about",
+                            titleKey = null,
+                            tag = BulletPointPreference::class.java
+                        )
+                    )
+                )
+            )
+        ),
+        PreferenceScreenPreference(
             key = "morphe_hide_filter_bar_screen",
             preferences = setOf(
                 SwitchPreference("morphe_hide_filter_bar_in_channel_page"),
@@ -384,7 +407,7 @@ val HideLayoutComponents = patch(
         SwitchPreference("morphe_hide_horizontal_shelves", summary = true),
         SwitchPreference("morphe_hide_image_shelf", summary = true),
         SwitchPreference("morphe_hide_handle", summary = true),
-        SwitchPreference("morphe_hide_help_feedback_menu", summary = true),
+        SwitchPreference("morphe_hide_help_feedback_menu", titleKey = "morphe_hide_help_and_feedback_menu_title", summary = true),
         SwitchPreference("morphe_hide_invite_to_message_card", summary = true),
         SwitchPreference("morphe_hide_latest_videos_button", summary = true),
         SwitchPreference("morphe_hide_live_streams", summary = true),
@@ -441,6 +464,7 @@ val HideLayoutComponents = patch(
     }
     addLithoFilter(CommentsFilter())
     addLithoFilter(KeywordContentFilter())
+    addLithoFilter(ViewCountFilter())
     addLithoFilter(AiSListFilter())
     addLithoFilter(CustomFilter())
 //    TODO InclusiveSpanPatch TextComponentPatch

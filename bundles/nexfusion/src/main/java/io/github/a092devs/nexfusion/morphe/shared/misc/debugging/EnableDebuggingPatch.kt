@@ -5,6 +5,7 @@ import io.github.a092devs.nexfusion.PatchExecutor
 import io.github.a092devs.nexfusion.hookMethod
 import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.BasePreference
 import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.BasePreferenceScreen
+import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.ListPreference
 import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.NonInteractivePreference
 import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.PreferenceScreenPreference
 import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.PreferenceScreenPreference.Sorting
@@ -27,14 +28,13 @@ fun enableDebuggingPatch(
     block()
 
     val preferences = mutableSetOf<BasePreference>(
-        SwitchPreference("morphe_debug"),
+        ListPreference("morphe_debug_level"),
     )
 
     preferences.addAll(additionalDebugPreferences)
 
     preferences.addAll(
         listOf(
-            SwitchPreference("morphe_debug_stacktrace", summary = true),
             SwitchPreference("morphe_debug_toast_on_error"),
             NonInteractivePreference(
                 "morphe_debug_export_logs",
