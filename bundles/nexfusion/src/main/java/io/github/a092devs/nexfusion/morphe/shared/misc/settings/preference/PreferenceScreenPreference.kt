@@ -34,7 +34,11 @@ open class PreferenceScreenPreference(
         return prefMgr.createPreferenceScreen(ctx).apply {
             applyBaseAttrs(this)
             preferenceScreen = this
-            children = preferences.map { it.build(ctx, prefMgr) }
+            children = preferences.mapNotNull {
+                runCatching { it.build(ctx, prefMgr) }
+                    .onFailure { e -> Logger.printException({ "Failed to build preference ${it.key}" }, e) }
+                    .getOrNull()
+            }
         }
     }
 

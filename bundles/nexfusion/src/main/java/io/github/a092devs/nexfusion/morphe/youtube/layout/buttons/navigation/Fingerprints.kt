@@ -300,6 +300,10 @@ object PivotBarRendererListFingerprint : Fingerprint(
     )
 )
 
+internal val pivotBarRendererListBuilderMethod = findMethodDirect {
+    PivotBarRendererListFingerprint.instructionMatches[1].instruction.methodRef!!
+}
+
 object MoreCommentsIconFingerprint : Fingerprint(
     accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.FINAL),
     returnType = "Landroid/view/View;",

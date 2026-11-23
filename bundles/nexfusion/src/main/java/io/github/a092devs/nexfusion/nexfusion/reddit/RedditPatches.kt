@@ -950,6 +950,27 @@ val HomeFeedTabs = patch(
 ) {
 }
 
+val CollapseAllComments = patch(
+    name = "Collapse all comments",
+    description = "Adds an option to show a button next to the comment count of a post that collapses or expands all comments.",
+    use = false,
+) {
+}
+
+val HidePeopleAlsoSearchFor = patch(
+    name = "Hide People also search for section",
+    description = "Adds an option to hide the 'People also search for' section from search results.",
+    use = false,
+) {
+}
+
+val RedditEnableDebugging = patch(
+    name = "Enable debugging",
+    description = "Enables debug logging for Reddit patches.",
+    use = false,
+) {
+}
+
 val RedditPatches = arrayOf(
     RedditSettings,
     DisableScreenshotBanner,
@@ -978,7 +999,9 @@ val RedditPatches = arrayOf(
     HideAskButton,
     DisableModernHome,
     RememberCollapsedComments,
+    CollapseAllComments,
     HideSearchAnswersPreview,
+    HidePeopleAlsoSearchFor,
     HideVideosForYou,
     OpenSystemShareSheet,
     HideInteractivePosts,
@@ -992,6 +1015,7 @@ val RedditPatches = arrayOf(
     DownloadAllFromGallery,
     KeepMediaViewerInSubreddit,
     HomeFeedTabs,
+    RedditEnableDebugging,
 )
 
 

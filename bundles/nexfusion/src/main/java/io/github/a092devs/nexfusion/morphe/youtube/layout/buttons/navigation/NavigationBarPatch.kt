@@ -95,11 +95,37 @@ val NavigationBar = patch(
         navPreferences += SwitchPreference("morphe_disable_auto_hide_navigation_bar", summary = true)
     }
 
+    val toolbarPreferences = mutableSetOf(
+        SwitchPreference("morphe_hide_toolbar_cast_button", titleKey = "morphe_hide_cast_button_title"),
+        SwitchPreference("morphe_hide_toolbar_chat_button"),
+        SwitchPreference("morphe_hide_toolbar_companion_button"),
+        SwitchPreference("morphe_hide_toolbar_create_button", titleKey = "morphe_hide_create_button_title"),
+        SwitchPreference("morphe_hide_toolbar_microphone_button"),
+        SwitchPreference("morphe_hide_toolbar_notification_button", titleKey = "morphe_hide_notifications_button_title"),
+        SwitchPreference("morphe_hide_toolbar_search_button"),
+        SwitchPreference("morphe_show_toolbar_settings_button", titleKey = "morphe_show_settings_button_title"),
+        SwitchPreference(
+            "morphe_show_toolbar_settings_button_type",
+            titleKey = "morphe_show_toolbar_settings_button_type_title",
+            summary = true
+        ),
+        NonInteractivePreference(
+            "morphe_toolbar_buttons_order",
+            tag = app.morphe.extension.youtube.settings.preference.NavigationButtonsOrderPreference::class.java,
+            selectable = true
+        )
+    )
+
     PreferenceScreen.GENERAL.addPreferences(
         PreferenceScreenPreference(
             key = "morphe_navigation_bar_screen",
             sorting = Sorting.UNSORTED,
             preferences = navPreferences
+        ),
+        PreferenceScreenPreference(
+            key = "morphe_toolbar_screen",
+            sorting = Sorting.UNSORTED,
+            preferences = toolbarPreferences
         )
     )
 
@@ -119,6 +145,20 @@ val NavigationBar = patch(
     // Hook navigation button created, in order to hide them and initialize navigation bar styles.
     hookNavigationButtonCreated.add { button, view ->
         NavigationBarPatch.navigationTabCreated(button, view)
+        runCatching {
+            val textId = view.resources.getIdentifier("text", "id", view.context.packageName)
+            if (textId != 0) {
+                view.findViewById<View>(textId)?.visibility = View.GONE
+            }
+            if (view is android.view.ViewGroup) {
+                for (i in 0 until view.childCount) {
+                    val child = view.getChildAt(i)
+                    if (child is TextView) {
+                        child.visibility = View.GONE
+                    }
+                }
+            }
+        }
         val container = (view.parent?.parent as? View) ?: (view.parent as? View) ?: view
         NavigationBarPatch.setNavigationBarGlass(container)
         NavigationBarPatch.setNavigationBarOpaque(container)
@@ -191,12 +231,32 @@ val NavigationBar = patch(
     runCatching {
         val factoryMethod = PivotBarRendererFingerprint.method
         val protoParamType = factoryMethod.parameterTypes[0]
-        val parseMethod = protoParamType.getMethod("parseFrom", ByteArray::class.java, com.google.protobuf.ExtensionRegistryLite::class.java)
+        val defaultInstanceField = protoParamType.declaredFields.firstOrNull {
+            java.lang.reflect.Modifier.isStatic(it.modifiers) && it.type == protoParamType
+        } ?: protoParamType.getDeclaredField("a")
+        defaultInstanceField.isAccessible = true
+        val defaultInstance = defaultInstanceField.get(null)
+
+        val parseMethod = protoParamType.superclass.methods.firstOrNull {
+            it.name == "parseFrom" &&
+                    java.lang.reflect.Modifier.isStatic(it.modifiers) &&
+                    it.parameterTypes.size == 3 &&
+                    it.parameterTypes[0].isAssignableFrom(protoParamType) &&
+                    it.parameterTypes[1] == ByteArray::class.java
+        } ?: protoParamType.superclass.methods.firstOrNull {
+            it.name == "parseFrom" &&
+                    java.lang.reflect.Modifier.isStatic(it.modifiers) &&
+                    it.parameterTypes.size == 2 &&
+                    it.parameterTypes[0].isAssignableFrom(protoParamType) &&
+                    it.parameterTypes[1] == ByteArray::class.java
+        }
+
         val registry = runCatching {
-            val m = com.google.protobuf.ExtensionRegistryLite::class.java.getDeclaredMethod("getGeneratedRegistry")
-            m.isAccessible = true
-            m.invoke(null)
-        }.getOrNull() ?: com.google.protobuf.ExtensionRegistryLite.getEmptyRegistry()
+            val registryClass = classLoader.loadClass("com.google.protobuf.ExtensionRegistryLite")
+            val registryMethod = registryClass.getDeclaredMethod("getGeneratedRegistry")
+            registryMethod.isAccessible = true
+            registryMethod.invoke(null)
+        }.getOrNull()
 
         io.github.a092devs.nexfusion.compat.XposedHelpers.findAndHookMethod(
             NavigationBarPatch::class.java,
@@ -205,11 +265,21 @@ val NavigationBar = patch(
             object : io.github.a092devs.nexfusion.compat.XC_MethodReplacement() {
                 override fun replaceHookedMethod(param: MethodHookParam): Any? {
                     val bytes = param.args[0] as? ByteArray ?: return null
-                    val proto = runCatching { parseMethod.invoke(null, bytes, registry) }.getOrNull() ?: return null
-                    val optional = runCatching { factoryMethod.invoke(null, proto) }.getOrNull() ?: return null
-                    return runCatching {
+                    val proto = runCatching {
+                        if (parseMethod != null) {
+                            if (parseMethod.parameterTypes.size == 3 && registry != null) {
+                                parseMethod.invoke(null, defaultInstance, bytes, registry)
+                            } else {
+                                parseMethod.invoke(null, defaultInstance, bytes)
+                            }
+                        } else null
+                    }.onFailure { android.util.Log.e("NexFusionNav", "Error parsing proto in buildPivotBarItem", it) }.getOrNull() ?: return null
+                    val optional = runCatching { factoryMethod.invoke(null, proto) }.onFailure { android.util.Log.e("NexFusionNav", "Error factoryMethod in buildPivotBarItem", it) }.getOrNull() ?: return null
+                    val item = runCatching {
                         optional.javaClass.getMethod("orElse", Any::class.java).invoke(optional, null)
-                    }.getOrNull()
+                    }.onFailure { android.util.Log.e("NexFusionNav", "Error orElse in buildPivotBarItem", it) }.getOrNull()
+                    android.util.Log.i("NexFusionNav", "buildPivotBarItem built item: $item (${item?.javaClass})")
+                    return item
                 }
             }
         )
@@ -219,49 +289,65 @@ val NavigationBar = patch(
     runCatching {
         PivotBarRendererFingerprint.hookMethod {
             before { param ->
-                val messageLite = param.args[0] as? com.google.protobuf.MessageLite ?: return@before
-                NavigationBarPatch.createPivotBarItems(messageLite)
+                val obj = param.args[0] ?: return@before
+                android.util.Log.i("NexFusionNav", "PivotBarRendererFingerprint called with obj: ${obj.javaClass}")
+                NavigationBarPatch.createPivotBarItems(obj)
             }
         }
     }
     runCatching {
         PivotBarIconOnlyRendererFingerprint.hookMethod {
             before { param ->
-                val messageLite = param.args[0] as? com.google.protobuf.MessageLite ?: return@before
-                NavigationBarPatch.createIconOnlyPivotBarItems(messageLite)
+                val obj = param.args[0] ?: return@before
+                NavigationBarPatch.createIconOnlyPivotBarItems(obj)
             }
         }
     }
 
     // Apply Navigation Bar buttons ordering and custom items list
     runCatching {
-        PivotBarRendererListFingerprint.hookMethod {
+        val listBuilderMethod = ::pivotBarRendererListBuilderMethod.method
+        val returnType = listBuilderMethod.returnType
+        val copyOfMethod = returnType.declaredMethods.firstOrNull {
+            java.lang.reflect.Modifier.isStatic(it.modifiers) &&
+                    it.returnType == returnType &&
+                    it.parameterTypes.size == 1 &&
+                    it.parameterTypes[0] == java.util.Collection::class.java
+        } ?: returnType.methods.firstOrNull {
+            java.lang.reflect.Modifier.isStatic(it.modifiers) &&
+                    it.returnType == returnType &&
+                    it.parameterTypes.size == 1 &&
+                    it.parameterTypes[0] == java.util.Collection::class.java
+        } ?: returnType.declaredMethods.firstOrNull {
+            java.lang.reflect.Modifier.isStatic(it.modifiers) &&
+                    returnType.isAssignableFrom(it.returnType) &&
+                    it.parameterTypes.size == 1 &&
+                    it.parameterTypes[0].isAssignableFrom(java.util.Collection::class.java)
+        } ?: returnType.methods.firstOrNull {
+            java.lang.reflect.Modifier.isStatic(it.modifiers) &&
+                    returnType.isAssignableFrom(it.returnType) &&
+                    it.parameterTypes.size == 1 &&
+                    it.parameterTypes[0].isAssignableFrom(java.util.Collection::class.java)
+        }
+        android.util.Log.i("NexFusionNav", "Found copyOfMethod: $copyOfMethod on returnType: $returnType")
+
+        listBuilderMethod.hookMethod {
             after { param ->
-                val thiz = param.thisObject ?: return@after
-                val listField = thiz.javaClass.declaredFields.firstOrNull {
-                    java.util.List::class.java.isAssignableFrom(it.type)
-                } ?: return@after
-                listField.isAccessible = true
-                val currentList = listField.get(thiz) as? List<Any> ?: return@after
-                val modified = NavigationBarPatch.getPivotBarRendererList(currentList) ?: return@after
-
-                val converterMethod = listField.type.methods.firstOrNull {
-                    java.lang.reflect.Modifier.isStatic(it.modifiers) &&
-                            listField.type.isAssignableFrom(it.returnType) &&
-                            it.parameterTypes.size == 1 &&
-                            java.util.Collection::class.java.isAssignableFrom(it.parameterTypes[0])
-                } ?: currentList.javaClass.methods.firstOrNull {
-                    it.name in listOf("copyOf", "j") && it.parameterTypes.size == 1 &&
-                            java.util.Collection::class.java.isAssignableFrom(it.parameterTypes[0])
-                }
-
                 runCatching {
-                    if (converterMethod != null) {
-                        converterMethod.isAccessible = true
-                        listField.set(thiz, converterMethod.invoke(null, modified))
-                    } else {
-                        listField.set(thiz, modified)
+                    val currentList = param.result as? List<Any> ?: return@after
+                    val modified = NavigationBarPatch.getPivotBarRendererList(currentList) ?: return@after
+                    if (copyOfMethod != null) {
+                        copyOfMethod.isAccessible = true
+                        val res = copyOfMethod.invoke(null, modified)
+                        android.util.Log.i("NexFusionNav", "Invoked copyOfMethod: res=$res (${res?.javaClass})")
+                        if (res != null && returnType.isInstance(res)) {
+                            param.result = res
+                        }
+                    } else if (returnType.isInstance(modified)) {
+                        param.result = modified
                     }
+                }.onFailure {
+                    android.util.Log.e("NexFusionNav", "Error in pivotBarRendererList hook", it)
                 }
             }
         }
@@ -426,22 +512,45 @@ fun getPivotBarItemProto(pivotBarItem: Any): app.morphe.extension.shared.innertu
     val bytes = if (pivotBarItem is ByteArray) {
         pivotBarItem
     } else {
-        pivotBarItem.javaClass.getMethod("toByteArray").invoke(pivotBarItem) as ByteArray
+        val protoObj = runCatching {
+            val field = pivotBarItem.javaClass.declaredFields.firstOrNull {
+                !java.lang.reflect.Modifier.isStatic(it.modifiers) &&
+                        it.type.name != "boolean" &&
+                        !it.type.name.startsWith("j$.util.Optional") &&
+                        !it.type.name.startsWith("java.lang")
+            } ?: pivotBarItem.javaClass.getDeclaredField("a")
+            field.isAccessible = true
+            field.get(pivotBarItem)
+        }.getOrNull() ?: pivotBarItem
+        protoObj.javaClass.getMethod("toByteArray").invoke(protoObj) as ByteArray
     }
     return app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarItemBytes.parseFrom(bytes)
 }
 
 fun getPivotBarItemRenderer(pivotBarItem: Any): app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarItemRenderer? {
     return runCatching {
-        val bytes = if (pivotBarItem is ByteArray) {
-            pivotBarItem
-        } else {
-            pivotBarItem.javaClass.getMethod("toByteArray").invoke(pivotBarItem) as ByteArray
-        }
-        val item = app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarItemBytes.parseFrom(bytes)
+        val item = getPivotBarItemProto(pivotBarItem)
         if (item.hasPivotBarItemRenderer()) {
             app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarItemRenderer.parseFrom(item.pivotBarItemRenderer)
+        } else if (item.hasPivotBarIconOnlyItemRenderer()) {
+            val iconOnly = app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarIconOnlyItemRendererBytes.parseFrom(item.pivotBarIconOnlyItemRenderer)
+            app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarItemRenderer.newBuilder()
+                .setPivotIdentifier(iconOnly.pivotIdentifier)
+                .setAccessibility(
+                    app.morphe.extension.shared.innertube.GuideResponseOuterClass.Accessibility.newBuilder()
+                        .setAccessibilityData(
+                            app.morphe.extension.shared.innertube.GuideResponseOuterClass.AccessibilityData.newBuilder()
+                                .setLabel(iconOnly.accessibility.runs.text)
+                        )
+                )
+                .build()
         } else {
+            val bytes = if (pivotBarItem is ByteArray) pivotBarItem else {
+                val protoObj = runCatching {
+                    pivotBarItem.javaClass.getDeclaredField("a").apply { isAccessible = true }.get(pivotBarItem)
+                }.getOrNull() ?: pivotBarItem
+                protoObj.javaClass.getMethod("toByteArray").invoke(protoObj) as ByteArray
+            }
             app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarItemRenderer.parseFrom(bytes)
         }
     }.getOrNull()

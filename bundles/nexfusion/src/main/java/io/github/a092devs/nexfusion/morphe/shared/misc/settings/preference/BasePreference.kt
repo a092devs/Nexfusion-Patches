@@ -65,10 +65,22 @@ abstract class BasePreference(
 
     open fun build(ctx: Context, prefMgr: PreferenceManager): Preference {
         Logger.printDebug { "build $key" }
-        return (tag.new(
-            arrayOf(Context::class.java, AttributeSet::class.java),
-            ctx, null
-        ) as Preference).apply {
+        val pref = try {
+            tag.new(
+                arrayOf(Context::class.java, AttributeSet::class.java),
+                ctx, null
+            )
+        } catch (e: Exception) {
+            try {
+                tag.new(
+                    arrayOf(Context::class.java),
+                    ctx
+                )
+            } catch (e2: Exception) {
+                tag.getDeclaredConstructor().newInstance()
+            }
+        } as Preference
+        return pref.apply {
             applyBaseAttrs(this)
         }
     }

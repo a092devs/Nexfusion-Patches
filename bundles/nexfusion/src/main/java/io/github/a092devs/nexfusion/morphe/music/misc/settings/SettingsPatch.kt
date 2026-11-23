@@ -200,6 +200,65 @@ val SettingsHook = patch(
             }
         }
     }
+
+    val cl = app.morphe.extension.shared.Utils.getContext()?.classLoader
+        ?: io.github.a092devs.nexfusion.compat.XposedBridge::class.java.classLoader
+    val musicExtensionPatches = listOf(
+        "app.morphe.extension.music.patches.AndroidAutoPatch",
+        "app.morphe.extension.music.patches.AppleMusicArtworkPatch",
+        "app.morphe.extension.music.patches.AutoSongVersionPatch",
+        "app.morphe.extension.music.patches.CastFixesPatch",
+        "app.morphe.extension.music.patches.ChangeHeaderPatch",
+        "app.morphe.extension.music.patches.ChangeMiniplayerColorPatch",
+        "app.morphe.extension.music.patches.ChangeStartPagePatch",
+        "app.morphe.extension.music.patches.CrossfadePatch",
+        "app.morphe.extension.music.patches.DeviceFilesSearchPatch",
+        "app.morphe.extension.music.patches.DisableAudioDuckingPatch",
+        "app.morphe.extension.music.patches.DisableAutoCaptionsPatch",
+        "app.morphe.extension.music.patches.DisableDislikeRedirectionPatch",
+        "app.morphe.extension.music.patches.DisableSwipeToChangeTrackPatch",
+        "app.morphe.extension.music.patches.DownloadsPatch",
+        "app.morphe.extension.music.patches.EnableAudioVideoSwitchPatch",
+        "app.morphe.extension.music.patches.EnableForcedMiniplayerPatch",
+        "app.morphe.extension.music.patches.EnableSwipeToDismissMiniplayerPatch",
+        "app.morphe.extension.music.patches.ForceOriginalAudioPatch",
+        "app.morphe.extension.music.patches.ForcePortraitOrientationPatch",
+        "app.morphe.extension.music.patches.HideAdsPatch",
+        "app.morphe.extension.music.patches.HideFlyoutMenuComponentsPatch",
+        "app.morphe.extension.music.patches.LoopVideoPatch",
+        "app.morphe.extension.music.patches.MiniplayerPreviousNextButtonsPatch",
+        "app.morphe.extension.music.patches.MusicMediaNotificationControlsPatch",
+        "app.morphe.extension.music.patches.NavigationBarPatch",
+        "app.morphe.extension.music.patches.OpenSystemShareSheetPatch",
+        "app.morphe.extension.music.patches.PauseWhenMutedPatch",
+        "app.morphe.extension.music.patches.PlaybackSpeedPatch",
+        "app.morphe.extension.music.patches.PlaylistTagsPatch",
+        "app.morphe.extension.music.patches.PlaylistTrackTapPatch",
+        "app.morphe.extension.music.patches.QueueLikeFilterPatch",
+        "app.morphe.extension.music.patches.RememberRepeatStatePatch",
+        "app.morphe.extension.music.patches.RememberShuffleStatePatch",
+        "app.morphe.extension.music.patches.RememberVideoQualityPatch",
+        "app.morphe.extension.music.patches.ReturnYouTubeDislikePatch",
+        "app.morphe.extension.music.patches.SettingsMenuFilterPatch",
+        "app.morphe.extension.music.patches.SonosCastPatch",
+        "app.morphe.extension.music.patches.SoundProofPatch",
+        "app.morphe.extension.music.patches.StartupAnimationPatch",
+        "app.morphe.extension.music.patches.ThemePatch",
+        "app.morphe.extension.music.patches.VideoEffectMenuPatch",
+        "app.morphe.extension.music.patches.lyrics.LyricsPatch",
+        "app.morphe.extension.music.patches.scrobble.ScrobblePatch",
+        "app.morphe.extension.music.patches.spoof.SpoofVideoStreamsPatch",
+    )
+    for (className in musicExtensionPatches) {
+        runCatching {
+            val cls = Class.forName(className, false, cl)
+            val isPatchIncludedMethod = cls.getDeclaredMethod("isPatchIncluded")
+            io.github.a092devs.nexfusion.compat.XposedBridge.hookMethod(
+                isPatchIncludedMethod,
+                XC_MethodReplacement.returnConstant(true)
+            )
+        }
+    }
 }
 
 object PreferenceScreen : BasePreferenceScreen() {

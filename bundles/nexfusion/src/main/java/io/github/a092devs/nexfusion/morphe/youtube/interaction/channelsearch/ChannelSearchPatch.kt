@@ -85,23 +85,5 @@ val ChannelSearch = patch(
             ChannelSearchExtension.clearBrowseId()
         }
     }
-
-    // 4. Search box hint
-    SearchBoxHintFingerprint.hookMethod {
-        after {
-            val original = it.result as? String
-            it.result = ChannelSearchExtension.getSearchHint(original)
-        }
-    }
-
-    // 5. Search submit
-    SearchSubmitFingerprint.hookMethod {
-        before {
-            val query = it.args[0] as? String
-            if (query != null && ChannelSearchExtension.searchInChannel(query)) {
-                it.result = null
-            }
-        }
-    }
 }
 

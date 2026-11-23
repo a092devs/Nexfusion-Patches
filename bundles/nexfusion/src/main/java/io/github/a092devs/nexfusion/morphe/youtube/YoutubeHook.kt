@@ -57,10 +57,13 @@ import io.github.a092devs.nexfusion.morphe.youtube.misc.playservice.VersionCheck
 import io.github.a092devs.nexfusion.morphe.youtube.video.speed.PlaybackSpeed
 import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.InputType
 import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.ListPreference
+import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.NonInteractivePreference
+import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.PreferenceCategory
 import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.PreferenceScreenPreference
 import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.PreferenceScreenPreference.Sorting
 import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.SwitchPreference
 import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.TextPreference
+import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.screenInfoPreferenceCategory
 import io.github.a092devs.nexfusion.morphe.youtube.misc.settings.PreferenceScreen
 import io.github.a092devs.nexfusion.patch
 import org.luckypray.dexkit.wrap.DexMethod
@@ -193,6 +196,72 @@ val ReturnYouTubeUsername = patch(
     )
 }
 
+val ReturnYouTubeDislike = patch(
+    name = "Return YouTube Dislike",
+    description = "Adds an option to show the dislike count of videos with Return YouTube Dislike, and the like count and like ratio on the thumbnails of feed videos.",
+    use = false,
+) {
+    PreferenceScreen.RETURN_YOUTUBE_DISLIKE.addPreferences(
+        SwitchPreference("morphe_ryd_enabled"),
+        SwitchPreference("morphe_ryd_dislike_percentage", summary = true),
+        SwitchPreference("morphe_ryd_feed_like_count"),
+        SwitchPreference("morphe_ryd_feed_like_ratio"),
+        ListPreference("morphe_ryd_feed_counts_position"),
+        SwitchPreference("morphe_ryd_estimated_like", summary = true),
+        SwitchPreference("morphe_ryd_toast_on_connection_error", summary = true),
+        screenInfoPreferenceCategory(
+            key = "morphe_ryd_about",
+            preferences = setOf(
+                NonInteractivePreference(
+                    key = "morphe_ryd_attribution",
+                    titleKey = null,
+                    tag = app.morphe.extension.shared.returnyoutubedislike.ui.ReturnYouTubeDislikeAboutPreference::class.java,
+                    selectable = true
+                )
+            )
+        ),
+        PreferenceCategory(
+            key = "morphe_ryd_statistics_category",
+            sorting = Sorting.UNSORTED,
+            preferences = emptySet(),
+            tag = app.morphe.extension.shared.returnyoutubedislike.ui.ReturnYouTubeDislikeDebugStatsPreferenceCategory::class.java
+        )
+    )
+
+    runCatching {
+        io.github.a092devs.nexfusion.morphe.setExtensionIsPatchIncluded(
+            app.morphe.extension.youtube.patches.ReturnYouTubeDislikePatch::class.java
+        )
+    }
+}
+
+val PlaylistSearch = patch(
+    name = "Playlist search",
+    description = "Adds a button to playlist pages to search the videos of that playlist.",
+    use = false,
+) {
+    PreferenceScreen.GENERAL.addPreferences(
+        SwitchPreference("morphe_playlist_search", summary = true)
+    )
+    runCatching {
+        io.github.a092devs.nexfusion.morphe.setExtensionIsPatchIncluded(
+            app.morphe.extension.youtube.patches.PlaylistSearchPatch::class.java
+        )
+    }
+}
+
+val ReplaySlower = patch(
+    name = "Replay slower button",
+    description = "Adds options to rewind and play part of the video at a slower speed, with a player button or by swiping left on the video.",
+    use = false,
+) {
+    runCatching {
+        io.github.a092devs.nexfusion.morphe.setExtensionIsPatchIncluded(
+            app.morphe.extension.youtube.videoplayer.ReplayVideoButton::class.java
+        )
+    }
+}
+
 val ReversePlaylistAutoplay = patch(
     name = "Reverse playlist autoplay",
     description = "Adds an option to autoplay playlists in reverse order, from the last video to the first.",
@@ -240,6 +309,9 @@ val YouTubePatches = arrayOf(
     ReversePlaylistAutoplay,
     HoldGesture,
     ReturnYouTubeUsername,
+    ReturnYouTubeDislike,
+    PlaylistSearch,
+    ReplaySlower,
     CheckRecycleBitmapMediaSession,
     changeStartPagePatch,
     FixVerticalScroll,
