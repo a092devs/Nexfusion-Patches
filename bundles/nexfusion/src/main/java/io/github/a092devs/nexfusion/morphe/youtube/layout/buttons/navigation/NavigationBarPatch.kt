@@ -357,8 +357,9 @@ val NavigationBar = patch(
     runCatching {
         MoreCommentsIconFingerprint.hookAllMethods {
             after { param ->
-                val view = param.result as? View ?: return@after
-                NavigationBarPatch.clipLiveChatScrollButton(view)
+                (param.result as? View)?.let { view ->
+                    NavigationBarPatch.clipLiveChatScrollButton(view)
+                }
             }
         }
     }
