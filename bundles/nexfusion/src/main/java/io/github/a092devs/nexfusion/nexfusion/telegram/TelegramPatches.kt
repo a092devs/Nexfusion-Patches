@@ -478,6 +478,7 @@ val TelegramAntiDelete = patch(
     use = false,
 ) {
     val deletedMessageIds = java.util.concurrent.ConcurrentHashMap.newKeySet<Int>()
+    val activeCells = java.util.Collections.newSetFromMap(java.util.WeakHashMap<View, Boolean>())
     var prefsLoaded = false
 
     fun getPrefs(): android.content.SharedPreferences? {
@@ -504,56 +505,6 @@ val TelegramAntiDelete = patch(
                     }
                 }
             }
-        }
-    }
-
-    fun requestUIRefresh() {
-        runCatching {
-            val auCls = runCatching { classLoader.loadClass("org.telegram.messenger.AndroidUtilities") }.getOrNull()
-            val runOnUIThread = auCls?.methods?.firstOrNull { it.name == "runOnUIThread" && it.parameterTypes.size == 1 }
-            val ncCls = runCatching { classLoader.loadClass("org.telegram.messenger.NotificationCenter") }.getOrNull()
-            val mcCls = TelegramResolver.findMessagesController(classLoader)
-
-            val updateMask = runCatching { mcCls?.getField("UPDATE_MASK_ALL")?.getInt(null) }.getOrNull() ?: 255
-            val updateInterfaces = runCatching { ncCls?.getField("updateInterfaces")?.getInt(null) }.getOrNull()
-            val updateAllMessages = runCatching { ncCls?.getField("updateAllMessages")?.getInt(null) }.getOrNull()
-
-            if (runOnUIThread != null && ncCls != null) {
-                runOnUIThread.invoke(null, java.lang.Runnable {
-                    for (acc in 0..3) {
-                        runCatching {
-                            val nc = ncCls.getMethod("getInstance", Int::class.javaPrimitiveType).invoke(null, acc)
-                            val postMethod = ncCls.methods.firstOrNull {
-                                it.name == "postNotificationName" && it.parameterTypes.size == 2 && it.parameterTypes[0] == Int::class.javaPrimitiveType
-                            }
-                            if (updateAllMessages != null) {
-                                postMethod?.invoke(nc, updateAllMessages, emptyArray<Any?>())
-                            }
-                            if (updateInterfaces != null) {
-                                postMethod?.invoke(nc, updateInterfaces, arrayOf(updateMask))
-                            }
-                        }
-                    }
-                })
-            }
-        }
-    }
-
-    fun markDeleted(ids: Collection<*>) {
-        ensureLoaded()
-        val sp = getPrefs()
-        val editor = sp?.edit()
-        var changed = false
-        for (item in ids) {
-            val mid = (item as? Number)?.toInt() ?: continue
-            if (deletedMessageIds.add(mid)) {
-                changed = true
-                editor?.putBoolean("d_$mid", true)
-            }
-        }
-        editor?.apply()
-        if (changed) {
-            requestUIRefresh()
         }
     }
 
@@ -592,6 +543,85 @@ val TelegramAntiDelete = patch(
         return 0
     }
 
+    fun requestUIRefresh() {
+        runCatching {
+            val auCls = runCatching { classLoader.loadClass("org.telegram.messenger.AndroidUtilities") }.getOrNull()
+            val runOnUIThread = auCls?.methods?.firstOrNull { it.name == "runOnUIThread" && it.parameterTypes.size == 1 }
+            val ncCls = runCatching { classLoader.loadClass("org.telegram.messenger.NotificationCenter") }.getOrNull()
+            val mcCls = TelegramResolver.findMessagesController(classLoader)
+
+            val updateMask = runCatching { mcCls?.getField("UPDATE_MASK_ALL")?.getInt(null) }.getOrNull() ?: 255
+            val updateInterfaces = runCatching { ncCls?.getField("updateInterfaces")?.getInt(null) }.getOrNull()
+            val updateAllMessages = runCatching { ncCls?.getField("updateAllMessages")?.getInt(null) }.getOrNull()
+
+            if (runOnUIThread != null) {
+                runOnUIThread.invoke(null, java.lang.Runnable {
+                    // 1. Immediately update all visible chat cells and trigger adapter refresh for instant icon display
+                    val parentsToNotify = mutableSetOf<Any>()
+                    for (cell in activeCells) {
+                        if (cell.isAttachedToWindow) {
+                            val msgObj = runCatching {
+                                cell.javaClass.methods.firstOrNull { it.name == "getMessageObject" }?.invoke(cell)
+                            }.getOrNull()
+                            val id = getMessageId(msgObj)
+                            if (id > 0 && isDeleted(id)) {
+                                cell.alpha = 0.72f
+                                cell.invalidate()
+                                val parent = cell.parent
+                                if (parent != null) parentsToNotify.add(parent)
+                            }
+                        }
+                    }
+                    for (parent in parentsToNotify) {
+                        runCatching {
+                            val adapter = parent.javaClass.methods.firstOrNull { it.name == "getAdapter" }?.invoke(parent)
+                            adapter?.javaClass?.methods?.firstOrNull { it.name == "notifyDataSetChanged" }?.invoke(adapter)
+                        }
+                        runCatching {
+                            (parent as? View)?.invalidate()
+                        }
+                    }
+
+                    // 2. Dispatch notification center updates
+                    if (ncCls != null) {
+                        for (acc in 0..3) {
+                            runCatching {
+                                val nc = ncCls.getMethod("getInstance", Int::class.javaPrimitiveType).invoke(null, acc)
+                                val postMethod = ncCls.methods.firstOrNull {
+                                    it.name == "postNotificationName" && it.parameterTypes.size == 2 && it.parameterTypes[0] == Int::class.javaPrimitiveType
+                                }
+                                if (updateAllMessages != null) {
+                                    postMethod?.invoke(nc, updateAllMessages, emptyArray<Any?>())
+                                }
+                                if (updateInterfaces != null) {
+                                    postMethod?.invoke(nc, updateInterfaces, arrayOf(updateMask))
+                                }
+                            }
+                        }
+                    }
+                })
+            }
+        }
+    }
+
+    fun markDeleted(ids: Collection<*>) {
+        ensureLoaded()
+        val sp = getPrefs()
+        val editor = sp?.edit()
+        var changed = false
+        for (item in ids) {
+            val mid = (item as? Number)?.toInt() ?: continue
+            if (deletedMessageIds.add(mid)) {
+                changed = true
+                editor?.putBoolean("d_$mid", true)
+            }
+        }
+        editor?.apply()
+        if (changed) {
+            requestUIRefresh()
+        }
+    }
+
     // 1. Clear deleted message IDs from incoming delete updates and track them
     runCatching {
         val tlrpc = runCatching { classLoader.loadClass("org.telegram.tgnet.TLRPC") }.getOrNull()
@@ -603,7 +633,7 @@ val TelegramAntiDelete = patch(
                     override fun afterHookedMethod(param: MethodHookParam) {
                         val obj = param.result ?: return
                         val name = obj.javaClass.name
-                        if (name.contains("updateDeleteMessages") || name.contains("updateDeleteChannelMessages")) {
+                        if (name.contains("updateDelete", ignoreCase = true) || name.contains("DeleteMessages", ignoreCase = true)) {
                             val messages = runCatching { XposedHelpers.getObjectField(obj, "messages") as? java.util.ArrayList<*> }.getOrNull()
                             if (messages != null && messages.isNotEmpty()) {
                                 markDeleted(messages)
@@ -614,21 +644,26 @@ val TelegramAntiDelete = patch(
                 })
             }
         }
-        for (name in listOf(
-            "org.telegram.tgnet.tl.TL_update\$TL_updateDeleteMessages",
-            "org.telegram.tgnet.tl.TL_update\$TL_updateDeleteChannelMessages",
+        for (suffix in listOf(
+            "TL_updateDeleteMessages",
+            "TL_updateDeleteChannelMessages",
+            "TL_updateDeleteEphemeralMessages",
+            "TL_updateDeleteScheduledMessages",
+            "TL_updateDeleteQuickReplyMessages",
         )) {
-            val cls = runCatching { classLoader.loadClass(name) }.getOrNull() ?: continue
-            cls.declaredMethods.filter { it.name == "readParams" }.forEach { m ->
-                XposedBridge.hookMethod(m, object : XC_MethodHook() {
-                    override fun afterHookedMethod(param: MethodHookParam) {
-                        val messages = runCatching { XposedHelpers.getObjectField(param.thisObject, "messages") as? java.util.ArrayList<*> }.getOrNull()
-                        if (messages != null && messages.isNotEmpty()) {
-                            markDeleted(messages)
-                            messages.clear()
+            for (prefix in listOf("org.telegram.tgnet.tl.TL_update\$", "org.telegram.tgnet.TLRPC\$")) {
+                val cls = runCatching { classLoader.loadClass(prefix + suffix) }.getOrNull() ?: continue
+                cls.declaredMethods.filter { it.name == "readParams" }.forEach { m ->
+                    XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                        override fun afterHookedMethod(param: MethodHookParam) {
+                            val messages = runCatching { XposedHelpers.getObjectField(param.thisObject, "messages") as? java.util.ArrayList<*> }.getOrNull()
+                            if (messages != null && messages.isNotEmpty()) {
+                                markDeleted(messages)
+                                messages.clear()
+                            }
                         }
-                    }
-                })
+                    })
+                }
             }
         }
     }
@@ -683,7 +718,7 @@ val TelegramAntiDelete = patch(
         }
     }.onFailure { PatcherLog.info(it) { "Telegram: failed to hook timeString for deleted mark" } }
 
-    // 4. Slightly grey-out / dim deleted chat bubbles (alpha = 0.72f) matching NagramXF
+    // 4. Slightly grey-out / dim deleted chat bubbles (alpha = 0.72f) matching NagramXF and register cell
     runCatching {
         val moClass = TelegramResolver.findMessageObject(classLoader)
         for (name in listOf("org.telegram.ui.Cells.ChatMessageCell", "org.telegram.ui.Cells.q1", "org.telegram.ui.Cells.u0")) {
@@ -695,6 +730,7 @@ val TelegramAntiDelete = patch(
                 XposedBridge.hookMethod(method, object : XC_MethodHook() {
                     override fun afterHookedMethod(param: MethodHookParam) {
                         val view = param.thisObject as? View ?: return
+                        activeCells.add(view)
                         val msgObj = param.args.firstOrNull()
                         val id = getMessageId(msgObj)
                         if (id > 0 && isDeleted(id)) {
@@ -702,6 +738,14 @@ val TelegramAntiDelete = patch(
                         } else {
                             view.alpha = 1.0f
                         }
+                    }
+                })
+            }
+            cellClass.declaredMethods.filter { it.name == "onAttachedToWindow" }.forEach { method ->
+                XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam) {
+                        val view = param.thisObject as? View ?: return
+                        activeCells.add(view)
                     }
                 })
             }
@@ -728,9 +772,23 @@ val TelegramAntiDisappearingMedia = patch(
                         runCatching { XposedHelpers.setIntField(owner, "destroyTime", 0) }
                         runCatching { XposedHelpers.setLongField(owner, "destroyTimeMillis", 0L) }
                         runCatching { XposedHelpers.setBooleanField(owner, "noforwards", false) }
+                        runCatching { XposedHelpers.setIntField(owner, "ttl", 0) }
+                        runCatching { XposedHelpers.setIntField(owner, "ttl_period", 0) }
+                        runCatching { XposedHelpers.setIntField(owner, "expire_date", 0) }
+                        val media = runCatching { XposedHelpers.getObjectField(owner, "media") }.getOrNull()
+                        if (media != null) {
+                            runCatching { XposedHelpers.setIntField(media, "ttl_seconds", 0) }
+                        }
                     }
                 }
             })
+            mo.declaredMethods.filter {
+                (it.returnType == java.lang.Boolean.TYPE || it.returnType == java.lang.Boolean::class.java) &&
+                    it.parameterCount == 0 &&
+                    (it.name.contains("Expired", ignoreCase = true) || it.name == "isExpiredViewOnce")
+            }.forEach { m ->
+                XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(false))
+            }
         }
     }
 
@@ -875,6 +933,7 @@ val TelegramBypassContentRestrictions = patch(
         for (name in listOf(
             "org.telegram.tgnet.TLRPC\$Message",
             "org.telegram.tgnet.TLRPC\$Chat",
+            "org.telegram.tgnet.TLRPC\$ChatFull",
             "org.telegram.tgnet.tl.TL_stories\$StoryItem",
         )) {
             val cls = runCatching { classLoader.loadClass(name) }.getOrNull() ?: continue
@@ -921,13 +980,13 @@ val TelegramBypassContentRestrictions = patch(
         })
     }
 
-    // 3. Hook MessageObject.canForwardMessage() -> return true
+    // 3. Hook MessageObject canForwardMessage() / canSaveMessage() -> return true
     runCatching {
         val mo = TelegramResolver.findMessageObject(classLoader)
         if (mo != null) {
             mo.declaredMethods.filter {
                 (it.returnType == java.lang.Boolean.TYPE || it.returnType == java.lang.Boolean::class.java) &&
-                    (it.name == "canForwardMessage" || it.name == "w")
+                    (it.name == "canForwardMessage" || it.name == "canSaveMessage" || it.name == "canSaveToGallery" || it.name == "w")
             }.forEach { m ->
                 XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
             }
@@ -1413,6 +1472,259 @@ val TelegramBypassIntegrity = patch(
     }
 }
 
+val TelegramHideReadReceipts = patch(
+    name = "Hide read receipts",
+    description = "Prevents sending read receipts (double-check ticks) for messages and channels while keeping local badge updates.",
+    use = false,
+) {
+    runCatching {
+        val cm = runCatching { classLoader.loadClass("org.telegram.tgnet.ConnectionsManager") }.getOrNull()
+        if (cm != null) {
+            XposedBridge.hookAllMethods(cm, "sendRequest", object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    val req = param.args.firstOrNull() ?: return
+                    val name = req.javaClass.name
+                    if (name.contains("readHistory", ignoreCase = true) ||
+                        name.contains("readMessageContents", ignoreCase = true) ||
+                        name.contains("readDiscussion", ignoreCase = true) ||
+                        name.contains("readEncryptedHistory", ignoreCase = true)
+                    ) {
+                        param.result = 0
+                    }
+                }
+            })
+        }
+    }
+}
+
+val TelegramHidePhoneNumber = patch(
+    name = "Hide phone number",
+    description = "Hides and masks your phone number with dots across navigation drawer, settings and profile screens.",
+    use = false,
+) {
+    var myPhone: String? = null
+    fun updateMyPhone(u: Any?) {
+        if (u != null) {
+            val p = runCatching { XposedHelpers.getObjectField(u, "phone") as? String }.getOrNull()
+            if (!p.isNullOrEmpty()) {
+                myPhone = p
+            }
+        }
+    }
+
+    runCatching {
+        val userConfig = TelegramResolver.findUserConfig(classLoader)
+        if (userConfig != null) {
+            userConfig.declaredMethods.filter {
+                it.parameterCount == 0 && (it.name == "getCurrentUser" || it.name == "f")
+            }.forEach { m ->
+                XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam) {
+                        updateMyPhone(param.result)
+                    }
+                })
+            }
+        }
+    }
+
+    runCatching {
+        val tvClass = Class.forName("android.widget.TextView")
+        tvClass.declaredMethods.filter {
+            it.name == "setText" && it.parameterCount >= 1 && it.parameterTypes[0] == CharSequence::class.java
+        }.forEach { m ->
+            XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    val cs = param.args[0] as? CharSequence ?: return
+                    val str = cs.toString().trim()
+                    val digits = str.filter { it.isDigit() }
+                    val phone = myPhone?.filter { it.isDigit() }
+                    if (phone != null && phone.length >= 6 && digits.contains(phone)) {
+                        param.args[0] = "••••••••••••"
+                    } else if (str.startsWith("+") && digits.length in 8..15 && digits.length == str.replace(" ", "").removePrefix("+").length) {
+                        val tv = param.thisObject as? android.widget.TextView
+                        if (tv != null && (tv.maxLines <= 2 || tv.id == android.R.id.text1 || tv.id == android.R.id.text2)) {
+                            param.args[0] = "••••••••••••"
+                        }
+                    }
+                }
+            })
+        }
+    }
+}
+
+val TelegramOpenExternalLinks = patch(
+    name = "Open links in external browser",
+    description = "Bypasses the built-in browser and opens all web links directly in your default external browser.",
+    use = false,
+) {
+    runCatching {
+        for (name in listOf("org.telegram.messenger.SharedConfig", "org.telegram.messenger.tz")) {
+            val sc = runCatching { classLoader.loadClass(name) }.getOrNull() ?: continue
+            sc.declaredMethods.filter {
+                (it.returnType == java.lang.Boolean.TYPE || it.returnType == java.lang.Boolean::class.java) &&
+                    (it.name.contains("inappBrowser", ignoreCase = true) || it.name.contains("customTabs", ignoreCase = true))
+            }.forEach { m ->
+                XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(false))
+            }
+        }
+    }
+
+    runCatching {
+        val browser = runCatching { classLoader.loadClass("org.telegram.messenger.browser.Browser") }.getOrNull()
+        if (browser != null) {
+            browser.declaredMethods.filter {
+                it.name == "openUrl" && it.parameterTypes.isNotEmpty() && it.parameterTypes[0] == Context::class.java
+            }.forEach { m ->
+                XposedBridge.hookMethod(m, object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        val ctx = param.args.firstOrNull() as? Context ?: return
+                        var urlStr: String? = null
+                        for (arg in param.args) {
+                            if (arg is String && (arg.startsWith("http://") || arg.startsWith("https://"))) {
+                                urlStr = arg
+                                break
+                            } else if (arg is android.net.Uri) {
+                                urlStr = arg.toString()
+                                break
+                            }
+                        }
+                        if (!urlStr.isNullOrEmpty()) {
+                            runCatching {
+                                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(urlStr))
+                                if (ctx !is Activity) {
+                                    intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                ctx.startActivity(intent)
+                                param.result = null
+                            }
+                        }
+                    }
+                })
+            }
+        }
+    }
+}
+
+val TelegramUseSystemFont = patch(
+    name = "Use system font",
+    description = "Forces Telegram to use the device's system font instead of bundled Roboto fonts.",
+    use = false,
+) {
+    runCatching {
+        val au = runCatching { classLoader.loadClass("org.telegram.messenger.AndroidUtilities") }.getOrNull()
+        if (au != null) {
+            au.declaredMethods.filter { it.name == "getTypeface" }.forEach { m ->
+                XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(android.graphics.Typeface.DEFAULT))
+            }
+        }
+    }
+
+    runCatching {
+        val typefaceClass = android.graphics.Typeface::class.java
+        XposedBridge.hookAllMethods(typefaceClass, "createFromAsset", object : XC_MethodHook() {
+            override fun beforeHookedMethod(param: MethodHookParam) {
+                val path = param.args.getOrNull(1) as? String ?: return
+                if (path.contains("fonts/") || path.endsWith(".ttf") || path.endsWith(".otf")) {
+                    param.result = android.graphics.Typeface.DEFAULT
+                }
+            }
+        })
+    }
+}
+
+val TelegramDisableDraftPreviews = patch(
+    name = "Disable draft link previews",
+    description = "Stops automatic fetching and preview generation of web links while typing drafts in the message input box.",
+    use = false,
+) {
+    runCatching {
+        val cm = runCatching { classLoader.loadClass("org.telegram.tgnet.ConnectionsManager") }.getOrNull()
+        if (cm != null) {
+            XposedBridge.hookAllMethods(cm, "sendRequest", object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    val req = param.args.firstOrNull() ?: return
+                    val name = req.javaClass.name
+                    if (name.contains("getWebPagePreview", ignoreCase = true)) {
+                        param.result = 0
+                    }
+                }
+            })
+        }
+    }
+}
+
+val TelegramHideSponsoredProxy = patch(
+    name = "Hide sponsored proxy channels",
+    description = "Hides promotional and sponsored channel banners displayed when using MTProto proxies.",
+    use = false,
+) {
+    runCatching {
+        val cm = runCatching { classLoader.loadClass("org.telegram.tgnet.ConnectionsManager") }.getOrNull()
+        if (cm != null) {
+            XposedBridge.hookAllMethods(cm, "sendRequest", object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    val req = param.args.firstOrNull() ?: return
+                    val name = req.javaClass.name
+                    if (name.contains("getPromoData", ignoreCase = true)) {
+                        param.result = 0
+                    }
+                }
+            })
+        }
+    }
+
+    runCatching {
+        val mc = TelegramResolver.findMessagesController(classLoader)
+        if (mc != null) {
+            mc.declaredMethods.filter {
+                it.name.contains("promo", ignoreCase = true) || it.name.contains("checkPromoInfo", ignoreCase = true)
+            }.forEach { m ->
+                if (m.returnType == java.lang.Void.TYPE) {
+                    XposedBridge.hookMethod(m, XC_MethodReplacement.DO_NOTHING)
+                } else {
+                    XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(null))
+                }
+            }
+        }
+    }
+}
+
+val TelegramKeepVideosMuted = patch(
+    name = "Keep videos muted",
+    description = "Ensures in-chat video messages and media clips play muted by default.",
+    use = false,
+) {
+    runCatching {
+        for (name in listOf("org.telegram.messenger.SharedConfig", "org.telegram.messenger.tz")) {
+            val sc = runCatching { classLoader.loadClass(name) }.getOrNull() ?: continue
+            sc.declaredMethods.filter {
+                (it.returnType == java.lang.Boolean.TYPE || it.returnType == java.lang.Boolean::class.java) &&
+                    (it.name.contains("soundInChat", ignoreCase = true) || it.name.contains("sound", ignoreCase = true))
+            }.forEach { m ->
+                XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(false))
+            }
+        }
+    }
+}
+
+val TelegramDisableCameraSwipe = patch(
+    name = "Disable in-app camera swipe",
+    description = "Prevents accidental activation of the camera swipe gesture in chats.",
+    use = false,
+) {
+    runCatching {
+        for (name in listOf("org.telegram.messenger.SharedConfig", "org.telegram.messenger.tz")) {
+            val sc = runCatching { classLoader.loadClass(name) }.getOrNull() ?: continue
+            sc.declaredMethods.filter {
+                (it.returnType == java.lang.Boolean.TYPE || it.returnType == java.lang.Boolean::class.java) &&
+                    (it.name.contains("inappCamera", ignoreCase = true) || it.name.contains("camera", ignoreCase = true))
+            }.forEach { m ->
+                XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(false))
+            }
+        }
+    }
+}
+
 val TelegramPatches = arrayOf(
     TelegramAmoledBlack,
     TelegramUnlockPremium,
@@ -1425,6 +1737,14 @@ val TelegramPatches = arrayOf(
     TelegramBypassChannelRestrictions,
     TelegramDownloadBoost,
     TelegramHideTyping,
+    TelegramHideReadReceipts,
+    TelegramHidePhoneNumber,
+    TelegramOpenExternalLinks,
+    TelegramUseSystemFont,
+    TelegramDisableDraftPreviews,
+    TelegramHideSponsoredProxy,
+    TelegramKeepVideosMuted,
+    TelegramDisableCameraSwipe,
     TelegramDisableDoubleTapReaction,
     TelegramRevealSpoilers,
     TelegramDisableVibration,

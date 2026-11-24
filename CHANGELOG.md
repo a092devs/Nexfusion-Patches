@@ -7,6 +7,19 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.0.3
+
+- `Instagram Patches`:
+  * Fixed thread unread badge reversion: opening direct messages now keeps the local thread state marked as read across background server synchronizations.
+  * Resolved visual media opening latency: view-once disappearing photos and videos now load instantaneously with direct mutation completion.
+- `Telegram Patches`:
+  * Instant deleted message UI update: deleting messages now triggers immediate UI refresh on visible chat cells, displaying the trash indicator (`🗑`) and bubble dimming without delay.
+- `YouTube & Reddit Upstream Synchronization`:
+  * Updated navigation bar and layout component hooks from upstream Morphe patches.
+  * Synchronized Reddit settings preferences and component hooks.
+- `Cleanup`:
+  * Removed legacy VLC patches and streamlined patch catalog.
+
 ## 5.0.2
 
 - `YouTube AMOLED Dark Theme`:

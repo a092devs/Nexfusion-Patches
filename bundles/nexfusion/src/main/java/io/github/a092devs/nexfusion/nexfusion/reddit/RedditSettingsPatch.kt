@@ -55,12 +55,17 @@ val RedditSettings = patch(
 
     // 0.1 Enable all Morphe extension settings categories by hooking isPatchIncluded
     val redditExtensionPatches = listOf(
+        "app.morphe.extension.reddit.patches.AlwaysShowHidePatch",
         "app.morphe.extension.reddit.patches.AppDowngradeNoticePatch",
         "app.morphe.extension.reddit.patches.AppIconPatch",
         "app.morphe.extension.reddit.patches.AutoModeratorCommentsPatch",
+        "app.morphe.extension.reddit.patches.ColorizeCommentIndentLinesPatch",
         "app.morphe.extension.reddit.patches.CopyTextPatch",
         "app.morphe.extension.reddit.patches.CustomFontPatch",
+        "app.morphe.extension.reddit.patches.DisableBottomBarAutoHidePatch",
+        "app.morphe.extension.reddit.patches.DisableHomeFeedAutoRefreshPatch",
         "app.morphe.extension.reddit.patches.DisableModernHomePatch",
+        "app.morphe.extension.reddit.patches.DisableRefreshOnBackPatch",
         "app.morphe.extension.reddit.patches.DisableScreenshotPopupPatch",
         "app.morphe.extension.reddit.patches.DownloadAllFromGalleryPatch",
         "app.morphe.extension.reddit.patches.DownloadLocationPatch",

@@ -2,6 +2,7 @@ package io.github.a092devs.nexfusion.nexfusion.instagram
 
 import io.github.a092devs.nexfusion.ApkContext
 import io.github.a092devs.nexfusion.nexfusion.instagram.download.*
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -104,6 +105,27 @@ class DownloadFingerprintsTest {
             }.isNotEmpty()
             println("Screenshot observer present: $observerExists (framework callbacks are the fallback)")
             assertClassExists("com.instagram.inappbrowser.fragments.BrowserLiteInMainProcessIGActivity")
+
+            // Verify candidates ported from HushGram
+            val lockoutMethods = dexkit.findMethod {
+                matcher {
+                    returnType = "void"
+                    paramTypes = listOf("androidx.fragment.app.FragmentActivity", null)
+                    usingStrings(listOf("lockout_active"), org.luckypray.dexkit.query.enums.StringMatchType.Contains)
+                }
+            }
+            assertEquals(1, lockoutMethods.size, "Expected exactly 1 build expired lockout method")
+            println("Verified buildExpiredLockoutMethod: ${lockoutMethods.first().className}.${lockoutMethods.first().name}")
+
+            val seenMutationMethods = dexkit.findMethod {
+                matcher {
+                    returnType = "void"
+                    paramCount = 3
+                    usingStrings(listOf("IGDirectItemSeenMutation"), org.luckypray.dexkit.query.enums.StringMatchType.Contains)
+                }
+            }
+            assertEquals(1, seenMutationMethods.size, "Expected exactly 1 IGDirectItemSeenMutation handler method")
+            println("Verified directSeenMethod: ${seenMutationMethods.first().className}.${seenMutationMethods.first().name}")
 
             println("ALL FINGERPRINTS PASSED FOR ${apkFile.name}!")
             }

@@ -11,6 +11,7 @@ android {
     sourceSets {
         named("main") {
             java.directories += arrayOf(
+                "src/main/java",
 //                "../morphe-patches/patches/stub/src/main/java",
                 "../morphe-patches/extensions/shared-youtube/stub/src/main/java",
                 "../morphe-patches/extensions/youtube/stub/src/main/java",

@@ -25,6 +25,7 @@ import io.github.a092devs.nexfusion.morphe.youtube.misc.navigation.hookNavigatio
 import io.github.a092devs.nexfusion.morphe.youtube.misc.playservice.VersionCheck
 import io.github.a092devs.nexfusion.morphe.youtube.misc.playservice.is_20_26_or_greater
 import io.github.a092devs.nexfusion.morphe.youtube.misc.playservice.is_20_31_or_greater
+import io.github.a092devs.nexfusion.morphe.youtube.misc.playservice.is_21_30_or_greater
 import io.github.a092devs.nexfusion.morphe.youtube.misc.playservice.is_21_35_or_greater
 import io.github.a092devs.nexfusion.morphe.youtube.misc.settings.PreferenceScreen
 import io.github.a092devs.nexfusion.patch
@@ -62,6 +63,10 @@ val NavigationBar = patch(
         SwitchPreference("morphe_hide_navigation_button_labels"),
         SwitchPreference("morphe_disable_icon_only_navigation_buttons", summary = true)
     )
+
+    if (is_21_30_or_greater) {
+        navPreferences += SwitchPreference("morphe_you_button_account_switcher", summary = true)
+    }
 
     if (is_21_35_or_greater) {
         navPreferences += SwitchPreference("morphe_disable_toolbar_navigation_tabs", summary = true)

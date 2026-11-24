@@ -154,6 +154,169 @@ val ViewLiveAnonymously = igPatch(
     InstagramRequestFilter.ensureHooks(classLoader)
 }
 
+internal val directSeenMethod = findMethodDirect {
+    findMethod {
+        matcher {
+            returnType = "void"
+            usingStrings(listOf("IGDirectItemSeenMutation"), StringMatchType.Contains)
+            paramCount = 3
+        }
+    }.first()
+}
+
+internal val visualSeenMethod = findMethodDirect {
+    findMethod {
+        matcher {
+            returnType = "void"
+            usingStrings(listOf("direct_v2/visual_threads/%s/item_seen/", "raven_media"), StringMatchType.Contains)
+            paramCount = 3
+        }
+    }.first()
+}
+
+internal val setThreadUnreadMethod = findMethodDirect {
+    findMethod {
+        matcher {
+            returnType = "void"
+            modifiers = java.lang.reflect.Modifier.STATIC
+            paramCount = 3
+            paramTypes = listOf(
+                "com.instagram.common.session.UserSession",
+                "com.instagram.model.direct.DirectThreadKey",
+                "boolean",
+            )
+        }
+    }.first()
+}
+
+private val readThreadIds = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+
+private fun extractThreadId(key: Any?): String? {
+    if (key == null) return null
+    val keyStr = key.toString()
+    val match = Regex("mThreadId='([^']+)'").find(keyStr)
+    if (match != null) return match.groupValues[1]
+    return runCatching {
+        val f = key.javaClass.declaredFields.firstOrNull { it.name == "mThreadId" }
+        if (f != null) {
+            f.isAccessible = true
+            f.get(key) as? String
+        } else null
+    }.getOrNull()
+}
+
+val ViewDmsAnonymously = igPatch(
+    name = "View DMs anonymously",
+    description = "Opening direct messages no longer marks them as seen or sends read receipts to the sender.",
+    use = false,
+) {
+    runCatching {
+        ::directSeenMethod.hookMethod(object : XC_MethodHook() {
+            override fun beforeHookedMethod(param: MethodHookParam) {
+                val mutation = param.args.getOrNull(2)
+                if (mutation != null) {
+                    val key = runCatching {
+                        mutation.javaClass.methods.firstOrNull {
+                            it.returnType.name.contains("DirectThreadKey") && it.parameterCount == 0
+                        }?.invoke(mutation)
+                    }.getOrNull()
+                    val threadId = extractThreadId(key)
+                    if (threadId != null) {
+                        readThreadIds.add(threadId)
+                    }
+                }
+
+                val callback = param.args.getOrNull(1)
+                if (callback != null) {
+                    val completeMethod = callback.javaClass.methods.firstOrNull {
+                        it.returnType == java.lang.Void.TYPE &&
+                            it.parameterTypes.size == 2 &&
+                            it.parameterTypes[1] == java.lang.String::class.java
+                    }
+                    completeMethod?.invoke(callback, null, null)
+                }
+                param.result = null
+            }
+        })
+        PatcherLog.info { "NexFusion Instagram: direct seen receipts suppressed" }
+    }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: direct seen hook skipped" } }
+
+    runCatching {
+        ::setThreadUnreadMethod.hookMethod(object : XC_MethodHook() {
+            override fun beforeHookedMethod(param: MethodHookParam) {
+                val key = param.args.getOrNull(1)
+                val threadId = extractThreadId(key)
+                val unread = param.args.getOrNull(2) as? Boolean ?: false
+                if (!unread && threadId != null) {
+                    readThreadIds.add(threadId)
+                } else if (unread && threadId != null && threadId in readThreadIds) {
+                    // Prevent background server sync from reverting locally read thread to unread
+                    param.result = null
+                }
+            }
+        })
+        PatcherLog.info { "NexFusion Instagram: thread read state persistence hook installed" }
+    }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: thread read state hook skipped" } }
+}
+
+val ViewDmMediaAnonymously = igPatch(
+    name = "View DM media anonymously",
+    description = "Holds back the Opened notice for view-once photos and videos in direct messages.",
+    use = false,
+) {
+    runCatching {
+        ::visualSeenMethod.hookMethod(object : XC_MethodHook() {
+            override fun beforeHookedMethod(param: MethodHookParam) {
+                val callback = param.args.getOrNull(1)
+                if (callback != null) {
+                    val completeMethod = callback.javaClass.methods.firstOrNull {
+                        it.returnType == java.lang.Void.TYPE &&
+                            it.parameterTypes.size == 2 &&
+                            it.parameterTypes[1] == java.lang.String::class.java
+                    }
+                    completeMethod?.invoke(callback, null, null)
+                }
+                param.result = null
+            }
+        })
+        PatcherLog.info { "NexFusion Instagram: visual seen hook installed" }
+    }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: visual seen hook skipped" } }
+}
+
+val HideMetaAi = igPatch(
+    name = "Hide Meta AI",
+    description = "Removes Meta AI search suggestions, feed units, and chat integration.",
+    use = false,
+) {
+    InstagramRequestFilter.enable(InstagramRequestFilter.Rule.META_AI)
+    InstagramRequestFilter.ensureHooks(classLoader)
+}
+
+internal val buildExpiredLockoutMethod = findMethodDirect {
+    findMethod {
+        matcher {
+            returnType = "void"
+            usingStrings(listOf("lockout_active"), StringMatchType.Contains)
+            paramTypes = listOf("androidx.fragment.app.FragmentActivity", null)
+        }
+    }.first()
+}
+
+val RemoveBuildExpiredPopup = igPatch(
+    name = "Remove build expired popup",
+    description = "Stops Instagram from locking you out with an update screen stating that the app build has expired.",
+    use = false,
+) {
+    runCatching {
+        ::buildExpiredLockoutMethod.hookMethod(object : XC_MethodHook() {
+            override fun beforeHookedMethod(param: MethodHookParam) {
+                param.result = null
+            }
+        })
+        PatcherLog.info { "NexFusion Instagram: build expired lockout suppressed" }
+    }.onFailure { PatcherLog.info(it) { "NexFusion Instagram: build expired lockout hook skipped" } }
+}
+
 val AllowScreenshots = igPatch(
     name = "Allow screenshots",
     description = "Clears FLAG_SECURE so screenshots and screen recordings work everywhere, including disappearing media.",
@@ -843,6 +1006,10 @@ val InstagramPatches = arrayOf(
     HideReelsAds,
     ViewStoriesAnonymously,
     ViewLiveAnonymously,
+    ViewDmsAnonymously,
+    ViewDmMediaAnonymously,
+    HideMetaAi,
+    RemoveBuildExpiredPopup,
     StopStoryAutoAdvance,
     HideTypingStatus,
     HideStoryFollow,

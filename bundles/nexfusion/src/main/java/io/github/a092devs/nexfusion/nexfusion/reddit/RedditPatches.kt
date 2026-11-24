@@ -971,6 +971,51 @@ val RedditEnableDebugging = patch(
 ) {
 }
 
+val DisableRefreshOnBack = patch(
+    name = "Disable refresh on back to exit",
+    description = "Adds an option to exit the app with back on the home feed without first scrolling to the top and reloading.",
+    use = false,
+) {
+    runCatching {
+        val cls = runCatching { Class.forName("app.morphe.extension.reddit.patches.DisableRefreshOnBackPatch", false, XposedBridge::class.java.classLoader) }.getOrNull()
+            ?: runCatching { classLoader.loadClass("app.morphe.extension.reddit.patches.DisableRefreshOnBackPatch") }.getOrNull()
+        if (cls != null) {
+            val method = cls.getDeclaredMethod("isPatchIncluded")
+            XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(true))
+        }
+    }
+}
+
+val AlwaysShowHide = patch(
+    name = "Always show Hide",
+    description = "Adds an option to always show Hide in the menu of feed posts, even when replaced by recommendations.",
+    use = false,
+) {
+    runCatching {
+        val cls = runCatching { Class.forName("app.morphe.extension.reddit.patches.AlwaysShowHidePatch", false, XposedBridge::class.java.classLoader) }.getOrNull()
+            ?: runCatching { classLoader.loadClass("app.morphe.extension.reddit.patches.AlwaysShowHidePatch") }.getOrNull()
+        if (cls != null) {
+            val method = cls.getDeclaredMethod("isPatchIncluded")
+            XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(true))
+        }
+    }
+}
+
+val DisableBottomBarAutoHide = patch(
+    name = "Disable bottom bar auto-hide",
+    description = "Adds an option to keep the bottom navigation bar visible while scrolling.",
+    use = false,
+) {
+    runCatching {
+        val cls = runCatching { Class.forName("app.morphe.extension.reddit.patches.DisableBottomBarAutoHidePatch", false, XposedBridge::class.java.classLoader) }.getOrNull()
+            ?: runCatching { classLoader.loadClass("app.morphe.extension.reddit.patches.DisableBottomBarAutoHidePatch") }.getOrNull()
+        if (cls != null) {
+            val method = cls.getDeclaredMethod("isPatchIncluded")
+            XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(true))
+        }
+    }
+}
+
 val RedditPatches = arrayOf(
     RedditSettings,
     DisableScreenshotBanner,
@@ -1015,6 +1060,9 @@ val RedditPatches = arrayOf(
     DownloadAllFromGallery,
     KeepMediaViewerInSubreddit,
     HomeFeedTabs,
+    DisableRefreshOnBack,
+    AlwaysShowHide,
+    DisableBottomBarAutoHide,
     RedditEnableDebugging,
 )
 

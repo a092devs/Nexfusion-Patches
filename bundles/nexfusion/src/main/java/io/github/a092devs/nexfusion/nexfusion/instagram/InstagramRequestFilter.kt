@@ -22,6 +22,7 @@ object InstagramRequestFilter {
         RECENT_SEARCHES,
         REEL_WATCH_HISTORY,
         META_AI,
+        VISUAL_MEDIA_SEEN,
     }
 
     private val enabledRules: MutableSet<Rule> = ConcurrentHashMap.newKeySet()
@@ -60,6 +61,8 @@ object InstagramRequestFilter {
             path.contains("/fbsearch/register_recent_search_click/") -> Rule.RECENT_SEARCHES
 
             path.contains("/clips/write_seen_state/") -> Rule.REEL_WATCH_HISTORY
+
+            path.contains("/visual_threads/") && path.contains("/item_seen/") -> Rule.VISUAL_MEDIA_SEEN
 
             path.contains("/meta_ai") ||
                 path.contains("/genai") ||

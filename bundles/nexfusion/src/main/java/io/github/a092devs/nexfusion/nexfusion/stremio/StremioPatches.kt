@@ -200,7 +200,7 @@ val StremioBingeWatching = patch(
 
 val StremioExternalPlayerProgress = patch(
     name = "External player progress",
-    description = "Saves watch progress in Stremio when playing in an external player (MX Player, VLC, Vimu), and resumes playback seamlessly at the saved position.",
+    description = "Saves watch progress in Stremio when playing in an external player (MX Player, Just Player, Vimu), and resumes playback seamlessly at the saved position.",
     use = false,
 ) {
     runCatching {

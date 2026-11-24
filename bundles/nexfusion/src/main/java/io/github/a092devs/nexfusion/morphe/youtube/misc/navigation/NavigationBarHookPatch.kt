@@ -77,8 +77,18 @@ val NavigationBarHook = patch(
 
     // Hook onto navigation bar touches. Needed to detect a tap on the selected
     // navigation button closes the search, as the button is not selected again.
+    // Also delegates to NavigationBarPatch to handle long-press on Settings / Account switcher.
     PivotBarDispatchTouchEventFingerprint.hookMethod {
         before {
+            val event = it.args[0] as? MotionEvent
+            if (event != null) {
+                runCatching {
+                    val replaced = app.morphe.extension.youtube.patches.NavigationBarPatch.navigationBarTouched(event)
+                    if (replaced != null) {
+                        it.args[0] = replaced
+                    }
+                }
+            }
             NavigationBar.navigationBarTouched(it.args[0] as? MotionEvent)
         }
     }

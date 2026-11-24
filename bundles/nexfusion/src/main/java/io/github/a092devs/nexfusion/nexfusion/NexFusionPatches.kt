@@ -18,7 +18,6 @@ import io.github.a092devs.nexfusion.nexfusion.google.GoogleDiscoverPatches
 import io.github.a092devs.nexfusion.nexfusion.instagram.InstagramPatches
 import io.github.a092devs.nexfusion.nexfusion.linkedin.LinkedInPatches
 import io.github.a092devs.nexfusion.nexfusion.maps.GoogleMapsPatches
-import io.github.a092devs.nexfusion.nexfusion.vlc.VlcPatches
 import io.github.a092devs.nexfusion.nexfusion.protonvpn.ProtonVpnPatches
 import io.github.a092devs.nexfusion.nexfusion.reddit.RedditPatches
 import io.github.a092devs.nexfusion.nexfusion.stremio.StremioPatches
@@ -118,12 +117,6 @@ object NexFusionPatches : PatchBundle {
             packageName = "com.twitter.android",
             patches = TwitterPatches,
             appIconColor = 0x000000,
-        ),
-        AppPatchInfo(
-            appName = "VLC",
-            packageName = "org.videolan.vlc",
-            patches = VlcPatches,
-            appIconColor = 0xFF6600,
         ),
         AppPatchInfo(
             appName = "Stremio",
