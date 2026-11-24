@@ -83,13 +83,10 @@ val NavigationBarHook = patch(
             val event = it.args[0] as? MotionEvent
             if (event != null) {
                 runCatching {
-                    val replaced = app.morphe.extension.youtube.patches.NavigationBarPatch.navigationBarTouched(event)
-                    if (replaced != null) {
-                        it.args[0] = replaced
-                    }
+                    app.morphe.extension.youtube.patches.NavigationBarPatch.navigationBarTouched(event)
                 }
             }
-            NavigationBar.navigationBarTouched(it.args[0] as? MotionEvent)
+            NavigationBar.navigationBarTouched(event)
         }
     }
 

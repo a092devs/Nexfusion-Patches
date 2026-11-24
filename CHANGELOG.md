@@ -7,6 +7,11 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.0.4
+
+- `YouTube Navigation Bar`:
+  * Resolved critical navigation bar touch dispatch crash: fixed return type handling in `PivotBarDispatchTouchEvent` hook so touch events pass through to views cleanly without argument type mismatches or failure toasts.
+
 ## 5.0.3
 
 - `Instagram Patches`:
