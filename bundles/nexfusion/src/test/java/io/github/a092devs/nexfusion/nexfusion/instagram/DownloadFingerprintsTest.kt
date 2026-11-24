@@ -125,7 +125,53 @@ class DownloadFingerprintsTest {
                 }
             }
             assertEquals(1, seenMutationMethods.size, "Expected exactly 1 IGDirectItemSeenMutation handler method")
-            println("Verified directSeenMethod: ${seenMutationMethods.first().className}.${seenMutationMethods.first().name}")
+            println("Verified directSeenMethod: ${seenMutationMethods.first().className}.${seenMutationMethods.first().name} params: ${seenMutationMethods.first().paramTypes}")
+            val directCb = dexkit.findClass { matcher { className(seenMutationMethods.first().paramTypes[1].name) } }.firstOrNull()
+            println("Direct Callback class: ${directCb?.name} methods: ${directCb?.methods?.map { "${it.name}(${it.paramTypes.joinToString()})${it.returnType}" }}")
+            val impls = dexkit.findClass { matcher { addInterface(directCb!!.name) } }
+            println("Implementations of ${directCb?.name}: ${impls.map { it.name }}")
+            val threadSeenKeyMethods = dexkit.findMethod {
+                matcher {
+                    usingStrings(listOf("mark_thread_seen-"), org.luckypray.dexkit.query.enums.StringMatchType.Contains)
+                }
+            }
+            println("Found threadSeenKeyMethods: ${threadSeenKeyMethods.size}")
+            threadSeenKeyMethods.forEach { 
+                println("threadSeenKeyMethod: ${it.className}.${it.name} return: ${it.returnType} modifiers: ${it.modifiers} params: ${it.paramTypes}")
+            }
+
+            val visualSeenMethods = dexkit.findMethod {
+                matcher {
+                    returnType = "void"
+                    usingStrings(listOf("direct_v2/visual_threads/%s/item_seen/", "raven_media"), org.luckypray.dexkit.query.enums.StringMatchType.Contains)
+                    paramCount = 3
+                }
+            }
+            println("Found visualSeenMethods: ${visualSeenMethods.size}")
+            visualSeenMethods.forEach { 
+                println("visualSeenMethod: ${it.className}.${it.name} params: ${it.paramTypes}") 
+                val cbClass = dexkit.findClass { matcher { className(it.paramTypes[1].name) } }.firstOrNull()
+                println("Callback class: ${cbClass?.name} methods: ${cbClass?.methods?.map { "${it.name}(${it.paramTypes.joinToString()})${it.returnType}" }}")
+            }
+
+            val setThreadUnreadMethods = dexkit.findMethod {
+                matcher {
+                    returnType = "void"
+                    modifiers = java.lang.reflect.Modifier.STATIC
+                    paramCount = 3
+                    paramTypes = listOf(
+                        "com.instagram.common.session.UserSession",
+                        "com.instagram.model.direct.DirectThreadKey",
+                        "boolean",
+                    )
+                }
+            }
+            println("Found setThreadUnreadMethods: ${setThreadUnreadMethods.size}")
+            setThreadUnreadMethods.forEach { 
+                println("setThreadUnreadMethod: ${it.className}.${it.name}")
+                val m = dexkit.findMethod { matcher { declaredClass(it.className); this.name = it.name } }.firstOrNull()
+                println("Method callers/strings: ${m?.usingStrings}")
+            }
 
             println("ALL FINGERPRINTS PASSED FOR ${apkFile.name}!")
             }

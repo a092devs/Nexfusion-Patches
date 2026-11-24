@@ -23,6 +23,7 @@ import io.github.a092devs.nexfusion.PatchExecutor
 import io.github.a092devs.nexfusion.nexfusion.instagram.download.DownloadMedia
 import io.github.a092devs.nexfusion.hookMethod
 import io.github.a092devs.nexfusion.morphe.findMethodDirect
+import io.github.a092devs.nexfusion.morphe.findMethodListDirect
 import io.github.a092devs.nexfusion.patch
 import org.luckypray.dexkit.query.enums.StringMatchType
 import java.util.Collections

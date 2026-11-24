@@ -7,6 +7,16 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.0.5
+
+- `YouTube Navigation Bar & Layout Theme`:
+  * Resolved critical navigation bar touch dispatch crash: fixed return type handling in `PivotBarDispatchTouchEvent` hook and added null safety guards in button iteration so touches pass through without argument mismatches or failure toasts.
+  * Overhauled AMOLED pitch black dark theme: added `ColorStateList`, theme attribute, and window bar hooks with modern YouTube background resources.
+  * Added note in AMOLED toggle description clarifying that Ambient Mode must be disabled in video player settings for pure black watch view background.
+- `Instagram Patches`:
+  * Improved Direct Message stealth persistence: prevented thread unread badge reversion across background syncs.
+  * Enhanced anonymous visual media viewing for view-once photos and videos.
+
 ## 5.0.4
 
 - `YouTube Navigation Bar`:

@@ -80,11 +80,9 @@ val NavigationBarHook = patch(
     // Also delegates to NavigationBarPatch to handle long-press on Settings / Account switcher.
     PivotBarDispatchTouchEventFingerprint.hookMethod {
         before {
-            val event = it.args[0] as? MotionEvent
-            if (event != null) {
-                runCatching {
-                    app.morphe.extension.youtube.patches.NavigationBarPatch.navigationBarTouched(event)
-                }
+            val event = it.args[0] as? MotionEvent ?: return@before
+            runCatching {
+                app.morphe.extension.youtube.patches.NavigationBarPatch.navigationBarTouched(event)
             }
             NavigationBar.navigationBarTouched(event)
         }
