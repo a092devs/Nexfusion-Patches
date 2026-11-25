@@ -221,7 +221,7 @@ jobs:
                   set -euo pipefail
 
                   python3 - <<'PY'
-                  import html, os, re, urllib.request, urllib.parse, urllib.error, sys
+                  import glob, html, mimetypes, os, re, sys, urllib.error, urllib.parse, urllib.request, uuid
 
                   token = os.environ["TELEGRAM_BOT_TOKEN"]
                   chat_id = os.environ["TELEGRAM_CHAT_ID"]
@@ -268,14 +268,32 @@ jobs:
                   except urllib.error.HTTPError as e:
                       print("Telegram sendMessage failed:", e.code, e.read().decode("utf-8", errors="replace"), file=sys.stderr)
                       raise
-                  PY
 
-                  shopt -s nullglob
-                  for file in release-assets/*.nxb; do
-                    curl -fsSL -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
-                      -F "chat_id=${TELEGRAM_CHAT_ID}" \
-                      -F "document=@${file}" \
-                      -F "caption=<b>NexFusion Patches ${TAG}</b>" \
-                      -F "parse_mode=HTML"
-                    echo ""
-                  done
+                  for path in sorted(glob.glob("release-assets/*.nxb")):
+                      boundary = f"----NexFusionBoundary{uuid.uuid4().hex}"
+                      caption = f"<b>NexFusion Patches {html.escape(tag)}</b>"
+                      parts = []
+                      for k, v in [("chat_id", chat_id), ("caption", caption), ("parse_mode", "HTML")]:
+                          parts.append(f"--{boundary}\r\nContent-Disposition: form-data; name=\"{k}\"\r\n\r\n{v}\r\n".encode("utf-8"))
+                      filename = os.path.basename(path)
+                      ctype = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+                      with open(path, "rb") as f:
+                          file_bytes = f.read()
+                      parts.append(
+                          f"--{boundary}\r\nContent-Disposition: form-data; name=\"document\"; filename=\"{filename}\"\r\nContent-Type: {ctype}\r\n\r\n".encode("utf-8")
+                          + file_bytes
+                          + f"\r\n--{boundary}--\r\n".encode("utf-8")
+                      )
+                      body_bytes = b"".join(parts)
+                      doc_req = urllib.request.Request(
+                          f"https://api.telegram.org/bot{token}/sendDocument",
+                          data=body_bytes,
+                          headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
+                      )
+                      try:
+                          with urllib.request.urlopen(doc_req, timeout=120) as resp:
+                              print(f"sendDocument ({filename}):", resp.read().decode("utf-8"))
+                      except urllib.error.HTTPError as e:
+                          print(f"Telegram sendDocument ({filename}) failed:", e.code, e.read().decode("utf-8", errors="replace"), file=sys.stderr)
+                          raise
+                  PY
