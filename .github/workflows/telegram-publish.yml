@@ -78,7 +78,15 @@ jobs:
                   footer = f"\n\n🔗 <a href=\"https://github.com/{repo}/releases/tag/{urllib.parse.quote(tag)}\">GitHub Release</a>"
                   max_body = 1024 - len(header) - len(footer) - 20
                   if len(body) > max_body:
-                      body = body[:max(0, max_body)].rstrip() + "\n…"
+                      kept = []
+                      cur_len = 0
+                      for ln in lines:
+                          add_len = len(ln) + (1 if kept else 0)
+                          if cur_len + add_len > max_body:
+                              break
+                          kept.append(ln)
+                          cur_len += add_len
+                      body = "\n".join(kept).rstrip() + "\n…"
                   caption = f"{header}\n{body}{footer}" if body else f"{header}{footer.strip()}"
 
                   files = sorted(glob.glob("release-assets/*.nxb"))
