@@ -9,7 +9,9 @@ import io.github.a092devs.nexfusion.compat.XC_MethodReplacement
 import io.github.a092devs.nexfusion.compat.XposedBridge
 import io.github.a092devs.nexfusion.compat.XposedHelpers
 import io.github.a092devs.nexfusion.PatcherLog
+import io.github.a092devs.nexfusion.PatchExecutor
 import io.github.a092devs.nexfusion.patch
+import org.luckypray.dexkit.query.enums.StringMatchType
 import java.util.ArrayList
 
 private fun isOfficialTelegram(classLoader: ClassLoader?): Boolean {
@@ -129,14 +131,106 @@ internal object TelegramResolver {
     }
 }
 
+private fun PatchExecutor.resolveByControllerGetter(cacheKey: String, getterName: String): Class<*>? =
+    runCatching {
+        dexkit.getClassDirectOrNull(cacheKey) {
+            findMethod {
+                matcher {
+                    name = getterName
+                    paramCount = 0
+                }
+            }.first { it.returnTypeName != "void" && it.returnTypeName != "java.lang.Object" }.returnType!!
+        }?.getInstance(classLoader)
+    }.getOrNull()
+
+private fun PatchExecutor.resolveUserConfig(): Class<*>? =
+    TelegramResolver.findUserConfig(classLoader)
+        ?: resolveByControllerGetter("tg_user_config", "getUserConfig")
+
+private fun PatchExecutor.resolveMessagesController(): Class<*>? =
+    TelegramResolver.findMessagesController(classLoader)
+        ?: resolveByControllerGetter("tg_messages_controller", "getMessagesController")
+
+private fun PatchExecutor.resolveMessagesStorage(): Class<*>? =
+    TelegramResolver.findMessagesStorage(classLoader)
+        ?: resolveByControllerGetter("tg_messages_storage", "getMessagesStorage")
+
+private fun PatchExecutor.resolveStoriesController(): Class<*>? =
+    TelegramResolver.findStoriesController(classLoader)
+        ?: resolveByControllerGetter("tg_stories_controller", "getStoriesController")
+
+private fun PatchExecutor.resolveNotificationsController(): Class<*>? =
+    TelegramResolver.findNotificationsController(classLoader)
+        ?: resolveByControllerGetter("tg_notifications_controller", "getNotificationsController")
+
+private fun PatchExecutor.resolveMessageObject(): Class<*>? =
+    TelegramResolver.findMessageObject(classLoader)
+        ?: runCatching {
+            dexkit.getClassDirectOrNull("tg_message_object") {
+                findClass {
+                    matcher {
+                        className("org.telegram.messenger.", StringMatchType.StartsWith)
+                        addMethod {
+                            name = "isOutOwner"
+                            paramCount = 0
+                        }
+                    }
+                }.first()
+            }?.getInstance(classLoader)
+        }.getOrNull()
+
+private fun PatchExecutor.resolveThemeClass(): Class<*>? =
+    TelegramResolver.findThemeClass(classLoader)
+        ?: runCatching {
+            dexkit.getClassDirectOrNull("tg_theme") {
+                findClass {
+                    matcher {
+                        className("org.telegram.ui.ActionBar.", StringMatchType.StartsWith)
+                        usingStrings("windowBackgroundWhite", "windowBackgroundGray")
+                    }
+                }.first()
+            }?.getInstance(classLoader)
+        }.getOrNull()
+
+private fun PatchExecutor.resolveThemeKeyLookup(): Class<*>? =
+    TelegramResolver.findThemeKeyLookup(classLoader)
+        ?: resolveThemeClass()
+
+private fun PatchExecutor.resolveTimeStringMethod(): java.lang.reflect.Method? {
+    TelegramResolver.findTimeStringMethod(classLoader)?.let { return it }
+    val moClass = resolveMessageObject() ?: return null
+    val cellClass = runCatching {
+        dexkit.getMethodDirectOrNull("tg_time_string_method") {
+            findMethod {
+                matcher {
+                    declaredClass("org.telegram.ui.Cells.", StringMatchType.StartsWith)
+                    modifiers = java.lang.reflect.Modifier.STATIC
+                    returnType = "java.lang.String"
+                    paramTypes(moClass.name, null, "boolean", "int")
+                }
+            }.first()
+        }
+    }.getOrNull()
+    return runCatching {
+        val cls = cellClass?.let { classLoader.loadClass(it.className) } ?: return null
+        cls.declaredMethods.firstOrNull {
+            it.name == cellClass.name &&
+                java.lang.reflect.Modifier.isStatic(it.modifiers) &&
+                it.returnType == String::class.java &&
+                it.parameterCount == 4 &&
+                it.parameterTypes[0] == moClass
+        }
+    }.getOrNull()
+}
+
 val TelegramAmoledBlack = patch(
     name = "AMOLED black",
     description = "Gives Telegram's dark themes pure black screens, bars, chats and dialogs for AMOLED displays.",
     use = false,
 ) {
     runCatching {
-        val themeClass = TelegramResolver.findThemeClass(classLoader)
-        val keyLookupClass = TelegramResolver.findThemeKeyLookup(classLoader)
+        val themeClass = resolveThemeClass()
+        val keyLookupClass = resolveThemeKeyLookup()
         val keyLookupMethod = keyLookupClass?.declaredMethods?.firstOrNull {
             java.lang.reflect.Modifier.isStatic(it.modifiers) &&
                 it.parameterTypes.size == 1 && it.parameterTypes[0] == String::class.java &&
@@ -305,7 +399,7 @@ val TelegramUnlockPremium = patch(
 
     // 1. Hook UserConfig (org.telegram.messenger.UserConfig / y10 / d20)
     runCatching {
-        val userConfig = TelegramResolver.findUserConfig(classLoader)
+        val userConfig = resolveUserConfig()
         if (userConfig != null) {
             // ONLY hook isPremium: q() in 13.3.0, or isPremium in unobfuscated.
             // ONLY return true when currentUser != null so empty account slots are never treated as active/premium!
@@ -367,7 +461,7 @@ val TelegramUnlockPremium = patch(
 
     // 2. Hook MessagesController.isPremiumUser (B2, Z4, H2 in 13.3.0) safely for self/premium only
     runCatching {
-        val mc = TelegramResolver.findMessagesController(classLoader)
+        val mc = resolveMessagesController()
         if (mc != null) {
             mc.declaredMethods.filter {
                 (it.name == "isPremiumUser" || it.name == "l5" || it.name == "B2" || it.name == "Z4" || it.name == "H2") &&
@@ -434,7 +528,7 @@ val TelegramRemoveAds = patch(
 
     // 2. Hook MessageObject sponsored checks
     runCatching {
-        val mo = TelegramResolver.findMessageObject(classLoader)
+        val mo = resolveMessageObject()
         if (mo != null) {
             mo.declaredMethods.filter {
                 (it.returnType == java.lang.Boolean.TYPE || it.returnType == java.lang.Boolean::class.java) &&
@@ -448,7 +542,7 @@ val TelegramRemoveAds = patch(
 
     // 3. Hook MessagesController isChannelAdHidden / getSponsoredMessages
     runCatching {
-        val mc = TelegramResolver.findMessagesController(classLoader)
+        val mc = resolveMessagesController()
         if (mc != null) {
             mc.declaredMethods.filter {
                 it.name == "isChannelAdHidden" || it.name == "getSponsoredMessages"
@@ -548,7 +642,7 @@ val TelegramAntiDelete = patch(
             val auCls = runCatching { classLoader.loadClass("org.telegram.messenger.AndroidUtilities") }.getOrNull()
             val runOnUIThread = auCls?.methods?.firstOrNull { it.name == "runOnUIThread" && it.parameterTypes.size == 1 }
             val ncCls = runCatching { classLoader.loadClass("org.telegram.messenger.NotificationCenter") }.getOrNull()
-            val mcCls = TelegramResolver.findMessagesController(classLoader)
+            val mcCls = resolveMessagesController()
 
             val updateMask = runCatching { mcCls?.getField("UPDATE_MASK_ALL")?.getInt(null) }.getOrNull() ?: 255
             val updateInterfaces = runCatching { ncCls?.getField("updateInterfaces")?.getInt(null) }.getOrNull()
@@ -670,7 +764,7 @@ val TelegramAntiDelete = patch(
 
     // 2. Track messages deleted via MessagesController and suppress remote push deletion
     runCatching {
-        val mc = TelegramResolver.findMessagesController(classLoader)
+        val mc = resolveMessagesController()
         if (mc != null) {
             mc.declaredMethods.filter {
                 it.name == "deleteMessagesByPush"
@@ -700,7 +794,7 @@ val TelegramAntiDelete = patch(
 
     // 3. Mark deleted messages with subtle trash icon indicator in chat bubble timestamp (matching NagramXF)
     runCatching {
-        val timeStringMethod = TelegramResolver.findTimeStringMethod(classLoader)
+        val timeStringMethod = resolveTimeStringMethod()
         if (timeStringMethod != null) {
             XposedBridge.hookMethod(timeStringMethod, object : XC_MethodHook() {
                 override fun afterHookedMethod(param: MethodHookParam) {
@@ -720,7 +814,7 @@ val TelegramAntiDelete = patch(
 
     // 4. Slightly grey-out / dim deleted chat bubbles (alpha = 0.72f) matching NagramXF and register cell
     runCatching {
-        val moClass = TelegramResolver.findMessageObject(classLoader)
+        val moClass = resolveMessageObject()
         for (name in listOf("org.telegram.ui.Cells.ChatMessageCell", "org.telegram.ui.Cells.q1", "org.telegram.ui.Cells.u0")) {
             val cellClass = runCatching { classLoader.loadClass(name) }.getOrNull() ?: continue
             cellClass.declaredMethods.filter {
@@ -760,7 +854,7 @@ val TelegramAntiDisappearingMedia = patch(
 ) {
     // 1. Keep view-once messages from expiring or being marked force-expired
     runCatching {
-        val mo = TelegramResolver.findMessageObject(classLoader)
+        val mo = resolveMessageObject()
         if (mo != null) {
             XposedBridge.hookAllConstructors(mo, object : XC_MethodHook() {
                 override fun afterHookedMethod(param: MethodHookParam) {
@@ -794,7 +888,7 @@ val TelegramAntiDisappearingMedia = patch(
 
     // 2. Prevent MessagesController from executing view-once deletion tasks
     runCatching {
-        val mc = TelegramResolver.findMessagesController(classLoader)
+        val mc = resolveMessagesController()
         if (mc != null) {
             mc.declaredMethods.filter {
                 it.name.contains("didViewShowOnce", ignoreCase = true) ||
@@ -860,7 +954,7 @@ val TelegramHideStories = patch(
 
     // 2. Hook StoriesController (wg.f5 / yg.e5 / StoriesController)
     runCatching {
-        val sc = TelegramResolver.findStoriesController(classLoader)
+        val sc = resolveStoriesController()
         if (sc != null) {
             // All boolean methods on StoriesController (hasStories, hasSelfStories, hasUnreadStories, hasHiddenStories, etc.)
             sc.declaredMethods.filter {
@@ -911,7 +1005,7 @@ val TelegramHideStoriesRead = patch(
         }
     }
     runCatching {
-        val sc = TelegramResolver.findStoriesController(classLoader)
+        val sc = resolveStoriesController()
         if (sc != null) {
             sc.declaredMethods.filter {
                 (it.name.contains("read", ignoreCase = true) || it.name.contains("mark", ignoreCase = true)) &&
@@ -982,7 +1076,7 @@ val TelegramBypassContentRestrictions = patch(
 
     // 3. Hook MessageObject canForwardMessage() / canSaveMessage() -> return true
     runCatching {
-        val mo = TelegramResolver.findMessageObject(classLoader)
+        val mo = resolveMessageObject()
         if (mo != null) {
             mo.declaredMethods.filter {
                 (it.returnType == java.lang.Boolean.TYPE || it.returnType == java.lang.Boolean::class.java) &&
@@ -1000,7 +1094,7 @@ val TelegramBypassChannelRestrictions = patch(
     use = false,
 ) {
     runCatching {
-        val mc = TelegramResolver.findMessagesController(classLoader)
+        val mc = resolveMessagesController()
         if (mc != null) {
             mc.declaredMethods.filter { it.name == "getRestrictionReason" }.forEach { m ->
                 XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(null))
@@ -1018,7 +1112,7 @@ val TelegramBypassChannelRestrictions = patch(
     }
 
     runCatching {
-        val mo = TelegramResolver.findMessageObject(classLoader)
+        val mo = resolveMessageObject()
         if (mo != null) {
             mo.declaredMethods.filter { it.name == "isRestricted" }.forEach { m ->
                 XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(false))
@@ -1039,7 +1133,7 @@ val TelegramDownloadBoost = patch(
 
     // 1. Enable getfileExperimentalParams in MessagesController (tp / I3 in 13.3.0)
     runCatching {
-        val mc = TelegramResolver.findMessagesController(classLoader)
+        val mc = resolveMessagesController()
         if (mc != null) {
             mc.declaredConstructors.forEach { c ->
                 XposedBridge.hookMethod(c, object : XC_MethodHook() {
@@ -1147,7 +1241,7 @@ val TelegramHideTyping = patch(
         }
     }
     runCatching {
-        val mc = TelegramResolver.findMessagesController(classLoader)
+        val mc = resolveMessagesController()
         if (mc != null) {
             mc.declaredMethods.filter { it.name.contains("sendTyping", ignoreCase = true) }.forEach { m ->
                 XposedBridge.hookMethod(m, object : XC_MethodHook() {
@@ -1177,7 +1271,7 @@ val TelegramDisableAutoUpdate = patch(
     }
 
     runCatching {
-        val mc = TelegramResolver.findMessagesController(classLoader)
+        val mc = resolveMessagesController()
         if (mc != null) {
             mc.declaredMethods.filter { it.name.contains("checkAppUpdate", ignoreCase = true) }.forEach { m ->
                 XposedBridge.hookMethod(m, XC_MethodReplacement.DO_NOTHING)
@@ -1338,7 +1432,7 @@ val TelegramVoiceToMusic = patch(
     use = false,
 ) {
     runCatching {
-        val mo = TelegramResolver.findMessageObject(classLoader)
+        val mo = resolveMessageObject()
         if (mo != null) {
             mo.declaredMethods.filter {
                 (it.returnType == java.lang.Boolean.TYPE || it.returnType == java.lang.Boolean::class.java) &&
@@ -1513,7 +1607,7 @@ val TelegramHidePhoneNumber = patch(
     }
 
     runCatching {
-        val userConfig = TelegramResolver.findUserConfig(classLoader)
+        val userConfig = resolveUserConfig()
         if (userConfig != null) {
             userConfig.declaredMethods.filter {
                 it.parameterCount == 0 && (it.name == "getCurrentUser" || it.name == "f")
@@ -1674,7 +1768,7 @@ val TelegramHideSponsoredProxy = patch(
     }
 
     runCatching {
-        val mc = TelegramResolver.findMessagesController(classLoader)
+        val mc = resolveMessagesController()
         if (mc != null) {
             mc.declaredMethods.filter {
                 it.name.contains("promo", ignoreCase = true) || it.name.contains("checkPromoInfo", ignoreCase = true)

@@ -7,6 +7,11 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.0.9
+
+- **Telegram (`13.3+` / Obfuscated Builds):**
+  * Added DexKit-cached dynamic class and method resolution fallbacks in `TelegramResolver` (`UserConfig`, `MessagesController`, `MessagesStorage`, `StoriesController`, `NotificationsController`, `MessageObject`, `Theme`, and `ChatMessageCell` time-string lookup) so patches remain compatible across obfuscated Telegram updates.
+
 ## 5.0.8
 
 - **Spotify (`9.2.2+`):**
