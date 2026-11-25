@@ -20,13 +20,19 @@ val textComponentPatch = patch(
             val spannedContext = it.args[0]
             val spanned = getSpannedMethod(it.args[2]) as String
             // TODO EmojiCompat.process(spanned)
-            hooks.forEach { it(ConversionContext(spannedContext), spanned) }
+            val ctx = ConversionContext(spannedContext)
+            hooks.forEach { fn -> fn(ctx, spanned) }
+            if (charSeqOverrides.isNotEmpty() && it.result is CharSequence) {
+                var current = it.result as CharSequence
+                charSeqOverrides.forEach { fn -> current = fn(ctx, current) }
+                it.result = current
+            }
         }
     }
 }
 
 private val hooks = mutableListOf<(ContextInterface, CharSequence) -> Unit>()
-private val overrides = mutableListOf<(ContextInterface, CharSequence) -> String>()
+private val charSeqOverrides = mutableListOf<(ContextInterface, CharSequence) -> CharSequence>()
 
 internal fun hookSpannableString(
     hook: (ContextInterface, CharSequence) -> Unit,
@@ -35,4 +41,8 @@ internal fun hookSpannableString(
     hooks.add { a, b -> hook(a, b) }
 }
 
-// TODO lithoSpannableStringPatch hookLithoSpannableString
+internal fun hookSpannableStringOverride(
+    hook: (ContextInterface, CharSequence) -> CharSequence,
+) {
+    charSeqOverrides.add(hook)
+}

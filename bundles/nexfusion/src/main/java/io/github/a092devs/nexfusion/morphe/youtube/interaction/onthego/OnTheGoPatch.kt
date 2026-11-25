@@ -19,4 +19,5 @@ val onTheGoPatch = patch(
 
     hookElement(OnTheGoPatch::onElementLoaded)
     addLithoFilter(OnTheGoFilter())
+    io.github.a092devs.nexfusion.morphe.setExtensionIsPatchIncluded(OnTheGoPatch::class.java)
 }

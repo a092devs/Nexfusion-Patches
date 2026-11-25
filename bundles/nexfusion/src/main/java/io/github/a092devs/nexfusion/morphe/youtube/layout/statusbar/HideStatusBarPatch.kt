@@ -16,6 +16,7 @@ val HideStatusBar = patch(
         SwitchPreference("morphe_fix_status_bar_layout", summary = true),
     )
 
+    io.github.a092devs.nexfusion.morphe.setExtensionIsPatchIncluded(HideStatusBarPatch::class.java)
     insertLiteralOverride(45400535L, HideStatusBarPatch::useEdgeToEdgeTopBar)
     insertLiteralOverride(45830993L, HideStatusBarPatch::useStatusBarScrollColor)
 }

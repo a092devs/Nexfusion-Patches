@@ -47,6 +47,7 @@ val seekbarColorPatch = patch(
     description = "Hide or set a custom seekbar color.",
     use = false,
 ) {
+    io.github.a092devs.nexfusion.morphe.setExtensionIsPatchIncluded(SeekbarColorPatch::class.java)
     PreferenceScreen.SEEKBAR.addPreferences(
         noTitleUnsortedPreferenceCategory(
             SwitchPreference("morphe_seekbar_custom_color"),

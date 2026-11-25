@@ -22,6 +22,10 @@ val channelWhitelistPatch = patch(
         RememberPlaybackSpeed
     )
 
+    io.github.a092devs.nexfusion.morphe.setExtensionIsPatchIncluded(
+        app.morphe.extension.youtube.whitelist.ChannelWhitelist::class.java
+    )
+
     PreferenceScreen.ADS.addPreferences(
         NonInteractivePreference(
             key = "morphe_ads_channel_whitelist",

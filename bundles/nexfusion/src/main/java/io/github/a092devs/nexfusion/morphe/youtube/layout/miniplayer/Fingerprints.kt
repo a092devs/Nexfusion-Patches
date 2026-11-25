@@ -7,6 +7,7 @@ import io.github.a092devs.nexfusion.morphe.InstructionLocation.MatchAfterWithin
 import io.github.a092devs.nexfusion.morphe.Opcode
 import io.github.a092devs.nexfusion.morphe.fieldAccess
 import io.github.a092devs.nexfusion.morphe.findFieldDirect
+import io.github.a092devs.nexfusion.morphe.findMethodDirect
 import io.github.a092devs.nexfusion.morphe.methodCall
 import io.github.a092devs.nexfusion.morphe.newInstance
 import io.github.a092devs.nexfusion.morphe.opcode
@@ -15,9 +16,6 @@ import io.github.a092devs.nexfusion.morphe.opcode
  * Draggable miniplayer rect getter, used as the class holder for the horizontal drag hooks.
  */
 internal object MiniplayerRectDragFieldsNameFingerprint : Fingerprint(
-    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.FINAL),
-    returnType = "Landroid/graphics/Rect;",
-    parameters = listOf("I", "I"),
     filters = listOf(
         opcode(Opcode.IF_GEZ),
         fieldAccess(
@@ -45,38 +43,42 @@ internal object MiniplayerRectDragFieldsNameFingerprint : Fingerprint(
 /**
  * The method that repositions the miniplayer with the dragged rect.
  */
-internal object MiniplayerHorizontalRepositionFingerprint : Fingerprint(
-    classFingerprint = MiniplayerRectDragFieldsNameFingerprint,
-    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.FINAL),
-    returnType = "V",
-    parameters = listOf("Landroid/graphics/Rect;"),
-    filters = listOf(
-        fieldAccess(
-            opcode = Opcode.IGET,
-            definingClass = "Landroid/graphics/Rect;",
-            name = "left",
-        ),
-    ),
-)
+internal val MiniplayerHorizontalRepositionMethod = findMethodDirect {
+    val targetClass = MiniplayerRectDragFieldsNameFingerprint.instructionMatches[1].instruction.fieldRef?.className
+        ?: error("Miniplayer rect defining class not found")
+    findClass {
+        matcher {
+            className = targetClass
+        }
+    }.single().methods.single { method ->
+        method.modifiers and (java.lang.reflect.Modifier.PUBLIC or java.lang.reflect.Modifier.FINAL) ==
+            (java.lang.reflect.Modifier.PUBLIC or java.lang.reflect.Modifier.FINAL) &&
+            method.returnTypeName == "void" &&
+            method.paramTypeNames == listOf("android.graphics.Rect") &&
+            method.usingFields.any {
+                it.field.declaredClassName == "android.graphics.Rect" && it.field.name == "left"
+            }
+    }
+}
 
 /**
  * Offscreen miniplayer bounds handler.
  */
-internal object MiniplayerOffscreenHandlerFingerprint : Fingerprint(
-    classFingerprint = MiniplayerRectDragFieldsNameFingerprint,
-    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.FINAL),
-    returnType = "V",
-    parameters = listOf("I", "I", "I", "I"),
-    filters = listOf(
-        fieldAccess(opcode = Opcode.IGET_OBJECT, type = "Landroid/graphics/Rect;"),
-        methodCall(
-            opcode = Opcode.INVOKE_VIRTUAL,
-            name = "set",
-            parameters = listOf("I", "I", "I", "I"),
-            returnType = "V",
-        ),
-    ),
-)
+internal val MiniplayerOffscreenHandlerMethod = findMethodDirect {
+    val targetClass = MiniplayerRectDragFieldsNameFingerprint.instructionMatches[1].instruction.fieldRef?.className
+        ?: error("Miniplayer rect defining class not found")
+    findClass {
+        matcher {
+            className = targetClass
+        }
+    }.single().methods.single { method ->
+        method.modifiers and (java.lang.reflect.Modifier.PUBLIC or java.lang.reflect.Modifier.FINAL) ==
+            (java.lang.reflect.Modifier.PUBLIC or java.lang.reflect.Modifier.FINAL) &&
+            method.returnTypeName == "void" &&
+            method.paramTypeNames == listOf("int", "int", "int", "int") &&
+            method.usingFields.any { it.field.typeName == "android.graphics.Rect" }
+    }
+}
 
 /**
  * Offscreen rect validator used when dragging the miniplayer.

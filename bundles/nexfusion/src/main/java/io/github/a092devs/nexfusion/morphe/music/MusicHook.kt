@@ -12,6 +12,7 @@ import io.github.a092devs.nexfusion.morphe.music.misc.debugging.EnableDebugging
 import io.github.a092devs.nexfusion.morphe.music.misc.privacy.SanitizeSharingLinks
 import io.github.a092devs.nexfusion.morphe.music.misc.settings.SettingsHook
 import io.github.a092devs.nexfusion.morphe.music.misc.sharesheet.OpenSystemShareSheet
+import io.github.a092devs.nexfusion.morphe.music.video.audio.ForceOriginalAudio
 import io.github.a092devs.nexfusion.morphe.music.video.effects.VideoEffects
 import io.github.a092devs.nexfusion.morphe.music.video.quality.RememberVideoQuality
 import io.github.a092devs.nexfusion.morphe.shared.misc.CheckRecycleBitmapMediaSession
@@ -27,7 +28,36 @@ val PauseWhenMuted = patch(
     name = "Pause when muted",
     description = "Adds an option to pause playback automatically when volume is lowered to zero.",
     use = false,
-) {}
+) {
+    runCatching {
+        val mediaSessionClass = android.media.session.MediaSession::class.java
+        io.github.a092devs.nexfusion.compat.XposedHelpers.findAndHookMethod(
+            mediaSessionClass,
+            "setMetadata",
+            android.media.MediaMetadata::class.java,
+            object : io.github.a092devs.nexfusion.compat.XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    app.morphe.extension.music.patches.PauseWhenMutedPatch.onSetMetadata(
+                        param.thisObject as android.media.session.MediaSession,
+                        param.args[0] as? android.media.MediaMetadata
+                    )
+                }
+            }
+        )
+        io.github.a092devs.nexfusion.compat.XposedHelpers.findAndHookMethod(
+            mediaSessionClass,
+            "setPlaybackState",
+            android.media.session.PlaybackState::class.java,
+            object : io.github.a092devs.nexfusion.compat.XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    app.morphe.extension.music.patches.PauseWhenMutedPatch.onSetPlaybackState(
+                        param.args[0] as? android.media.session.PlaybackState
+                    )
+                }
+            }
+        )
+    }
+}
 
 val PlaylistTrackTap = patch(
     name = "Playlist track tap",
@@ -62,12 +92,6 @@ val RemoveViewerDiscretionDialog = patch(
 val DisableDislikeRedirection = patch(
     name = "Disable dislike redirection",
     description = "Prevents skipping to the next track when tapping the dislike button.",
-    use = false,
-) {}
-
-val ForceOriginalAudio = patch(
-    name = "Force original audio",
-    description = "Adds an option to force high-fidelity original audio streams for music videos.",
     use = false,
 ) {}
 
@@ -123,7 +147,38 @@ val DisableAudioDucking = patch(
     name = "Disable audio ducking",
     description = "Prevents YouTube Music from lowering audio volume when navigation or system notifications trigger.",
     use = false,
-) {}
+) {
+    runCatching {
+        io.github.a092devs.nexfusion.morphe.Fingerprint(
+            name = "onAudioFocusChange",
+            returnType = "V",
+            parameters = listOf("I"),
+            filters = listOf(io.github.a092devs.nexfusion.morphe.string("AudioFocus DUCK"))
+        ).hookMethod {
+            before { param ->
+                val focusChange = param.args.firstOrNull() as? Int ?: return@before
+                if (app.morphe.extension.music.patches.DisableAudioDuckingPatch.ignoreAudioFocusChange(focusChange)) {
+                    param.result = Unit
+                }
+            }
+        }
+    }
+    runCatching {
+        val compatClass = classLoader.loadClass("androidx.media.AudioFocusRequestCompat")
+        io.github.a092devs.nexfusion.compat.XposedBridge.hookAllConstructors(
+            compatClass,
+            object : io.github.a092devs.nexfusion.compat.XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    val lastIdx = param.args.lastIndex
+                    if (lastIdx >= 0 && param.args[lastIdx] is Boolean) {
+                        param.args[lastIdx] = app.morphe.extension.music.patches.DisableAudioDuckingPatch
+                            .willPauseWhenDucked(param.args[lastIdx] as Boolean)
+                    }
+                }
+            }
+        )
+    }
+}
 
 val Downloads = patch(
     name = "Downloads",

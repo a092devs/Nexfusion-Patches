@@ -48,6 +48,8 @@ val Downloads = patch(
         R.id.morphe_external_download_button
     )
 
+    io.github.a092devs.nexfusion.morphe.setExtensionIsPatchIncluded(DownloadsPatch::class.java)
+
     initializeTopControl(
         ControlInitializer(
             R.id.morphe_external_download_button,

@@ -30,7 +30,6 @@ internal object BottomSheetDialogOnAttachedToWindowFingerprint : Fingerprint(
 )
 
 internal object DialogFragmentOnStartFingerprint : Fingerprint(
-    name = "onStart",
     returnType = "V",
     parameters = listOf(),
     filters = listOf(

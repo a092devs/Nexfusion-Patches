@@ -2,6 +2,7 @@ package io.github.a092devs.nexfusion.morphe.youtube.misc.settings
 
 import android.app.Activity
 import app.morphe.extension.shared.ResourceUtils
+import app.morphe.extension.shared.patches.SettingsNamePatch
 import app.morphe.extension.shared.settings.preference.ClearNewSettingsIndicatorPreference
 import app.morphe.extension.shared.settings.preference.ImportExportPreference
 import app.morphe.extension.shared.settings.preference.SeekBarPreference
@@ -37,6 +38,10 @@ val SettingsHook = patch(
         initializationPatch()
     )
 
+    val getPreferenceScreenMethod = runCatching { ::PreferenceFragmentCompat_getPreferenceScreen.method }.getOrNull()
+    val findPreferenceMethod = runCatching { ::PreferenceGroup_findPreference.method }.getOrNull()
+    val setTitleMethod = runCatching { ::Preference_setTitle.method }.getOrNull()
+
     ::PreferenceFragmentCompat_addPreferencesFromResource.hookMethod {
         val settings_fragment = ResourceUtils.getXmlIdentifier("settings_fragment")
         val settings_fragment_cairo = ResourceUtils.getXmlIdentifier("settings_fragment_cairo")
@@ -49,6 +54,14 @@ val SettingsHook = patch(
             }
 
             param.invokeOriginalMethod(arrayOf(xml))
+            if (getPreferenceScreenMethod != null && findPreferenceMethod != null && setTitleMethod != null) {
+                applyCustomSettingsName(
+                    param.thisObject,
+                    getPreferenceScreenMethod,
+                    findPreferenceMethod,
+                    setTitleMethod,
+                )
+            }
         }
     }
 
@@ -145,6 +158,20 @@ val SettingsHook = patch(
     )
 
     PreferenceScreen.close()
+}
+
+internal fun applyCustomSettingsName(
+    fragment: Any,
+    getPreferenceScreen: java.lang.reflect.Method,
+    findPreference: java.lang.reflect.Method,
+    setTitle: java.lang.reflect.Method,
+) {
+    runCatching {
+        val customName = SettingsNamePatch.getCustomSettingsName() ?: return
+        val screen = getPreferenceScreen.invoke(fragment) ?: return
+        val pref = findPreference.invoke(screen, "morphe_settings_root") ?: return
+        setTitle.invoke(pref, customName)
+    }
 }
 
 object PreferenceScreen : BasePreferenceScreen() {

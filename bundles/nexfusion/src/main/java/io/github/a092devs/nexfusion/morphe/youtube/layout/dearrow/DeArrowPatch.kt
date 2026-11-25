@@ -36,6 +36,7 @@ val deArrowPatch = patch(
         // Titles are replaced by the same hooks that restore the original titles.
 //        restoreOriginalTitlesPatch,
     )
+    io.github.a092devs.nexfusion.morphe.setExtensionIsPatchIncluded(DeArrowPatch::class.java)
     val entries = "morphe_dearrow_thumbnail_options_entries"
     val values = "morphe_dearrow_thumbnail_options_entry_values"
     PreferenceScreen.DEARROW.addPreferences(

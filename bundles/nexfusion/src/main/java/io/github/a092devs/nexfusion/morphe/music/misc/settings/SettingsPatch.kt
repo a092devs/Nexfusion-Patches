@@ -26,12 +26,19 @@ import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.TextP
 import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.noTitleUnsortedPreferenceCategory
 import io.github.a092devs.nexfusion.morphe.shared.settings.preferences
 import io.github.a092devs.nexfusion.morphe.youtube.misc.settings.PreferenceFragmentCompat_addPreferencesFromResource
+import io.github.a092devs.nexfusion.morphe.youtube.misc.settings.PreferenceFragmentCompat_getPreferenceScreen
+import io.github.a092devs.nexfusion.morphe.youtube.misc.settings.PreferenceGroup_findPreference
+import io.github.a092devs.nexfusion.morphe.youtube.misc.settings.Preference_setTitle
+import io.github.a092devs.nexfusion.morphe.youtube.misc.settings.applyCustomSettingsName
 import io.github.a092devs.nexfusion.patch
 
 val SettingsHook = patch(
     description = "Adds settings for Morphe to YouTube Music.",
 ) {
     val addPreferencesFromResource = ::PreferenceFragmentCompat_addPreferencesFromResource.method
+    val getPreferenceScreenMethod = runCatching { ::PreferenceFragmentCompat_getPreferenceScreen.method }.getOrNull()
+    val findPreferenceMethod = runCatching { ::PreferenceGroup_findPreference.method }.getOrNull()
+    val setTitleMethod = runCatching { ::Preference_setTitle.method }.getOrNull()
 
     ::PreferenceFragmentCompat_setPreferencesFromResource.hookMethod {
         before { param ->
@@ -40,6 +47,14 @@ val SettingsHook = patch(
             Logger.printDebug { "setPreferencesFromResource $preferencesName" }
             if (!preferencesName.endsWith("settings_headers")) return@before
             addPreferencesFromResource.invoke(param.thisObject, R.xml.yt_morphe_settings_music)
+            if (getPreferenceScreenMethod != null && findPreferenceMethod != null && setTitleMethod != null) {
+                applyCustomSettingsName(
+                    param.thisObject,
+                    getPreferenceScreenMethod,
+                    findPreferenceMethod,
+                    setTitleMethod,
+                )
+            }
             addPreferencesFromResource.invoke(param.thisObject, param.args[0])
             param.result = Unit
         }

@@ -122,11 +122,63 @@ val SwipeControls = patch(
         TextPreference("morphe_swipe_threshold", inputType = InputType.NUMBER),
     )
 
-    // Host lifecycle glue: upstream injects SwipeControlsHostActivity into the MainActivity
-    // class hierarchy (setSuperClass bytecode edit), which is impossible at runtime, and the
-    // stable extension no longer carries the composition-based host (removed `hookActivity`).
-    // Until a runtime host is reintroduced, only player overlay / change-video gating hooks run.
-    println("NexFusion: Swipe controls host not attached (upstream hierarchy injection is not portable); feature disabled")
+    runCatching {
+        val mainCls = io.github.a092devs.nexfusion.morphe.youtube.shared.mainActivityClass.let { prop ->
+            dexkit.getClassDirectOrNull("main_activity_class") {
+                findClass {
+                    matcher {
+                        className(".MainActivity", org.luckypray.dexkit.query.enums.StringMatchType.EndsWith)
+                    }
+                }.first()
+            }?.getInstance(classLoader) ?: classLoader.loadClass("com.google.android.apps.youtube.app.watchwhile.MainActivity")
+        }
+        val hosts = java.util.Collections.synchronizedMap(java.util.WeakHashMap<android.app.Activity, SwipeControlsHostActivity>())
+
+        io.github.a092devs.nexfusion.compat.XposedBridge.hookAllMethods(mainCls, "onCreate", object : io.github.a092devs.nexfusion.compat.XC_MethodHook() {
+            override fun afterHookedMethod(param: MethodHookParam) {
+                val act = param.thisObject as? android.app.Activity ?: return
+                if (!hosts.containsKey(act)) {
+                    hosts[act] = SwipeControlsHostActivity.attachRuntimeHost(act)
+                }
+            }
+        })
+        io.github.a092devs.nexfusion.compat.XposedBridge.hookAllMethods(mainCls, "onStart", object : io.github.a092devs.nexfusion.compat.XC_MethodHook() {
+            override fun afterHookedMethod(param: MethodHookParam) {
+                val act = param.thisObject as? android.app.Activity ?: return
+                hosts[act]?.onHostStart()
+            }
+        })
+        io.github.a092devs.nexfusion.compat.XposedBridge.hookAllMethods(mainCls, "onStop", object : io.github.a092devs.nexfusion.compat.XC_MethodHook() {
+            override fun beforeHookedMethod(param: MethodHookParam) {
+                val act = param.thisObject as? android.app.Activity ?: return
+                hosts[act]?.onHostStop()
+            }
+        })
+        io.github.a092devs.nexfusion.compat.XposedBridge.hookAllMethods(mainCls, "onDestroy", object : io.github.a092devs.nexfusion.compat.XC_MethodHook() {
+            override fun afterHookedMethod(param: MethodHookParam) {
+                val act = param.thisObject as? android.app.Activity ?: return
+                hosts.remove(act)?.onHostDestroy()
+            }
+        })
+        io.github.a092devs.nexfusion.compat.XposedBridge.hookAllMethods(mainCls, "dispatchTouchEvent", object : io.github.a092devs.nexfusion.compat.XC_MethodHook() {
+            override fun beforeHookedMethod(param: MethodHookParam) {
+                val act = param.thisObject as? android.app.Activity ?: return
+                val ev = param.args.firstOrNull() as? android.view.MotionEvent ?: return
+                if (hosts[act]?.onHostDispatchTouchEvent(ev) == true) {
+                    param.result = true
+                }
+            }
+        })
+        io.github.a092devs.nexfusion.compat.XposedBridge.hookAllMethods(mainCls, "dispatchKeyEvent", object : io.github.a092devs.nexfusion.compat.XC_MethodHook() {
+            override fun beforeHookedMethod(param: MethodHookParam) {
+                val act = param.thisObject as? android.app.Activity ?: return
+                val ev = param.args.firstOrNull() as? android.view.KeyEvent ?: return
+                if (hosts[act]?.onHostDispatchKeyEvent(ev) == true) {
+                    param.result = true
+                }
+            }
+        })
+    }
 
     if (!is_20_34_or_greater) {
         insertLiteralOverride(45631116L, SwipeControlsHostActivity::allowSwipeChangeVideo)

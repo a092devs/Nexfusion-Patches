@@ -899,6 +899,26 @@ val HideRelatedPostsSection = patch(
     description = "Hides the related posts section in post details.",
     use = false,
 ) {
+    runCatching {
+        val relatedPostSectionKeyFingerprint = io.github.a092devs.nexfusion.morphe.Fingerprint(
+            accessFlags = listOf(io.github.a092devs.nexfusion.morphe.AccessFlags.PUBLIC, io.github.a092devs.nexfusion.morphe.AccessFlags.FINAL),
+            returnType = "Ljava/lang/String;",
+            parameters = listOf(),
+            filters = listOf(io.github.a092devs.nexfusion.morphe.string("related_posts_"))
+        )
+        io.github.a092devs.nexfusion.morphe.Fingerprint(
+            classFingerprint = relatedPostSectionKeyFingerprint,
+            accessFlags = listOf(io.github.a092devs.nexfusion.morphe.AccessFlags.PUBLIC, io.github.a092devs.nexfusion.morphe.AccessFlags.FINAL),
+            returnType = "V",
+            parameters = listOf("L", "L", "L", "L")
+        ).hookMethod {
+            before { param ->
+                if (app.morphe.extension.reddit.patches.HideRelatedPostsSectionPatch.hideRelatedPostsSection()) {
+                    param.result = Unit
+                }
+            }
+        }
+    }
 }
 
 val SearchHiddenProfiles = patch(

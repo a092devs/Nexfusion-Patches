@@ -65,3 +65,34 @@ val setThemeFingerprint = findMethodDirect {
         }
     }.single { it.returnTypeName != "void" }
 }
+
+val PreferenceFragmentCompat_getPreferenceScreen = findMethodDirect {
+    PreferenceFragmentCompatClass().findMethod {
+        matcher {
+            paramCount = 0
+            returnType = "androidx.preference.PreferenceScreen"
+        }
+    }.single()
+}
+
+val PreferenceGroup_findPreference = findMethodDirect {
+    findMethod {
+        matcher {
+            declaredClass = "androidx.preference.PreferenceGroup"
+            modifiers = Modifier.PUBLIC or Modifier.FINAL
+            returnType = "androidx.preference.Preference"
+            paramTypes("java.lang.CharSequence")
+        }
+    }.single()
+}
+
+val Preference_setTitle = findMethodDirect {
+    findMethod {
+        matcher {
+            declaredClass = "androidx.preference.Preference"
+            modifiers = Modifier.PUBLIC or Modifier.FINAL
+            returnType = "void"
+            paramTypes("java.lang.CharSequence")
+        }
+    }.single()
+}

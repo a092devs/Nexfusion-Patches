@@ -3,6 +3,7 @@ package io.github.a092devs.nexfusion.morphe.youtube.layout.miniplayer
 import android.graphics.Rect
 import android.view.MotionEvent
 import app.morphe.extension.youtube.patches.MiniplayerPatch as ExtensionMiniplayerPatch
+import io.github.a092devs.nexfusion.hookMethod
 import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.ListPreference
 import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.PreferenceScreenPreference
 import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.PreferenceScreenPreference.Sorting
@@ -60,7 +61,7 @@ val Miniplayer = patch(
         }
     }
     runCatching {
-        MiniplayerOffscreenHandlerFingerprint.hookMethod {
+        ::MiniplayerOffscreenHandlerMethod.hookMethod {
             before { param ->
                 if (ExtensionMiniplayerPatch.getHorizontalDrag()) param.result = null
             }
@@ -75,7 +76,7 @@ val Miniplayer = patch(
         }
     }
     runCatching {
-        MiniplayerHorizontalRepositionFingerprint.hookMethod {
+        ::MiniplayerHorizontalRepositionMethod.hookMethod {
             before { param ->
                 val current = param.args.firstOrNull() as? Rect
                 val previous = runCatching {

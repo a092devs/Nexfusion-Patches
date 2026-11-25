@@ -146,38 +146,6 @@ val HoldGesture = patch(
     description = "Adds options to change the playback speed, to keep it and to run actions by dragging after tapping and holding the video player.",
     use = false,
 ) {
-    PreferenceScreen.PLAYER.addPreferences(
-        PreferenceScreenPreference(
-            key = "morphe_hold_gesture_screen",
-            sorting = Sorting.UNSORTED,
-            preferences = setOf(
-                SwitchPreference(
-                    key = "morphe_hold_gesture",
-                    summary = true,
-                    tag = app.morphe.extension.youtube.settings.preference.HoldGestureSwitchPreference::class.java
-                ),
-                SwitchPreference("morphe_hold_gesture_haptic_feedback", summary = true),
-                SwitchPreference("morphe_hold_gesture_speed_swipe", summary = true),
-                ListPreference("morphe_hold_gesture_speed_step"),
-                ListPreference("morphe_hold_gesture_speed_sensitivity"),
-                TextPreference("morphe_hold_gesture_speed_min", inputType = InputType.NUMBER_DECIMAL),
-                TextPreference("morphe_hold_gesture_speed_max", inputType = InputType.NUMBER_DECIMAL),
-                SwitchPreference("morphe_hold_gesture_lock", summary = true),
-                SwitchPreference("morphe_hold_gesture_lock_badge_always", summary = true),
-                SwitchPreference("morphe_hold_gesture_unlock_on_video_change", summary = true),
-                SwitchPreference("morphe_hold_gesture_launcher", summary = true),
-                ListPreference("morphe_hold_gesture_launcher_slot_count"),
-                *(1..5).map { slot ->
-                    ListPreference(
-                        key = "morphe_hold_gesture_launcher_slot_$slot",
-                        tag = app.morphe.extension.youtube.settings.preference.HoldGestureLauncherActionPreference::class.java,
-                        entriesKey = "morphe_hold_gesture_launcher_action_entries",
-                        entryValuesKey = "morphe_hold_gesture_launcher_action_entry_values"
-                    )
-                }.toTypedArray(),
-            )
-        )
-    )
 }
 
 val ReturnYouTubeUsername = patch(
@@ -185,16 +153,6 @@ val ReturnYouTubeUsername = patch(
     description = "Adds an option to show channel names instead of handles in comments, below the video title and in Shorts.",
     use = false,
 ) {
-    PreferenceScreen.GENERAL.addPreferences(
-        PreferenceScreenPreference(
-            key = "morphe_return_youtube_username_screen",
-            sorting = Sorting.UNSORTED,
-            preferences = setOf(
-                SwitchPreference("morphe_return_youtube_username", summary = true),
-                ListPreference("morphe_return_youtube_username_display_format"),
-            )
-        )
-    )
 }
 
 val ReturnYouTubeDislike = patch(
@@ -202,6 +160,12 @@ val ReturnYouTubeDislike = patch(
     description = "Adds an option to show the dislike count of videos with Return YouTube Dislike, and the like count and like ratio on the thumbnails of feed videos.",
     use = false,
 ) {
+    dependsOn(
+        io.github.a092devs.nexfusion.morphe.shared.misc.textcomponent.textComponentPatch,
+        io.github.a092devs.nexfusion.morphe.youtube.video.videoid.VideoId,
+        io.github.a092devs.nexfusion.morphe.youtube.misc.playertype.PlayerTypeHook,
+    )
+
     PreferenceScreen.RETURN_YOUTUBE_DISLIKE.addPreferences(
         SwitchPreference("morphe_ryd_enabled"),
         SwitchPreference("morphe_ryd_dislike_percentage", summary = true),
@@ -234,6 +198,120 @@ val ReturnYouTubeDislike = patch(
             app.morphe.extension.youtube.patches.ReturnYouTubeDislikePatch::class.java
         )
     }
+
+    io.github.a092devs.nexfusion.morphe.youtube.video.videoid.videoIdHooks.add { videoId ->
+        app.morphe.extension.youtube.patches.ReturnYouTubeDislikePatch.newVideoLoaded(videoId)
+    }
+
+    io.github.a092devs.nexfusion.morphe.youtube.video.videoid.hookPlayerResponseVideoId { videoId, isShortAndOpeningOrPlaying ->
+        app.morphe.extension.youtube.patches.ReturnYouTubeDislikePatch.preloadVideoId(videoId, isShortAndOpeningOrPlaying)
+    }
+
+    io.github.a092devs.nexfusion.morphe.shared.misc.textcomponent.hookSpannableStringOverride { ctx, orig ->
+        app.morphe.extension.youtube.patches.ReturnYouTubeDislikePatch.onLithoTextLoaded(ctx, orig)
+    }
+
+    runCatching {
+        val componentHost = classLoader.loadClass("com.facebook.litho.ComponentHost")
+        io.github.a092devs.nexfusion.compat.XposedHelpers.findAndHookMethod(
+            componentHost,
+            "setContentDescription",
+            CharSequence::class.java,
+            object : io.github.a092devs.nexfusion.compat.XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    val host = param.thisObject as? com.facebook.litho.ComponentHost ?: return
+                    param.args[0] = app.morphe.extension.youtube.patches.ReturnYouTubeDislikePatch
+                        .onComponentHostContentDescription(host, param.args[0] as? CharSequence)
+                }
+            }
+        )
+    }
+
+    runCatching {
+        val yogaNative = classLoader.loadClass("com.facebook.yoga.YogaNative")
+        io.github.a092devs.nexfusion.compat.XposedHelpers.findAndHookMethod(
+            yogaNative,
+            "jni_YGNodeStyleSetWidthJNI",
+            Long::class.javaPrimitiveType,
+            Float::class.javaPrimitiveType,
+            object : io.github.a092devs.nexfusion.compat.XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    val ptr = (param.args[0] as? Number)?.toLong() ?: return
+                    val width = (param.args[1] as? Number)?.toFloat() ?: return
+                    app.morphe.extension.youtube.patches.ReturnYouTubeDislikePatch.onYogaSetWidth(ptr, width)
+                }
+            }
+        )
+    }
+
+    runCatching {
+        val endpointSuper = dexkit.getClassDirectOrNull("ryd_dislike_super") {
+            findMethod {
+                matcher {
+                    name = "<init>"
+                    returnType = "void"
+                    usingStrings("like/dislike")
+                }
+            }.first().declaredClass!!.superClass!!
+        }
+        val endpointSuperName = endpointSuper?.className
+        if (endpointSuperName != null) {
+            val serviceField = dexkit.getFieldDirectOrNull("ryd_endpoint_service_field") {
+                findMethod {
+                    matcher {
+                        paramCount = 0
+                        usingStrings("serviceName")
+                    }
+                }.first().usingFields.last {
+                    it.field.typeName == "java.lang.String"
+                }.field
+            }
+            val parserMethod = dexkit.getMethodDirectOrNull("ryd_like_endpoint_parser") {
+                findMethod {
+                    matcher {
+                        declaredClass = endpointSuperName
+                        returnType = "void"
+                        usingStrings("")
+                    }
+                }.first()
+            }
+            val serviceFieldName = serviceField?.name
+            if (parserMethod != null && serviceFieldName != null) {
+                val parserCls = classLoader.loadClass(parserMethod.className)
+                val targetMethod = parserCls.declaredMethods.firstOrNull { it.name == parserMethod.name }
+                if (targetMethod != null) {
+                    io.github.a092devs.nexfusion.compat.XposedBridge.hookMethod(
+                        targetMethod,
+                        object : io.github.a092devs.nexfusion.compat.XC_MethodHook() {
+                            override fun afterHookedMethod(param: MethodHookParam) {
+                                val serviceName = runCatching {
+                                    io.github.a092devs.nexfusion.compat.XposedHelpers
+                                        .getObjectField(param.thisObject, serviceFieldName) as? String
+                                }.getOrNull() ?: return
+                                if (!serviceName.contains("like/")) return
+                                val videoId = param.thisObject.javaClass.declaredFields
+                                    .asSequence()
+                                    .mapNotNull { f ->
+                                        runCatching {
+                                            f.isAccessible = true
+                                            val v = f.get(param.thisObject) ?: return@mapNotNull null
+                                            v.javaClass.declaredFields.firstOrNull { sf ->
+                                                sf.type == String::class.java && run {
+                                                    sf.isAccessible = true
+                                                    val sv = sf.get(v) as? String
+                                                    sv != null && sv.length == 11 && sv.all { ch -> ch.isLetterOrDigit() || ch == '-' || ch == '_' }
+                                                }
+                                            }?.get(v) as? String
+                                        }.getOrNull()
+                                    }.firstOrNull() ?: return
+                                app.morphe.extension.youtube.patches.ReturnYouTubeDislikePatch.sendVote(serviceName, videoId)
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
 }
 
 val PlaylistSearch = patch(
@@ -241,14 +319,6 @@ val PlaylistSearch = patch(
     description = "Adds a button to playlist pages to search the videos of that playlist.",
     use = false,
 ) {
-    PreferenceScreen.GENERAL.addPreferences(
-        SwitchPreference("morphe_playlist_search", summary = true)
-    )
-    runCatching {
-        io.github.a092devs.nexfusion.morphe.setExtensionIsPatchIncluded(
-            app.morphe.extension.youtube.patches.PlaylistSearchPatch::class.java
-        )
-    }
 }
 
 val ReplaySlower = patch(
@@ -256,11 +326,6 @@ val ReplaySlower = patch(
     description = "Adds options to rewind and play part of the video at a slower speed, with a player button or by swiping left on the video.",
     use = false,
 ) {
-    runCatching {
-        io.github.a092devs.nexfusion.morphe.setExtensionIsPatchIncluded(
-            app.morphe.extension.youtube.videoplayer.ReplayVideoButton::class.java
-        )
-    }
 }
 
 val ReversePlaylistAutoplay = patch(
@@ -268,9 +333,6 @@ val ReversePlaylistAutoplay = patch(
     description = "Adds an option to autoplay playlists in reverse order, from the last video to the first.",
     use = false,
 ) {
-    PreferenceScreen.PLAYER.addPreferences(
-        SwitchPreference("morphe_reverse_playlist_autoplay", summary = true)
-    )
 }
 
 val YouTubePatches = arrayOf(

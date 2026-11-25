@@ -22,6 +22,7 @@ val SpoofFeaturesPatch = patch(
         "HARDWARE" to "marlin",
         "MODEL" to "Pixel XL",
         "ID" to "QP1A.191005.007.A3",
+        "DISPLAY" to "QP1A.191005.007.A3",
         "TAGS" to "release-keys",
         "TYPE" to "user",
         "FINGERPRINT" to "google/marlin/marlin:10/QP1A.191005.007.A3/5972272:user/release-keys"
@@ -32,48 +33,14 @@ val SpoofFeaturesPatch = patch(
         runCatching { XposedHelpers.setStaticObjectField(buildClazz, k, v) }
     }
 
-    val propSpoofs = mapOf(
-        "ro.product.brand" to "google",
-        "ro.product.manufacturer" to "Google",
-        "ro.product.device" to "marlin",
-        "ro.product.name" to "marlin",
-        "ro.product.model" to "Pixel XL",
-        "ro.product.board" to "marlin",
-        "ro.product.system.brand" to "google",
-        "ro.product.system.manufacturer" to "Google",
-        "ro.product.system.device" to "marlin",
-        "ro.product.system.name" to "marlin",
-        "ro.product.system.model" to "Pixel XL",
-        "ro.product.vendor.brand" to "google",
-        "ro.product.vendor.manufacturer" to "Google",
-        "ro.product.vendor.device" to "marlin",
-        "ro.product.vendor.name" to "marlin",
-        "ro.product.vendor.model" to "Pixel XL",
-        "ro.product.odm.brand" to "google",
-        "ro.product.odm.manufacturer" to "Google",
-        "ro.product.odm.device" to "marlin",
-        "ro.product.odm.name" to "marlin",
-        "ro.product.odm.model" to "Pixel XL",
-        "ro.build.fingerprint" to "google/marlin/marlin:10/QP1A.191005.007.A3/5972272:user/release-keys",
-        "ro.build.id" to "QP1A.191005.007.A3",
-        "ro.build.tags" to "release-keys",
-        "ro.build.type" to "user",
-    )
-
-    runCatching {
-        val sysProps = classLoader.loadClass("android.os.SystemProperties")
-        XposedBridge.hookAllMethods(sysProps, "get", object : XC_MethodHook() {
-            override fun beforeHookedMethod(param: MethodHookParam) {
-                val key = param.args.firstOrNull() as? String ?: return
-                val spoofed = propSpoofs[key] ?: return
-                param.result = spoofed
-            }
-        })
-    }
-
     val featuresToEnable = setOf(
+        "com.google.android.feature.PIXEL_EXPERIENCE",
+        "com.google.android.feature.GOOGLE_BUILD",
+        "com.google.android.feature.GOOGLE_EXPERIENCE",
         "com.google.android.apps.photos.NEXUS_PRELOAD",
         "com.google.android.apps.photos.nexus_preload",
+        "com.google.android.apps.photos.PIXEL_PRELOAD",
+        "com.google.android.apps.photos.PIXEL_2016_PRELOAD",
     )
 
     val featuresToDisable = setOf(

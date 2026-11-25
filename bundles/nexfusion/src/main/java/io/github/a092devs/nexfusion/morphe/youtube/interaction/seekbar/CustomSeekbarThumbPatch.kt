@@ -34,6 +34,7 @@ val customSeekbarThumbPatch = patch(
     )
 
     // Set seekbar view reference at start of onDraw
+    io.github.a092devs.nexfusion.morphe.setExtensionIsPatchIncluded(CustomSeekbarThumbPatch::class.java)
     ::seekbarOnDrawFingerprint.hookMethod {
         before { param ->
             (param.thisObject as? View)?.let { CustomSeekbarThumbPatch.setSeekbarView(it) }
