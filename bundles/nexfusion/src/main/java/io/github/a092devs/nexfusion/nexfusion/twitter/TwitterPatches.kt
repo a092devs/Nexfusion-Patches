@@ -361,11 +361,42 @@ private fun IHook.installTwitterAdSuppressor() {
             }
         }
     }
-    val hookedFunnel = hookMethodsIfExists(
-        "com.x.urt.b", "a", "presenter funnel",
+    var hookedFunnel = hookMethodsIfExists(
+        "com.x.urt.g", "a", "presenter funnel (12.46+)",
         shape = { it.size == 5 && it[0] == java.lang.Integer.TYPE },
         block = adSuppressorBlock,
     )
+    if (hookedFunnel == 0) {
+        hookedFunnel = hookMethodsIfExists(
+            "com.x.urt.b", "a", "presenter funnel",
+            shape = { it.size == 5 && it[0] == java.lang.Integer.TYPE },
+            block = adSuppressorBlock,
+        )
+    }
+    if (hookedFunnel == 0) {
+        val presenterType = runCatching { classLoader.loadClass("com.x.presenter.a") }.getOrNull()
+        if (presenterType != null) {
+            for (ch in 'a'..'z') {
+                val clsName = "com.x.urt.$ch"
+                val cls = runCatching { classLoader.loadClass(clsName) }.getOrNull() ?: continue
+                val matches = cls.declaredMethods.filter { m ->
+                    m.parameterTypes.size == 5 &&
+                        m.parameterTypes[0] == java.lang.Integer.TYPE &&
+                        presenterType.isAssignableFrom(m.returnType)
+                }
+                if (matches.isNotEmpty()) {
+                    matches.map { it.name }.distinct().forEach { mName ->
+                        hookedFunnel += hookMethodsIfExists(
+                            clsName, mName, "presenter funnel (dynamic)",
+                            shape = { it.size == 5 && it[0] == java.lang.Integer.TYPE },
+                            block = adSuppressorBlock,
+                        )
+                    }
+                    break
+                }
+            }
+        }
+    }
     if (hookedFunnel == 0) {
         hookCatching(PRESENTER_FUNNEL_DESCRIPTOR_12_38, adSuppressorBlock)
         hookCatching(PRESENTER_FUNNEL_DESCRIPTOR_12_37, adSuppressorBlock)

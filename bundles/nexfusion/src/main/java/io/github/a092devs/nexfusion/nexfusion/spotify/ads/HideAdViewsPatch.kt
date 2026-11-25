@@ -34,10 +34,10 @@ private val adResourceMarkers = listOf(
     "google_meet_upsell", "now_playing_bar_promo_indicator", "premium_offer_cta_button",
     "premiumbenefitslist", "premiumofferplan", "premiumsectionheader", "premium_destination",
     "premium_grouped_items_row", "premium_offer_legal_text_row", "activity_premium_checkout",
-    "banner_upsell", "party_upsell", "skip_upsell",
+    "banner_upsell", "party_upsell", "skip_upsell", "rejoin_premium", "home_promo", "promo_banner",
 )
 
-private val adDescriptionMarkers = listOf("advertisement", "werbung", "ad", "upsell", "get premium", "try premium")
+private val adDescriptionMarkers = listOf("advertisement", "werbung", "ad", "upsell", "get premium", "try premium", "rejoin premium")
 
 /** Caches the per-class marker check, since the class name of a view never changes. */
 private val adClassNameCache = ConcurrentHashMap<Class<*>, Boolean>()

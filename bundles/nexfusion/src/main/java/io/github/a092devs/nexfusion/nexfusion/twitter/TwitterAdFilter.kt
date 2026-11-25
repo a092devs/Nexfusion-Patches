@@ -38,6 +38,7 @@ internal const val PROMOTED_ENTRY_ID = "promoted"
 
 /** X no-op presenter singletons across versions (implements com.x.presenter.a, renders nothing). */
 private val EMPTY_PRESENTER_CLASSES = listOf(
+    "com.x.urt.z0", // X 12.46+
     "com.x.urt.g0", // X 12.38+
     "com.x.urt.b0", // X 12.37
     "com.x.urt.f0", // X 12.35 - 12.36
@@ -64,7 +65,10 @@ internal class TwitterAdFilter(private val classLoader: ClassLoader) {
             if (readMarker(item, probe) != null) return true
         }
         val entryId = runCatching { XposedHelpers.callMethod(item, "c") as? String }.getOrNull()
-        return entryId?.contains(PROMOTED_ENTRY_ID) == true
+            ?: runCatching { XposedHelpers.callMethod(item, "a") as? String }.getOrNull()
+        return entryId?.let {
+            it.contains(PROMOTED_ENTRY_ID, ignoreCase = true) || it.contains("rtb", ignoreCase = true)
+        } == true
     }
 
     private fun readMarker(item: Any, probe: AdProbe): Any? {
@@ -103,8 +107,9 @@ internal class TwitterAdFilter(private val classLoader: ClassLoader) {
                 }
             }
             if (emptyPresenter == null && presenterInterface != null) {
-                // Dynamic fallback across common urt presenter suffixes
-                for (name in listOf("g0", "b0", "f0", "h0", "i0", "j0", "k0", "l0", "m0", "n0", "a0", "c0", "d0", "e0")) {
+                // Dynamic fallback across all urt presenter suffixes (a0..z0)
+                for (ch in 'a'..'z') {
+                    val name = "${ch}0"
                     emptyPresenter = runCatching {
                         val cls = classLoader.loadClass("com.x.urt.$name")
                         if (presenterInterface.isAssignableFrom(cls)) {

@@ -7,6 +7,14 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.0.7
+
+- **X (Twitter) Ad Blocking (`12.46.1+`):**
+  * Updated the timeline presenter funnel hook to `com.x.urt.g.a` and empty presenter singleton to `com.x.urt.z0`, with dynamic fallbacks across `com.x.urt.a..z` and `a0..z0`.
+  * Updated `entryId` inspection to check `o0.a()` in addition to `c()` for promoted and RTB items.
+- **Spotify:**
+  * Added `rejoin_premium`, `home_promo`, and `promo_banner` view/description markers to `Hide ad views`.
+
 ## 5.0.6
 
 - **Upstream Patch Sync & Compatibility:**
