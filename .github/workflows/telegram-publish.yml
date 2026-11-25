@@ -1,0 +1,130 @@
+name: Publish Bundles to Telegram
+
+on:
+    workflow_call:
+        inputs:
+            tag:
+                description: 'Release tag to publish to Telegram'
+                required: true
+                type: string
+    workflow_dispatch:
+        inputs:
+            tag:
+                description: 'Release tag to publish to Telegram'
+                required: true
+                type: string
+
+jobs:
+    publish:
+        name: Publish to Telegram
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Download release bundles and notes
+              shell: bash
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  TAG: ${{ inputs.tag }}
+                  REPO: ${{ github.repository }}
+              run: |
+                  set -euo pipefail
+                  mkdir -p release-assets
+                  gh release download "$TAG" --repo "$REPO" --dir release-assets --pattern "*.nxb"
+                  gh release view "$TAG" --repo "$REPO" --json body --jq '.body // ""' > release-notes.md
+
+            - name: Send grouped bundles and changelog to Telegram
+              shell: bash
+              env:
+                  TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+                  TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+                  TAG: ${{ inputs.tag }}
+                  REPO: ${{ github.repository }}
+              run: |
+                  set -euo pipefail
+                  if [[ -z "${TELEGRAM_BOT_TOKEN:-}" || -z "${TELEGRAM_CHAT_ID:-}" ]]; then
+                    echo "::warning::TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is not configured; skipping Telegram publish."
+                    exit 0
+                  fi
+
+                  python3 - <<'PY'
+                  import glob, html, json, mimetypes, os, re, sys, urllib.error, urllib.parse, urllib.request, uuid
+
+                  token = os.environ["TELEGRAM_BOT_TOKEN"]
+                  chat_id = os.environ["TELEGRAM_CHAT_ID"]
+                  tag = os.environ["TAG"]
+                  repo = os.environ["REPO"]
+
+                  notes = ""
+                  if os.path.exists("release-notes.md"):
+                      with open("release-notes.md", "r", encoding="utf-8") as f:
+                          notes = f.read()
+
+                  notes = re.sub(r"<!--.*?-->", "", notes, flags=re.S).strip()
+                  lines = []
+                  for raw in notes.splitlines():
+                      s = raw.strip()
+                      if not s:
+                          lines.append("")
+                          continue
+                      esc = html.escape(s)
+                      esc = re.sub(r"^#{1,6}\s+(.+)$", r"<b>\1</b>", esc)
+                      esc = re.sub(r"^\s*[-*]\s+", "• ", esc)
+                      esc = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", esc)
+                      esc = re.sub(r"`([^`]+)`", r"<code>\1</code>", esc)
+                      lines.append(esc)
+
+                  body = "\n".join(lines).strip()
+                  header = f"🧩 <b>NexFusion Patches {html.escape(tag)} Released</b>\n"
+                  footer = f"\n\n🔗 <a href=\"https://github.com/{repo}/releases/tag/{urllib.parse.quote(tag)}\">GitHub Release</a>"
+                  max_body = 1024 - len(header) - len(footer) - 20
+                  if len(body) > max_body:
+                      body = body[:max(0, max_body)].rstrip() + "\n…"
+                  caption = f"{header}\n{body}{footer}" if body else f"{header}{footer.strip()}"
+
+                  files = sorted(glob.glob("release-assets/*.nxb"))
+                  if not files:
+                      print("::error::No .nxb files found in release-assets/", file=sys.stderr)
+                      sys.exit(1)
+
+                  media = []
+                  boundary = f"----NexFusionBoundary{uuid.uuid4().hex}"
+                  parts = []
+
+                  for idx, path in enumerate(files):
+                      field = f"file{idx}"
+                      item = {"type": "document", "media": f"attach://{field}"}
+                      if idx == len(files) - 1:
+                          item["caption"] = caption
+                          item["parse_mode"] = "HTML"
+                      media.append(item)
+
+                  for k, v in [("chat_id", chat_id), ("media", json.dumps(media))]:
+                      parts.append(f"--{boundary}\r\nContent-Disposition: form-data; name=\"{k}\"\r\n\r\n{v}\r\n".encode("utf-8"))
+
+                  for idx, path in enumerate(files):
+                      field = f"file{idx}"
+                      filename = os.path.basename(path)
+                      ctype = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+                      with open(path, "rb") as f:
+                          file_bytes = f.read()
+                      parts.append(
+                          f"--{boundary}\r\nContent-Disposition: form-data; name=\"{field}\"; filename=\"{filename}\"\r\nContent-Type: {ctype}\r\n\r\n".encode("utf-8")
+                          + file_bytes
+                          + b"\r\n"
+                      )
+
+                  parts.append(f"--{boundary}--\r\n".encode("utf-8"))
+                  body_bytes = b"".join(parts)
+
+                  req = urllib.request.Request(
+                      f"https://api.telegram.org/bot{token}/sendMediaGroup",
+                      data=body_bytes,
+                      headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
+                  )
+                  try:
+                      with urllib.request.urlopen(req, timeout=180) as resp:
+                          print("sendMediaGroup:", resp.read().decode("utf-8"))
+                  except urllib.error.HTTPError as e:
+                      print("Telegram sendMediaGroup failed:", e.code, e.read().decode("utf-8", errors="replace"), file=sys.stderr)
+                      raise
+                  PY

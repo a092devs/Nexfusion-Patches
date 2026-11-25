@@ -8,6 +8,7 @@
     <img src="https://img.shields.io/badge/LSPosed-API%20101%2F102-8957e5?style=flat&labelColor=21262d" alt="LSPosed API 101/102" />
     <img src="https://img.shields.io/badge/Targets-22%20Applications-238636?style=flat&labelColor=21262d" alt="Targets: 22 Applications" />
     <img src="https://img.shields.io/badge/Icon-Hardware%20Silicon%20Matrix-1f6feb?style=flat&labelColor=21262d" alt="Hardware Silicon Matrix" />
+    <a href="https://t.me/NexFusion"><img src="https://img.shields.io/badge/Telegram%20Channel-@NexFusion-2f81f7?style=flat&labelColor=21262d&logo=telegram&logoColor=white" alt="Telegram Channel" /></a>
     <a href="https://t.me/a092devs"><img src="https://img.shields.io/badge/Telegram-@a092devs-2f81f7?style=flat&labelColor=21262d&logo=telegram&logoColor=white" alt="Telegram Support" /></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-d29922?style=flat&labelColor=21262d" alt="GPL-3.0" /></a>
   </p>
