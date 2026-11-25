@@ -208,3 +208,70 @@ jobs:
                       fi
                     fi
                   fi
+
+            - name: Publish to Telegram
+              if: ${{ env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != '' }}
+              shell: bash
+              env:
+                  TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+                  TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+                  TAG: ${{ steps.release.outputs.tag }}
+                  REPO: ${{ github.repository }}
+              run: |
+                  set -euo pipefail
+
+                  python3 - <<'PY'
+                  import html, os, re, urllib.request, urllib.parse
+
+                  token = os.environ["TELEGRAM_BOT_TOKEN"]
+                  chat_id = os.environ["TELEGRAM_CHAT_ID"]
+                  tag = os.environ["TAG"]
+                  repo = os.environ["REPO"]
+
+                  notes = ""
+                  if os.path.exists("release-notes.md"):
+                      with open("release-notes.md", "r", encoding="utf-8") as f:
+                          notes = f.read()
+
+                  notes = re.sub(r"<!--.*?-->", "", notes, flags=re.S).strip()
+                  lines = []
+                  for raw in notes.splitlines():
+                      s = raw.strip()
+                      if not s:
+                          lines.append("")
+                          continue
+                      esc = html.escape(s)
+                      esc = re.sub(r"^#{1,6}\s+(.+)$", r"<b>\1</b>", esc)
+                      esc = re.sub(r"^\s*[-*]\s+", "• ", esc)
+                      esc = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", esc)
+                      esc = re.sub(r"`([^`]+)`", r"<code>\1</code>", esc)
+                      lines.append(esc)
+
+                  body = "\n".join(lines).strip()
+                  header = f"🧩 <b>NexFusion Patches {html.escape(tag)} Released</b>\n"
+                  footer = f"\n\n🔗 <a href=\"https://github.com/{repo}/releases/tag/{urllib.parse.quote(tag)}\">GitHub Release</a>"
+                  max_body = 4096 - len(header) - len(footer) - 20
+                  if len(body) > max_body:
+                      body = body[:max_body].rstrip() + "\n…"
+                  text = f"{header}\n{body}{footer}" if body else f"{header}{footer.strip()}"
+
+                  payload = urllib.parse.urlencode({
+                      "chat_id": chat_id,
+                      "text": text,
+                      "parse_mode": "HTML",
+                      "disable_web_page_preview": "true",
+                  }).encode("utf-8")
+                  req = urllib.request.Request(f"https://api.telegram.org/bot{token}/sendMessage", data=payload)
+                  with urllib.request.urlopen(req, timeout=30) as resp:
+                      print("sendMessage:", resp.read().decode("utf-8"))
+                  PY
+
+                  shopt -s nullglob
+                  for file in release-assets/*.nxb; do
+                    curl -fsSL -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
+                      -F "chat_id=${TELEGRAM_CHAT_ID}" \
+                      -F "document=@${file}" \
+                      -F "caption=<b>NexFusion Patches ${TAG}</b>" \
+                      -F "parse_mode=HTML"
+                    echo ""
+                  done
