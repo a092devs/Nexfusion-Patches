@@ -7,6 +7,15 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.0.10
+
+- **Telegram (`13.3+` / Obfuscated Builds):**
+  * Fixed `Anti-delete messages` for obfuscated Telegram builds by resolving `ApplicationLoader`, `AndroidUtilities`, and `NotificationCenter` dynamically via DexKit/signatures, handling `ids` on `TL_updateDeleteEphemeralMessages`, matching obfuscated `MessagesController.deleteMessages` overloads, and falling back to the resolved `ChatMessageCell` class.
+  * Fixed `Anti-disappearing media` by resolving `MessageObject.messageOwner` by field type and hooking `MessagesController`'s `TL_messages_readMessageContents` handler via DexKit for view-once/TTL media.
+  * Updated `Remove ads`, `Disable analytics`, `Auto-reveal spoilers`, `Disable vibration`, `Show message seconds`, `Exact numbers`, `Anti-screenshot notification`, `Strip link tracking`, `Bypass integrity check`, `Open links in external browser`, `Use system font`, `Hide stories`, and `Hide sponsored proxy channels` to use DexKit and signature-based resolution across obfuscated classes (`SharedConfig`, `LocaleController`, `Browser`, `SpoilerEffect`, `StoriesController`, `ConnectionsManager`).
+- **Morphe About Dialog:**
+  * Added `Telegram Channel` (`https://t.me/nexfusion`) under `Official links`.
+
 ## 5.0.9
 
 - **Telegram (`13.3+` / Obfuscated Builds):**
