@@ -11,7 +11,6 @@ import io.github.a092devs.nexfusion.patches.ExtensionResourceHook
 import io.github.a092devs.nexfusion.revanced.googlephotos.GooglePhotosPatches
 import io.github.a092devs.nexfusion.nexfusion.cloudflare.CloudflareWarpPatches
 import io.github.a092devs.nexfusion.nexfusion.crunchyroll.CrunchyrollPatches
-import io.github.a092devs.nexfusion.nexfusion.discord.DiscordPatches
 import io.github.a092devs.nexfusion.nexfusion.gboard.GboardPatches
 import io.github.a092devs.nexfusion.nexfusion.gmail.GmailPatches
 import io.github.a092devs.nexfusion.nexfusion.google.GoogleDiscoverPatches
@@ -20,7 +19,6 @@ import io.github.a092devs.nexfusion.nexfusion.linkedin.LinkedInPatches
 import io.github.a092devs.nexfusion.nexfusion.maps.GoogleMapsPatches
 import io.github.a092devs.nexfusion.nexfusion.protonvpn.ProtonVpnPatches
 import io.github.a092devs.nexfusion.nexfusion.reddit.RedditPatches
-import io.github.a092devs.nexfusion.nexfusion.stremio.StremioPatches
 import io.github.a092devs.nexfusion.nexfusion.spotify.SpotifyPatches
 import io.github.a092devs.nexfusion.nexfusion.telegram.TelegramPatches
 import io.github.a092devs.nexfusion.nexfusion.twitter.TwitterPatches
@@ -50,12 +48,6 @@ object NexFusionPatches : PatchBundle {
             packageName = "com.crunchyroll.crunchyroid",
             patches = CrunchyrollPatches,
             appIconColor = 0xFF5C00,
-        ),
-        AppPatchInfo(
-            appName = "Discord",
-            packageName = "com.discord",
-            patches = DiscordPatches,
-            appIconColor = 0x5865F2,
         ),
         AppPatchInfo(
             appName = "Instagram",
@@ -117,12 +109,6 @@ object NexFusionPatches : PatchBundle {
             packageName = "com.twitter.android",
             patches = TwitterPatches,
             appIconColor = 0x000000,
-        ),
-        AppPatchInfo(
-            appName = "Stremio",
-            packageName = "com.stremio.one",
-            patches = StremioPatches,
-            appIconColor = 0x5B67F1,
         ),
         AppPatchInfo(
             appName = "Spotify",

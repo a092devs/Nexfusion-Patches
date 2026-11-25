@@ -199,6 +199,19 @@ val HideAds = patch(
         )
     }
 
-    // TODO Hide paid promotion label in miniplayer
+    runCatching {
+        MiniplayerPaidPromotionLabelFingerprint.hookMethod {
+            after { param ->
+                val id = io.github.a092devs.nexfusion.morphe.resourceMappings["id", "modern_miniplayer_subtitle_text"]
+                val root = (param.thisObject as? View)
+                    ?: (param.args.firstOrNull() as? View)
+                    ?: (param.result as? View)
+                val label = root?.findViewById<View>(id)
+                if (label != null) {
+                    AdsFilter.hideMiniplayerPaidPromotionLabelView(label)
+                }
+            }
+        }
+    }
 
 }

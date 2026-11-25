@@ -6,11 +6,12 @@ import org.luckypray.dexkit.query.enums.StringMatchType
 // Ported from MrxSiN/GmailHideAds (GPL-3.0) and gnadgnaoh/SexAlloy (GPL-3.0).
 
 internal const val AD_PACKAGE = "com.google.android.gm.ads"
+internal const val AD_PACKAGE_NEW = "com.google.android.apps.gmail.libraries.ads"
 
 val adViewConstructors = findMethodListDirect {
     findMethod {
         matcher {
-            declaredClass("$AD_PACKAGE.", StringMatchType.StartsWith)
+            declaredClass("AdTeaserItemView", StringMatchType.EndsWith)
             name = "<init>"
             paramTypes(listOf("android.content.Context", "android.util.AttributeSet"))
         }

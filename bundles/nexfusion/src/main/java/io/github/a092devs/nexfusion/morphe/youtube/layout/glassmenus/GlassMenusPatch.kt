@@ -92,4 +92,21 @@ val GlassMenus = patch(
             }
         }
     }
+
+    runCatching {
+        val touchFeedbackDrawableClass = classLoader.loadClass(
+            "com.google.android.libraries.youtube.rendering.ui.spec.motion.TouchFeedbackDrawable"
+        )
+        val ctor = touchFeedbackDrawableClass.getDeclaredConstructor(android.graphics.drawable.Drawable::class.java)
+        io.github.a092devs.nexfusion.compat.XposedBridge.hookMethod(
+            ctor,
+            object : io.github.a092devs.nexfusion.compat.XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    val wrapper = param.thisObject as? android.graphics.drawable.Drawable ?: return
+                    val wrapped = param.args.firstOrNull() as? android.graphics.drawable.Drawable ?: return
+                    GlassMenusExt.onWrappedDrawable(wrapper, wrapped)
+                }
+            }
+        )
+    }
 }

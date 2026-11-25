@@ -2,9 +2,11 @@ package io.github.a092devs.nexfusion.morphe.music.misc.backgroundplayback
 
 import io.github.a092devs.nexfusion.morphe.AccessFlags
 import io.github.a092devs.nexfusion.morphe.Fingerprint
+import io.github.a092devs.nexfusion.morphe.InstructionLocation.MatchAfterWithin
 import io.github.a092devs.nexfusion.morphe.Opcode
 import io.github.a092devs.nexfusion.morphe.OpcodesFilter
-import io.github.a092devs.nexfusion.morphe.literal
+import io.github.a092devs.nexfusion.morphe.fieldAccess
+import io.github.a092devs.nexfusion.morphe.methodCall
 
 internal object BackgroundPlaybackDisableFingerprint : Fingerprint(
     accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.STATIC),
@@ -28,6 +30,22 @@ internal object KidsBackgroundPlaybackPolicyControllerFingerprint : Fingerprint(
     returnType = "V",
     parameters = listOf("I", "L", "Z"),
     filters = listOf(
-        literal(45638079L)
+        methodCall(smali = "Lj$/util/Optional;->get()Ljava/lang/Object;"),
+        fieldAccess(
+            opcode = Opcode.IPUT,
+            definingClass = "this",
+            type = "I"
+        ),
+        fieldAccess(
+            opcode = Opcode.IPUT_OBJECT,
+            definingClass = "this",
+            location = MatchAfterWithin(5)
+        ),
+        fieldAccess(
+            opcode = Opcode.IPUT_BOOLEAN,
+            definingClass = "this",
+            type = "Z",
+            location = MatchAfterWithin(5)
+        )
     )
 )

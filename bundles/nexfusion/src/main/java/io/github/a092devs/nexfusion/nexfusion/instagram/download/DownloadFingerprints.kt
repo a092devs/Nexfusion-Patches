@@ -208,7 +208,9 @@ val storyMenuLabelsMethod = findMethodDirect {
  * "stories_mimicry_menu_bottom_sheet".
  */
 val storyMenuSheetMethod = findMethodDirect {
-    val sheetClass = methodsUsingStrings("stories_mimicry_menu_bottom_sheet").first().declaredClassName
+    val sheetClasses = methodsUsingStrings("stories_mimicry_menu_bottom_sheet")
+        .mapNotNull { it.declaredClassName }
+        .toSet()
     findMethod {
         matcher {
             returnType = "void"
@@ -216,7 +218,7 @@ val storyMenuSheetMethod = findMethodDirect {
     }.first { method ->
         "java.util.List" in method.paramTypeNames &&
             "kotlin.jvm.functions.Function1" in method.paramTypeNames &&
-            method.instructions.any { it.classRef?.name == sheetClass }
+            method.instructions.any { it.classRef?.name in sheetClasses }
     }
 }
 

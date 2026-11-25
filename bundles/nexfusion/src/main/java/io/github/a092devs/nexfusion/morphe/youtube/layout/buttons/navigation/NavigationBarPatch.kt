@@ -59,7 +59,8 @@ val NavigationBar = patch(
         ),
         SwitchPreference("morphe_swap_create_with_notifications_button", summary = true),
         SwitchPreference("morphe_hide_navigation_bar"),
-        SwitchPreference("morphe_narrow_navigation_buttons", summary = true),
+        // Narrow navigation buttons requires mid-method bytecode injection.
+//        SwitchPreference("morphe_narrow_navigation_buttons", summary = true),
         SwitchPreference("morphe_hide_navigation_button_labels"),
         SwitchPreference("morphe_disable_icon_only_navigation_buttons", summary = true)
     )

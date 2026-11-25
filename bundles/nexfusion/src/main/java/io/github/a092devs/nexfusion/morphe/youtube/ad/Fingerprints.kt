@@ -48,11 +48,15 @@ internal object GetPremiumViewFingerprint : Fingerprint(
     accessFlags = listOf(AccessFlags.PROTECTED, AccessFlags.FINAL),
     returnType = "V",
     parameters = listOf("I", "I"),
-    filters = OpcodesFilter.opcodesToFilters(
-        Opcode.ADD_INT_2ADDR,
-        Opcode.ADD_INT_2ADDR,
-        Opcode.INVOKE_VIRTUAL,
-        Opcode.RETURN_VOID,
+    filters = listOf(
+        methodCall(
+            opcode = Opcode.INVOKE_VIRTUAL,
+            definingClass = "this",
+            name = "setMeasuredDimension",
+            parameters = listOf("I", "I"),
+            returnType = "V"
+        ),
+        opcode(Opcode.RETURN_VOID, MatchAfterImmediately())
     )
 )
 
@@ -90,5 +94,13 @@ internal object PlayerBytesAdLayoutFingerprint : Fingerprint(
     parameters = listOf("L"),
     strings = listOf(
         "Bootstrapped layout construction resulted in non PlayerBytesLayout. PlayerAds count: ",
+    )
+)
+
+internal object MiniplayerPaidPromotionLabelFingerprint : Fingerprint(
+    filters = listOf(
+        resourceLiteral(ResourceType.ID, "modern_miniplayer_subtitle_text"),
+        opcode(Opcode.INVOKE_VIRTUAL, MatchAfterImmediately()),
+        opcode(Opcode.MOVE_RESULT_OBJECT, MatchAfterImmediately())
     )
 )

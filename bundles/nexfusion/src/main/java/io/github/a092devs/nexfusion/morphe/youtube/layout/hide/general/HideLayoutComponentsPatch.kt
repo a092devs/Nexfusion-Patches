@@ -143,8 +143,9 @@ val HideLayoutComponents = patch(
                 SwitchPreference("morphe_hide_comments_live_chat_tooltips", summary = true),
                 SwitchPreference("morphe_hide_comments_menu_button", summary = true),
 //                SwitchPreference("morphe_hide_comments_preview_comment", summary = true),
-                SwitchPreference("morphe_minimal_comments_button", summary = true),
+                SwitchPreference("morphe_hide_comments_preview_comment_cards", summary = true),
                 SwitchPreference("morphe_hide_comments_thanks_button", titleKey = "morphe_hide_thanks_button_title"),
+                SwitchPreference("morphe_hide_comments_timed_reactions", summary = true),
                 SwitchPreference("morphe_hide_comments_timestamp_button"),
                 SwitchPreference("morphe_hide_comments_top_fans_button"),
                 SwitchPreference("morphe_hide_comments_translate_button"),
@@ -166,7 +167,6 @@ val HideLayoutComponents = patch(
 //        SwitchPreference("morphe_hide_snackbar"),
         SwitchPreference("morphe_hide_subscribers_community_guidelines"),
         SwitchPreference("morphe_hide_sync_button"),
-        SwitchPreference("morphe_hide_timed_reactions", summary = true),
         SwitchPreference("morphe_hide_video_title", summary = true),
 //        SwitchPreference("morphe_sanitize_video_subtitle", summary = true)
     )
@@ -514,6 +514,9 @@ val HideLayoutComponents = patch(
 
     // hide comments carousel
     hookElement(CommentsFilter::onCommentsLoaded)
+
+    // fix description like and view counts showing older count
+    hookElement(app.morphe.extension.youtube.patches.FixDescriptionCountsPatch::onElementLoaded)
 
     // hide comments info button
     // id.information_button

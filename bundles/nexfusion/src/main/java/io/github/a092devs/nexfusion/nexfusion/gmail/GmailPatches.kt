@@ -25,7 +25,8 @@ val HideAds = patch(
 
     val hooked = constructors.mapNotNull { dexMethod ->
         val constructor = dexMethod.toConstructorOrNull(classLoader) ?: return@mapNotNull null
-        if (!View::class.java.isAssignableFrom(constructor.declaringClass)) {
+        val cls = constructor.declaringClass
+        if (!View::class.java.isAssignableFrom(cls)) {
             return@mapNotNull null
         }
 
@@ -33,7 +34,14 @@ val HideAds = patch(
         constructor.hookMethod {
             after { param -> (param.thisObject as? View)?.hideAsAd() }
         }
-        constructor.declaringClass.simpleName
+        runCatching {
+            val onFinishInflate = cls.getDeclaredMethod("onFinishInflate")
+            onFinishInflate.isAccessible = true
+            onFinishInflate.hookMethod {
+                after { param -> (param.thisObject as? View)?.collapse() }
+            }
+        }
+        cls.simpleName
     }
 
     if (hooked.isEmpty()) {

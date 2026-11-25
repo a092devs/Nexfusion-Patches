@@ -76,6 +76,12 @@ class DownloadFingerprintsTest {
             assertNotNull(igDialogMenuBottomCornersField(dexkit))
 
             // Non-download anchors used by the rest of the Instagram patch set.
+            assertNotNull(io.github.a092devs.nexfusion.nexfusion.instagram.adInjectorMethod(dexkit))
+            assertNotNull(io.github.a092devs.nexfusion.nexfusion.instagram.directSeenMethod(dexkit))
+            assertNotNull(io.github.a092devs.nexfusion.nexfusion.instagram.visualSeenMethod(dexkit))
+            assertNotNull(io.github.a092devs.nexfusion.nexfusion.instagram.setThreadUnreadMethod(dexkit))
+            assertNotNull(io.github.a092devs.nexfusion.nexfusion.instagram.buildExpiredLockoutMethod(dexkit))
+            assertNotNull(io.github.a092devs.nexfusion.nexfusion.instagram.storyHeaderBinderMethod(dexkit))
             assertNotNull(typingStatusMethod(dexkit))
             println("Verified typingStatusMethod: ${typingStatusMethod(dexkit)}")
             assertNotNull(feedDoubleTapMethod(dexkit))

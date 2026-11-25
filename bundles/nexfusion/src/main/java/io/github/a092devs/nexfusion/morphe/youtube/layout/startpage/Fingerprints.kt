@@ -1,13 +1,14 @@
 package io.github.a092devs.nexfusion.morphe.youtube.layout.startpage
 
 import io.github.a092devs.nexfusion.morphe.Fingerprint
+import io.github.a092devs.nexfusion.morphe.InstructionLocation.MatchAfterImmediately
 import io.github.a092devs.nexfusion.morphe.InstructionLocation.MatchAfterWithin
 import io.github.a092devs.nexfusion.morphe.Opcode
 import io.github.a092devs.nexfusion.morphe.StrictQuery
 import io.github.a092devs.nexfusion.morphe.fieldAccess
 import io.github.a092devs.nexfusion.morphe.findMethodDirect
-import io.github.a092devs.nexfusion.morphe.literal
 import io.github.a092devs.nexfusion.morphe.methodCall
+import io.github.a092devs.nexfusion.morphe.opcode
 import io.github.a092devs.nexfusion.morphe.string
 
 
@@ -26,11 +27,18 @@ internal object BrowseIdFingerprint : Fingerprint(
     filters = listOf(
         string("FEwhat_to_watch"),
         methodCall(
+            opcode = Opcode.INVOKE_STATIC,
             parameters = listOf("Ljava/lang/String;"),
-            location = MatchAfterWithin(3)
+            location = MatchAfterImmediately()
         ),
-        literal(512),
-        fieldAccess(opcode = Opcode.IPUT_OBJECT, type = "Ljava/lang/String;")
+        // Sets the has bit of the browse id, which is 0x400 in 21.47+ and 0x200 before.
+        opcode(Opcode.OR_INT_LIT16),
+        opcode(Opcode.IPUT, location = MatchAfterImmediately()),
+        fieldAccess(
+            opcode = Opcode.IPUT_OBJECT,
+            type = "Ljava/lang/String;",
+            location = MatchAfterImmediately()
+        )
     )
 )
 

@@ -7,6 +7,19 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.0.6
+
+- **Upstream Patch Sync & Compatibility:**
+  * Synced `morphe-patches` upstream `dev` changes and updated fingerprints across supported apps.
+- **YouTube & YouTube Music:**
+  * Fixed YouTube `21.47.483` compatibility across ad hiding (`GetPremiumViewFingerprint`, `MiniplayerPaidPromotionLabelFingerprint`), start page (`BrowseIdFingerprint`), glass menus (`TouchFeedbackDrawable`), and layout components.
+  * Updated YouTube Music `KidsBackgroundPlaybackPolicyControllerFingerprint` for background playback.
+- **Gmail & Instagram:**
+  * Fixed Gmail ad blocking for latest Gmail releases (`2026.11.09`).
+  * Updated Instagram `storyMenuSheetMethod` fingerprint for Instagram `457.0.0.55.73`.
+- **Bundle Cleanup:**
+  * Removed Discord and Stremio patch modules.
+
 ## 5.0.5
 
 - `YouTube Navigation Bar & Layout Theme`:
