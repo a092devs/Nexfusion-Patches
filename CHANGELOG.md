@@ -7,6 +7,11 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.0.15
+
+- **YouTube & YouTube Music:**
+  * Fixed selecting presets or custom names in the Morphe settings name dialog.
+
 ## 5.0.14
 
 - **YouTube:**
