@@ -7,6 +7,15 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.0.13
+
+- **YouTube:**
+  * Fixed the miniplayer video title getting stuck loading after opening a Short while a video is playing.
+  * Fixed empty spaces appearing in search results after opening a Short when Shorts are hidden on the Home feed.
+  * Fixed the account switcher shortcut closing immediately on YouTube 21.30.
+- **Telegram Publishing:**
+  * Updated release announcements to post as a single message with one expandable changelog block.
+
 ## 5.0.12
 
 - **Google Photos (Multi-Account Unlimited Backup):**

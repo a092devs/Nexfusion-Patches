@@ -60,58 +60,56 @@ jobs:
                           notes = f.read()
 
                   notes = re.sub(r"<!--.*?-->", "", notes, flags=re.S).strip()
+                  # Drop auto-generated Compatibility section so the changelog fits cleanly in one caption
+                  notes = re.split(r"(?m)^#{1,6}\s+Compatibility\b", notes, maxsplit=1)[0].strip()
 
                   def format_line(raw_line: str) -> str:
                       esc = html.escape(raw_line)
+                      esc = re.sub(r"^#{1,6}\s+(.+)$", r"<b>\1</b>", esc)
                       esc = re.sub(r"^\s*[-*]\s+", "• ", esc)
                       esc = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", esc)
                       esc = re.sub(r"`([^`]+)`", r"<code>\1</code>", esc)
                       return esc
 
-                  sections = []
-                  cur_title = None
-                  cur_items = []
+                  formatted_lines = []
                   for raw in notes.splitlines():
                       s = raw.strip()
                       if not s:
+                          if formatted_lines and formatted_lines[-1] != "":
+                              formatted_lines.append("")
                           continue
-                      m_hdr = re.match(r"^#{1,6}\s+(.+)$", s)
-                      m_top = re.match(r"^[-*]\s+\*\*(.+?)\*\*:?\s*$", s)
-                      if m_hdr:
-                          if cur_title is not None or cur_items:
-                              sections.append((cur_title, cur_items))
-                          cur_title = html.escape(m_hdr.group(1))
-                          cur_items = []
-                      elif m_top:
-                          if cur_title is not None or cur_items:
-                              sections.append((cur_title, cur_items))
-                          cur_title = html.escape(m_top.group(1).rstrip(":"))
-                          cur_items = []
-                      else:
-                          cur_items.append(format_line(s))
-                  if cur_title is not None or cur_items:
-                      sections.append((cur_title, cur_items))
+                      formatted_lines.append(format_line(s))
+                  while formatted_lines and formatted_lines[-1] == "":
+                      formatted_lines.pop()
 
-                  blocks = []
-                  for title, items in sections:
-                      if title and items:
-                          inner = "\n".join(items)
-                          blocks.append(f"<b>{title}:</b>\n<blockquote expandable>{inner}</blockquote>")
-                      elif title:
-                          blocks.append(f"<b>{title}</b>")
-                      elif items:
-                          inner = "\n".join(items)
-                          blocks.append(f"<blockquote expandable>{inner}</blockquote>")
-
-                  body = "\n\n".join(blocks).strip()
                   header = f"🧩 <b>NexFusion Patches {html.escape(tag)} Released</b>"
                   footer = (
                       f"🔗 <a href=\"https://github.com/{repo}/releases/tag/{urllib.parse.quote(tag)}\">GitHub Release</a>\n"
                       f"📢 Channel: @nexfusion"
                   )
-                  full_text = f"{header}\n\n{body}\n\n{footer}" if body else f"{header}\n\n{footer}"
-                  use_separate_msg = len(full_text) > 1024
-                  caption = f"{header}\n\n{footer}" if use_separate_msg else full_text
+                  quote_open = "<blockquote expandable>"
+                  quote_close = "</blockquote>"
+                  max_inner = 1024 - len(header) - len(footer) - len(quote_open) - len(quote_close) - 10
+
+                  if formatted_lines:
+                      kept = []
+                      cur_len = 0
+                      truncated = False
+                      for ln in formatted_lines:
+                          add_len = len(ln) + (1 if kept else 0)
+                          if cur_len + add_len > max_inner:
+                              truncated = True
+                              break
+                          kept.append(ln)
+                          cur_len += add_len
+                      while kept and kept[-1] == "":
+                          kept.pop()
+                      inner = "\n".join(kept)
+                      if truncated:
+                          inner = (inner + "\n…") if inner else "…"
+                      caption = f"{header}\n\n{quote_open}{inner}{quote_close}\n\n{footer}"
+                  else:
+                      caption = f"{header}\n\n{footer}"
 
                   files = sorted(glob.glob("release-assets/*.nxb"))
                   if not files:
@@ -160,38 +158,4 @@ jobs:
                   except urllib.error.HTTPError as e:
                       print("Telegram sendMediaGroup failed:", e.code, e.read().decode("utf-8", errors="replace"), file=sys.stderr)
                       raise
-
-                  if use_separate_msg:
-                      msg_text = full_text
-                      if len(msg_text) > 4096:
-                          kept_blocks = []
-                          max_b = 4096 - len(header) - len(footer) - 20
-                          cur_b = 0
-                          for blk in blocks:
-                              add_b = len(blk) + (2 if kept_blocks else 0)
-                              if cur_b + add_b > max_b:
-                                  break
-                              kept_blocks.append(blk)
-                              cur_b += add_b
-                          msg_text = f"{header}\n\n" + "\n\n".join(kept_blocks) + f"\n…\n\n{footer}"
-                      reply_id = res_data.get("result", [{}])[0].get("message_id")
-                      payload = {
-                          "chat_id": chat_id,
-                          "text": msg_text,
-                          "parse_mode": "HTML",
-                          "link_preview_options": {"is_disabled": True},
-                      }
-                      if reply_id:
-                          payload["reply_parameters"] = {"message_id": reply_id}
-                      msg_req = urllib.request.Request(
-                          f"https://api.telegram.org/bot{token}/sendMessage",
-                          data=json.dumps(payload).encode("utf-8"),
-                          headers={"Content-Type": "application/json"},
-                      )
-                      try:
-                          with urllib.request.urlopen(msg_req, timeout=60) as mresp:
-                              print("sendMessage ok:", json.loads(mresp.read().decode("utf-8")).get("ok"))
-                      except urllib.error.HTTPError as e:
-                          print("Telegram sendMessage failed:", e.code, e.read().decode("utf-8", errors="replace"), file=sys.stderr)
-                          raise
                   PY
