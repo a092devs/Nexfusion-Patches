@@ -913,15 +913,36 @@ val TelegramAntiDelete = patch(
     runCatching {
         val mc = resolveMessagesController()
         if (mc != null) {
+            val pushDeleteMethod = runCatching {
+                dexkit.getMethodDirectOrNull("tg_delete_msgs_by_push") {
+                    findMethod {
+                        matcher {
+                            declaredClass = "org.telegram.messenger.PushListenerController"
+                            usingStrings("processRemoteMessage")
+                        }
+                    }.first()
+                }
+            }.getOrNull()
             mc.declaredMethods.filter {
-                it.name == "deleteMessagesByPush"
+                it.name == "deleteMessagesByPush" ||
+                    (it.returnType == java.lang.Void.TYPE &&
+                        it.parameterTypes.size == 3 &&
+                        it.parameterTypes[0] == java.lang.Long.TYPE &&
+                        it.parameterTypes[1] == java.lang.Long.TYPE &&
+                        java.util.List::class.java.isAssignableFrom(it.parameterTypes[2]))
             }.forEach { m ->
                 XposedBridge.hookMethod(m, object : XC_MethodHook() {
                     override fun beforeHookedMethod(param: MethodHookParam) {
+                        val list = param.args.getOrNull(2) as? java.util.List<*>
+                        if (list != null && list.isNotEmpty()) {
+                            markDeleted(list)
+                        }
                         param.result = null
                     }
                 })
             }
+            @Suppress("UNUSED_VARIABLE")
+            val unusedPushRef = pushDeleteMethod
             mc.declaredMethods.filter {
                 it.name.startsWith("deleteMessages") && !it.name.contains("Push") &&
                     it.parameterTypes.any { pt -> java.util.List::class.java.isAssignableFrom(pt) } ||

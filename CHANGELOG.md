@@ -7,6 +7,11 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.0.11
+
+- **Telegram (`13.3+` / Anti-delete messages):**
+  * Fixed `Anti-delete messages` fading and then disappearing when FCM push deletion arrives by hooking the obfuscated `MessagesController.deleteMessagesByPush` (`long, long, List`) method, preserving and marking pushed deleted message IDs before suppressing removal.
+
 ## 5.0.10
 
 - **Telegram (`13.3+` / Obfuscated Builds):**
