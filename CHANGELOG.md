@@ -7,19 +7,27 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
-## 5.0.13
+## 5.0.14
 
 - **YouTube:**
   * Fixed Swipe controls (brightness and volume gestures) and Return YouTube Dislike.
   * Fixed the Morphe settings name option and greyed-out patch sub-settings.
-  * Fixed miniplayer titles getting stuck loading and search gaps when Shorts are hidden.
-  * Fixed the account switcher closing on YouTube 21.30 and updated Miniplayer, Glass menus, and Disable video codecs.
+  * Fixed Miniplayer, Glass menus, and Disable video codecs compatibility on newer YouTube versions.
 - **YouTube Music:**
   * Enabled Force original audio, Pause when muted, Disable audio ducking, and custom settings name.
 - **Reddit:**
   * Enabled Hide Related Posts section.
 - **Google Photos:**
   * Simplified Pixel XL spoofing to only spoof essential `Build` fields and system features.
+
+## 5.0.13
+
+- **YouTube:**
+  * Fixed the miniplayer video title getting stuck loading after opening a Short while a video is playing.
+  * Fixed empty spaces appearing in search results after opening a Short when Shorts are hidden on the Home feed.
+  * Fixed the account switcher shortcut closing immediately on YouTube 21.30.
+- **Telegram Publishing:**
+  * Updated release announcements to post as a single message with one expandable changelog block.
 
 ## 5.0.12
 
