@@ -1,7 +1,9 @@
 package io.github.a092devs.nexfusion.revanced.googlephotos.misc.features
 
+import android.content.pm.FeatureInfo
 import android.os.Build
 import io.github.a092devs.nexfusion.compat.XC_MethodHook
+import io.github.a092devs.nexfusion.compat.XposedBridge
 import io.github.a092devs.nexfusion.compat.XposedHelpers
 import io.github.a092devs.nexfusion.patch
 import org.luckypray.dexkit.wrap.DexMethod
@@ -16,13 +18,57 @@ val SpoofFeaturesPatch = patch(
         "MANUFACTURER" to "Google",
         "DEVICE" to "marlin",
         "PRODUCT" to "marlin",
+        "BOARD" to "marlin",
+        "HARDWARE" to "marlin",
         "MODEL" to "Pixel XL",
+        "ID" to "QP1A.191005.007.A3",
+        "TAGS" to "release-keys",
+        "TYPE" to "user",
         "FINGERPRINT" to "google/marlin/marlin:10/QP1A.191005.007.A3/5972272:user/release-keys"
     )
 
     val buildClazz = Build::class.java
     for ((k, v) in buildInfo) {
-        XposedHelpers.setStaticObjectField(buildClazz, k, v)
+        runCatching { XposedHelpers.setStaticObjectField(buildClazz, k, v) }
+    }
+
+    val propSpoofs = mapOf(
+        "ro.product.brand" to "google",
+        "ro.product.manufacturer" to "Google",
+        "ro.product.device" to "marlin",
+        "ro.product.name" to "marlin",
+        "ro.product.model" to "Pixel XL",
+        "ro.product.board" to "marlin",
+        "ro.product.system.brand" to "google",
+        "ro.product.system.manufacturer" to "Google",
+        "ro.product.system.device" to "marlin",
+        "ro.product.system.name" to "marlin",
+        "ro.product.system.model" to "Pixel XL",
+        "ro.product.vendor.brand" to "google",
+        "ro.product.vendor.manufacturer" to "Google",
+        "ro.product.vendor.device" to "marlin",
+        "ro.product.vendor.name" to "marlin",
+        "ro.product.vendor.model" to "Pixel XL",
+        "ro.product.odm.brand" to "google",
+        "ro.product.odm.manufacturer" to "Google",
+        "ro.product.odm.device" to "marlin",
+        "ro.product.odm.name" to "marlin",
+        "ro.product.odm.model" to "Pixel XL",
+        "ro.build.fingerprint" to "google/marlin/marlin:10/QP1A.191005.007.A3/5972272:user/release-keys",
+        "ro.build.id" to "QP1A.191005.007.A3",
+        "ro.build.tags" to "release-keys",
+        "ro.build.type" to "user",
+    )
+
+    runCatching {
+        val sysProps = classLoader.loadClass("android.os.SystemProperties")
+        XposedBridge.hookAllMethods(sysProps, "get", object : XC_MethodHook() {
+            override fun beforeHookedMethod(param: MethodHookParam) {
+                val key = param.args.firstOrNull() as? String ?: return
+                val spoofed = propSpoofs[key] ?: return
+                param.result = spoofed
+            }
+        })
     }
 
     val featuresToEnable = setOf(
@@ -55,7 +101,7 @@ val SpoofFeaturesPatch = patch(
 
     val hook = object : XC_MethodHook() {
         override fun beforeHookedMethod(param: MethodHookParam) {
-            val feature = param.args[0] as String
+            val feature = param.args[0] as? String ?: return
             param.result = when (feature) {
                 in featuresToEnable -> true
                 in featuresToDisable -> false
@@ -71,5 +117,23 @@ val SpoofFeaturesPatch = patch(
     runCatching {
         DexMethod("Landroid/app/ApplicationPackageManager;->hasSystemFeature(Ljava/lang/String;I)Z")
             .hookMethod(hook)
+    }
+    runCatching {
+        val apm = classLoader.loadClass("android.app.ApplicationPackageManager")
+        XposedBridge.hookAllMethods(apm, "getSystemAvailableFeatures", object : XC_MethodHook() {
+            override fun afterHookedMethod(param: MethodHookParam) {
+                val orig = param.result as? Array<*> ?: return
+                val filtered = orig.filterIsInstance<FeatureInfo>()
+                    .filter { it.name !in featuresToDisable }
+                    .toMutableList()
+                val existingNames = filtered.mapNotNullTo(HashSet()) { it.name }
+                for (featName in featuresToEnable) {
+                    if (featName !in existingNames) {
+                        filtered.add(FeatureInfo().apply { name = featName })
+                    }
+                }
+                param.result = filtered.toTypedArray()
+            }
+        })
     }
 }

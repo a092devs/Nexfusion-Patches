@@ -7,6 +7,13 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.0.12
+
+- **Google Photos (Multi-Account Unlimited Backup):**
+  * Expanded `Spoof features` (`SpoofFeaturesPatch`) to spoof `android.os.SystemProperties` (`ro.product.*`, `ro.build.*`), `Build` hardware/ID/tags/type fields, and `ApplicationPackageManager.getSystemAvailableFeatures()` (injecting `NEXUS_PRELOAD` and stripping `PIXEL_2017`–`PIXEL_2027`), ensuring Pixel XL spoofing applies consistently across multiple Google accounts.
+- **Release CI / Telegram Publishing:**
+  * Formatted Telegram release changelogs with `<blockquote expandable>` sections and a full-text `sendMessage` reply fallback when notes exceed the 1024-character media caption limit.
+
 ## 5.0.11
 
 - **Telegram (`13.3+` / Anti-delete messages):**
