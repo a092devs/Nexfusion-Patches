@@ -29,11 +29,26 @@ public final class BlockPopupAdsPatch {
         try {
             ClassLoader classLoader = single.getClass().getClassLoader();
             Class<?> functionClass = Class.forName(RX_FUNCTION, false, classLoader);
-            Field fallbackField = Reflection.findFirstFieldByType(single.getClass(), functionClass);
-            Class<?> singleClass = Class.forName(RX_SINGLE, false, classLoader);
+            Field supplierField = Reflection.findFirstFieldByType(single.getClass(), functionClass);
+            Object supplier = supplierField.get(single);
+            Object fallback = null;
+            if (supplier != null) {
+                fallback = functionClass.getMethod("apply", Object.class)
+                        .invoke(supplier, new RuntimeException("Blocked"));
+            } else {
+                for (Field f : single.getClass().getDeclaredFields()) {
+                    if (f.getType() == Object.class) {
+                        f.setAccessible(true);
+                        fallback = f.get(single);
+                        break;
+                    }
+                }
+            }
+            if (fallback == null) return single;
 
+            Class<?> singleClass = Class.forName(RX_SINGLE, false, classLoader);
             return Reflection.findMethod(singleClass, "just", "java.lang.Object")
-                    .invoke(null, fallbackField.get(single));
+                    .invoke(null, fallback);
         } catch (Throwable ex) {
             Logger.error("replaceRequest failure", ex);
             return single;

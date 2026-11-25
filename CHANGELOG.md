@@ -7,6 +7,11 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.0.8
+
+- **Spotify (`9.2.2+`):**
+  * Fixed `Block popup ads` (`BlockPopupAdsPatch.replaceRequest`) to invoke the `SingleOnErrorReturn` supplier `Function` (and fall back to the direct `value` field when `onErrorReturnItem` is used), preventing fullscreen Pendragon promo popups from slipping through.
+
 ## 5.0.7
 
 - **X (Twitter) Ad Blocking (`12.46.1+`):**
