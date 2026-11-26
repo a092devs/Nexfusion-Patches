@@ -7,6 +7,16 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.0.20
+
+- **YouTube & YouTube Music:**
+  * Synced with upstream `morphe-patches` (`dev`): updated `yt-dlp-ejs`, SponsorBlock seek-to-start fix, Hide 'Members only' chip fix, Keyword content filter channel check, Comment search scroll lag fix, Voice over translation caption notice, Return YouTube Username feed card fix, Hide YouTube Premium exclusive videos, and YouTube Music third-party lyrics AI test + downloads fixes.
+- **Reddit:**
+  * Ported `Glass navigation bar` with zero-allocation runtime Compose adapters and enabled its customization options in Reddit's Morphe settings.
+  * Ported `Hide navigation buttons` (`Games`, `Answers`, `Chat`, `Communities`, `Create`) and Morphe hooks for `Full-screen reply`, `Hide Ask button`, `Show view count`, `Disable bottom bar auto-hide`, `Private browsing mode`, `Disable refresh on back to exit`, `Hide People also search for section`, `Swipe up for comments`, and `Keep media viewer in subreddit`.
+- **Documentation:**
+  * Removed dropped Stremio and Discord targets from `README.md` and updated the supported apps matrix.
+
 ## 5.0.19
 
 - **YouTube:**
