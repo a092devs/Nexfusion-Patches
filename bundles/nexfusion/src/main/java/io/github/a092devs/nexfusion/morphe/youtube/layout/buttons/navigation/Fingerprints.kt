@@ -317,3 +317,57 @@ object MoreCommentsIconFingerprint : Fingerprint(
         opcode(Opcode.MOVE_RESULT_OBJECT, location = MatchAfterImmediately())
     )
 )
+
+internal object BrowseResponseTabsFingerprint : Fingerprint(
+    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.FINAL, AccessFlags.DECLARED_SYNCHRONIZED),
+    returnType = "L",
+    parameters = listOf(),
+    filters = listOf(
+        literal(58173949L),
+        methodCall(name = "stream"),
+        fieldAccess(
+            opcode = Opcode.IPUT_OBJECT,
+            definingClass = "this"
+        )
+    )
+)
+
+internal object PivotBarItemProtoFactoryFingerprint : Fingerprint(
+    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.STATIC),
+    returnType = "L",
+    parameters = listOf("Ljava/lang/String;", "Ljava/lang/String;", "L", "Z"),
+    filters = listOf(
+        literal(117501096L)
+    )
+)
+
+internal object NavigationBarBlurTintCallFingerprint : Fingerprint(
+    definingClass = "Lcom/google/android/libraries/youtube/rendering/ui/pivotbar/PivotBar;",
+    filters = listOf(
+        methodCall(smali = "Landroid/content/res/TypedArray;->getColor(II)I"),
+        opcode(Opcode.MOVE_RESULT, location = MatchAfterImmediately()),
+        methodCall(
+            opcode = Opcode.INVOKE_VIRTUAL,
+            parameters = listOf("I"),
+            returnType = "V",
+            location = MatchAfterImmediately()
+        ),
+        methodCall(
+            smali = "Lcom/google/android/libraries/youtube/rendering/ui/pivotbar/PivotBar;->setBackground(Landroid/graphics/drawable/Drawable;)V",
+            location = MatchAfterWithin(3)
+        )
+    )
+)
+
+internal object NavigationBarBlurTintFingerprint : Fingerprint(
+    returnType = "V",
+    parameters = listOf("I"),
+    filters = listOf(
+        methodCall(smali = "Landroid/graphics/Paint;->setColor(I)V"),
+        methodCall(smali = "Landroid/graphics/Paint;->setAlpha(I)V", location = MatchAfterWithin(4))
+    )
+)
+
+internal val navigationBarBlurTintMethod = findMethodDirect {
+    NavigationBarBlurTintCallFingerprint.match().instructionMatches[2].instruction.methodRef!!
+}

@@ -114,9 +114,11 @@ internal fun sharedLithoFilterPatch(
             val conversion = param.args[1]
             val bufferParent = param.args[2]
             // Verify it's the expected subclass just in case.
-            val buffer = if (protoBufferEncodeClass.isInstance(bufferParent)) {
-                protoBufferEncodeMethod(bufferParent) as ByteArray?
-            } else byteArrayOf()
+            val elementBytes = LithoFilterPatch.ElementBytesInterface {
+                if (protoBufferEncodeClass.isInstance(bufferParent)) {
+                    protoBufferEncodeMethod(bufferParent) as ByteArray?
+                } else null
+            }
             val buttonViewModel = buttonViewModelThreadLocal.get()
             buttonViewModelThreadLocal.remove()
             val accessibilityId = buttonViewModel?.let { accessibilityIdMethod(it) as String? }
@@ -124,7 +126,7 @@ internal fun sharedLithoFilterPatch(
 
             if (LithoFilterPatch.isFiltered(
                     ConversionContext(conversion),
-                    buffer,
+                    elementBytes,
                     accessibilityId,
                     accessibilityText
                 )

@@ -247,8 +247,8 @@ private fun PatchExecutor.installForceAmbientModeRenderer() {
                 }
 
                 // patch_forceAmbientModeRenderer: only forced while ambient mode is not disabled
-                // in the settings and the state is still waiting for a /next response.
-                if (state === waitingState) {
+                // in the settings and the state is no longer waiting for a /next response.
+                if (state !== waitingState) {
                     var renderer = if (optionalPresentMethod.invoke(optionalArgument) as Boolean) {
                         optionalGetMethod.invoke(optionalArgument)
                     } else {
@@ -336,6 +336,8 @@ val AmbientMode = patch(
     // if ambient mode is not disabled.
     insertLiteralOverride(45376186L) { _ -> ExtensionAmbientModePatch.disableAmbientMode(true) }
     insertLiteralOverride(45372814L) { _ -> ExtensionAmbientModePatch.disableAmbientMode(true) }
+    // Black background experiment: keep off so ambient mode stays active.
+    insertLiteralOverride(45767512L, false)
 
     // The /next response can have no CinematicContainerRenderer, a static color style
     // (the background does not change with the video, issue) or ambient mode off by

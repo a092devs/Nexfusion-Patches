@@ -509,6 +509,8 @@ val HideLayoutComponents = patch(
     // hide page header buttons
     hookElement(LayoutComponentsFilter::hidePageHeaderButtons)
 
+    hookElement(LayoutComponentsFilter::hideMixCards)
+
     // post buttons
     hookElement(LayoutComponentsFilter::setPostButtons)
 

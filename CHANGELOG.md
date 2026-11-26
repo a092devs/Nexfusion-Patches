@@ -7,6 +7,23 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.0.16
+
+- **YouTube:**
+  * Restored the Subscriptions tab in the bottom navigation bar so all 5 tabs work like stock YouTube while removing it from the top filter bar.
+  * Fixed the floating Glass navigation bar opacity slider, bottom margin spacing, and unresponsive slider options.
+  * Fixed Ambient mode not applying after video metadata loads and disabled the black-background experiment flag.
+  * Fixed Morphe settings sub-screens turning black on One UI 7 / Android 15 and removed the `AMOLED dark theme` patch.
+  * Enabled the `You` button account switcher shortcut on older YouTube versions and added cutout avoidance support to `Hide status bar`.
+  * Synced Glass menus, Hide layout components, LithoFilter, and Hide status bar with upstream `morphe-patches`.
+- **YouTube Music:**
+  * Fixed Glass menus SeekBar sliders being unclickable.
+- **Telegram:**
+  * Synced closer to HushTelegram: removed `Unlock Premium`, `Bypass integrity check`, and the duplicate `Hide stories` patch.
+  * Fixed `Show message seconds`, `Swipe back on profiles`, and `Auto-reveal spoilers` (text and media).
+- **Spotify:**
+  * Improved `Disable ad breaks` to disable ad slots sooner and handle obfuscated transport request methods.
+
 ## 5.0.15
 
 - **YouTube & YouTube Music:**

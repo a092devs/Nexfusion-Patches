@@ -54,15 +54,18 @@ val GlassMenus = patch(
                 SwitchPreference("morphe_glass_menus", summary = true),
                 NonInteractivePreference(
                     key = "morphe_glass_menus_opacity",
-                    tag = app.morphe.extension.shared.settings.preference.SeekBarPreference::class.java
+                    tag = app.morphe.extension.shared.settings.preference.SeekBarPreference::class.java,
+                    selectable = true,
                 ),
                 NonInteractivePreference(
                     key = "morphe_glass_menus_blur",
-                    tag = app.morphe.extension.shared.settings.preference.SeekBarPreference::class.java
+                    tag = app.morphe.extension.shared.settings.preference.SeekBarPreference::class.java,
+                    selectable = true,
                 ),
                 NonInteractivePreference(
                     key = "morphe_glass_menus_dim",
-                    tag = app.morphe.extension.shared.settings.preference.SeekBarPreference::class.java
+                    tag = app.morphe.extension.shared.settings.preference.SeekBarPreference::class.java,
+                    selectable = true,
                 ),
             ),
         )
@@ -90,6 +93,34 @@ val GlassMenus = patch(
                 }
             }
         }
+    }
+
+    runCatching {
+        val listPopupClass = android.widget.ListPopupWindow::class.java
+        io.github.a092devs.nexfusion.compat.XposedHelpers.findAndHookMethod(
+            listPopupClass,
+            "show",
+            object : io.github.a092devs.nexfusion.compat.XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    val popup = param.thisObject as? android.widget.ListPopupWindow ?: return
+                    GlassMenusExt.onListPopupWindow(popup)
+                }
+            }
+        )
+    }
+
+    runCatching {
+        val progressDialogClass = android.app.ProgressDialog::class.java
+        io.github.a092devs.nexfusion.compat.XposedHelpers.findAndHookMethod(
+            progressDialogClass,
+            "show",
+            object : io.github.a092devs.nexfusion.compat.XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    val dialog = param.thisObject as? android.app.ProgressDialog ?: return
+                    GlassMenusExt.onProgressDialogShown(dialog)
+                }
+            }
+        )
     }
 
     runCatching {

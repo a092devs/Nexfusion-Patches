@@ -5,6 +5,7 @@ import android.os.Build
 import android.view.View
 import android.view.WindowInsets
 import android.widget.TextView
+import app.morphe.extension.youtube.patches.ClassicSubscriptionsLayoutPatch
 import app.morphe.extension.youtube.patches.NavigationBarPatch
 import io.github.a092devs.nexfusion.HookDsl
 import io.github.a092devs.nexfusion.IScopedHookCallback
@@ -62,12 +63,9 @@ val NavigationBar = patch(
         // Narrow navigation buttons requires mid-method bytecode injection.
 //        SwitchPreference("morphe_narrow_navigation_buttons", summary = true),
         SwitchPreference("morphe_hide_navigation_button_labels"),
-        SwitchPreference("morphe_disable_icon_only_navigation_buttons", summary = true)
+        SwitchPreference("morphe_disable_icon_only_navigation_buttons", summary = true),
+        SwitchPreference("morphe_you_button_account_switcher", summary = true)
     )
-
-    if (is_21_30_or_greater) {
-        navPreferences += SwitchPreference("morphe_you_button_account_switcher", summary = true)
-    }
 
     if (is_21_35_or_greater) {
         navPreferences += SwitchPreference("morphe_disable_toolbar_navigation_tabs", summary = true)
@@ -80,13 +78,15 @@ val NavigationBar = patch(
         SwitchPreference("morphe_navigation_bar_glass", summary = true),
         NonInteractivePreference(
             key = "morphe_navigation_bar_glass_opacity",
-            tag = app.morphe.extension.shared.settings.preference.SeekBarPreference::class.java
+            tag = app.morphe.extension.shared.settings.preference.SeekBarPreference::class.java,
+            selectable = true
         ),
         SwitchPreference("morphe_navigation_bar_glass_round", summary = true),
         SwitchPreference("morphe_navigation_bar_glass_edge", summary = true),
         NonInteractivePreference(
             key = "morphe_navigation_bar_glass_bottom_margin",
-            tag = app.morphe.extension.shared.settings.preference.SeekBarPreference::class.java
+            tag = app.morphe.extension.shared.settings.preference.SeekBarPreference::class.java,
+            selectable = true
         ),
         NonInteractivePreference(
             key = "morphe_navigation_bar_glass_height",
@@ -209,7 +209,7 @@ val NavigationBar = patch(
             val paddingHook = object : io.github.a092devs.nexfusion.compat.XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
                     val view = param.thisObject as View
-                    param.args[3] = NavigationBarPatch.getNavigationBarPadding(view, param.args[3] as Int)
+                    param.args[3] = NavigationBarPatch.getNavigationBarBottomPadding(view, param.args[3] as Int)
                 }
             }
             io.github.a092devs.nexfusion.compat.XposedHelpers.findAndHookMethod(
@@ -233,15 +233,65 @@ val NavigationBar = patch(
         }
     }
 
-    // Build PivotBar items (Search, Settings, Watch Later)
+    // Lighten the blur tint Paint used over the glass navigation bar so opacity slider works.
+    runCatching {
+        val setAlphaMethod = android.graphics.Paint::class.java.getMethod("setAlpha", Int::class.javaPrimitiveType)
+        ::navigationBarBlurTintMethod.hookMethod(scopedHook(setAlphaMethod) {
+            after { param ->
+                NavigationBarPatch.setNavigationBarBlurTint(param.thisObject as android.graphics.Paint)
+            }
+        })
+    }
+
+    // Disable toolbar navigation tabs and restore Subscriptions in the bottom navigation bar.
+    if (is_21_35_or_greater) {
+        insertLiteralOverride(45780222L, ClassicSubscriptionsLayoutPatch::hideOfflineSubscriptionsButton)
+
+        runCatching {
+            val streamMethod = java.util.Collection::class.java.getMethod("stream")
+            BrowseResponseTabsFingerprint.hookMethod(scopedHook(streamMethod) {
+                before { param ->
+                    if (innerDepth != 0) return@before
+                    @Suppress("UNCHECKED_CAST")
+                    val tabs = param.thisObject as? List<Any> ?: return@before
+                    val filtered = ClassicSubscriptionsLayoutPatch.filterBrowseTabs(tabs)
+                    if (filtered !== tabs) {
+                        param.result = filtered.stream()
+                    }
+                }
+            })
+        }.onFailure {
+            io.github.a092devs.nexfusion.PatcherLog.error(it) { "NexFusionNav: BrowseResponseTabsFingerprint hook failed" }
+        }
+    }
+
+    // Build PivotBar items (Search, Settings, Watch Later, and Subscriptions)
+    val subsFactoryMethod = runCatching { PivotBarItemProtoFactoryFingerprint.method }
+        .onFailure { io.github.a092devs.nexfusion.PatcherLog.error(it) { "NexFusionNav: PivotBarItemProtoFactoryFingerprint failed" } }
+        .getOrNull()
+    val subsIconLookupMethod = subsFactoryMethod?.parameterTypes?.getOrNull(2)?.let { iconEnumClass ->
+        iconEnumClass.declaredMethods.firstOrNull {
+            java.lang.reflect.Modifier.isStatic(it.modifiers) &&
+                    it.returnType == iconEnumClass &&
+                    it.parameterTypes.size == 1 &&
+                    it.parameterTypes[0] == Int::class.javaPrimitiveType
+        }?.apply { isAccessible = true }
+    }
+    var pivotBarParseMethod: java.lang.reflect.Method? = null
+    var pivotBarDefaultInstance: Any? = null
+    var pivotBarRegistry: Any? = null
+    var pivotBarRendererFactory: java.lang.reflect.Method? = null
+
     runCatching {
         val factoryMethod = PivotBarRendererFingerprint.method
+        pivotBarRendererFactory = factoryMethod
         val protoParamType = factoryMethod.parameterTypes[0]
         val defaultInstanceField = protoParamType.declaredFields.firstOrNull {
             java.lang.reflect.Modifier.isStatic(it.modifiers) && it.type == protoParamType
         } ?: protoParamType.getDeclaredField("a")
         defaultInstanceField.isAccessible = true
         val defaultInstance = defaultInstanceField.get(null)
+        pivotBarDefaultInstance = defaultInstance
 
         val parseMethod = protoParamType.superclass.methods.firstOrNull {
             it.name == "parseFrom" &&
@@ -256,6 +306,7 @@ val NavigationBar = patch(
                     it.parameterTypes[0].isAssignableFrom(protoParamType) &&
                     it.parameterTypes[1] == ByteArray::class.java
         }
+        pivotBarParseMethod = parseMethod
 
         val registry = runCatching {
             val registryClass = classLoader.loadClass("com.google.protobuf.ExtensionRegistryLite")
@@ -263,6 +314,7 @@ val NavigationBar = patch(
             registryMethod.isAccessible = true
             registryMethod.invoke(null)
         }.getOrNull()
+        pivotBarRegistry = registry
 
         io.github.a092devs.nexfusion.compat.XposedHelpers.findAndHookMethod(
             NavigationBarPatch::class.java,
@@ -291,13 +343,27 @@ val NavigationBar = patch(
         )
     }
 
-    // Initialize custom pivot bar buttons
+    // Initialize custom pivot bar buttons and convert icon-only buttons when needed
     runCatching {
         PivotBarRendererFingerprint.hookMethod {
             before { param ->
                 val obj = param.args[0] ?: return@before
-                android.util.Log.i("NexFusionNav", "PivotBarRendererFingerprint called with obj: ${obj.javaClass}")
                 NavigationBarPatch.createPivotBarItems(obj)
+                val converted = (obj as? com.google.protobuf.MessageLite)?.let {
+                    ClassicSubscriptionsLayoutPatch.convertIconOnlyPivotBarItem(it)
+                }
+                if (converted != null && pivotBarParseMethod != null && pivotBarDefaultInstance != null) {
+                    runCatching {
+                        val parsed = if (pivotBarParseMethod!!.parameterTypes.size == 3 && pivotBarRegistry != null) {
+                            pivotBarParseMethod!!.invoke(null, pivotBarDefaultInstance, converted, pivotBarRegistry)
+                        } else {
+                            pivotBarParseMethod!!.invoke(null, pivotBarDefaultInstance, converted)
+                        }
+                        if (parsed != null) {
+                            param.args[0] = parsed
+                        }
+                    }
+                }
             }
         }
     }
@@ -335,17 +401,39 @@ val NavigationBar = patch(
                     it.parameterTypes.size == 1 &&
                     it.parameterTypes[0].isAssignableFrom(java.util.Collection::class.java)
         }
-        android.util.Log.i("NexFusionNav", "Found copyOfMethod: $copyOfMethod on returnType: $returnType")
-
         listBuilderMethod.hookMethod {
             after { param ->
                 runCatching {
+                    @Suppress("UNCHECKED_CAST")
                     val currentList = param.result as? List<Any> ?: return@after
-                    val modified = NavigationBarPatch.getPivotBarRendererList(currentList) ?: return@after
+                    var modified = NavigationBarPatch.getPivotBarRendererList(currentList) ?: currentList
+                    val needsSubs = if (is_21_35_or_greater &&
+                        subsFactoryMethod != null &&
+                        subsIconLookupMethod != null &&
+                        pivotBarRendererFactory != null
+                    ) ClassicSubscriptionsLayoutPatch.needsSubscriptionsPivotBarItem(modified) else false
+                    if (needsSubs) {
+                        val iconEnum = subsIconLookupMethod!!.invoke(
+                            null,
+                            ClassicSubscriptionsLayoutPatch.getSubscriptionsIconType()
+                        )
+                        val proto = subsFactoryMethod!!.invoke(
+                            null,
+                            "FEsubscriptions",
+                            ClassicSubscriptionsLayoutPatch.getSubscriptionsLabel(),
+                            iconEnum,
+                            ClassicSubscriptionsLayoutPatch.isSubscriptionsIconOnly()
+                        )
+                        val optional = pivotBarRendererFactory!!.invoke(null, proto)
+                        val subsItem = optional?.javaClass?.getMethod("orElse", Any::class.java)?.invoke(optional, null)
+                        if (subsItem != null) {
+                            modified = ClassicSubscriptionsLayoutPatch.addSubscriptionsPivotBarItem(modified, subsItem)
+                        }
+                    }
+                    if (modified === currentList) return@after
                     if (copyOfMethod != null) {
                         copyOfMethod.isAccessible = true
                         val res = copyOfMethod.invoke(null, modified)
-                        android.util.Log.i("NexFusionNav", "Invoked copyOfMethod: res=$res (${res?.javaClass})")
                         if (res != null && returnType.isInstance(res)) {
                             param.result = res
                         }
@@ -353,10 +441,12 @@ val NavigationBar = patch(
                         param.result = modified
                     }
                 }.onFailure {
-                    android.util.Log.e("NexFusionNav", "Error in pivotBarRendererList hook", it)
+                    io.github.a092devs.nexfusion.PatcherLog.error(it) { "NexFusionNav: Error in pivotBarRendererList hook" }
                 }
             }
         }
+    }.onFailure {
+        io.github.a092devs.nexfusion.PatcherLog.error(it) { "NexFusionNav: pivotBarRendererListBuilderMethod setup failed" }
     }
 
     // Clip Live Chat scroll button
@@ -446,7 +536,7 @@ val NavigationBar = patch(
 
     // The keyboard branch reads its insets before constructing the bottom-margin update.
     // Replace that margin where it is consumed, while leaving the other margins unchanged.
-    runCatching {
+    val hasModernBottomMargin = runCatching {
         PageBottomMarginFingerprint.hookMethod(scopedHook(::pageKeyboardInsetsMethod.method) {
             before { outerParam.setObjectExtra("navigationKeyboardMargin", true) }
         })
@@ -457,18 +547,21 @@ val NavigationBar = patch(
                 }
             }
         })
-    }
-    runCatching {
-        PageBottomMarginLegacyFingerprint.hookMethod(scopedHook(::pageKeyboardInsetsMethod.method) {
-            before { outerParam.setObjectExtra("navigationKeyboardMargin", true) }
-        })
-        PageBottomMarginLegacyFingerprint.hookMethod(scopedHook(::pageBottomMarginConstructor.constructor) {
-            before {
-                if (it.args[1] == 1 && outerParam.getObjectExtra("navigationKeyboardMargin") == true) {
-                    it.args[0] = 0
+        true
+    }.getOrDefault(false)
+    if (!hasModernBottomMargin) {
+        runCatching {
+            PageBottomMarginLegacyFingerprint.hookMethod(scopedHook(::pageKeyboardInsetsMethod.method) {
+                before { outerParam.setObjectExtra("navigationKeyboardMargin", true) }
+            })
+            PageBottomMarginLegacyFingerprint.hookMethod(scopedHook(::pageBottomMarginConstructor.constructor) {
+                before {
+                    if (it.args[1] == 1 && outerParam.getObjectExtra("navigationKeyboardMargin") == true) {
+                        it.args[0] = 0
+                    }
                 }
-            }
-        })
+            })
+        }
     }
 
     // A feed behind the navigation bar includes the keyboard in its bottom padding.
@@ -515,32 +608,65 @@ val NavigationBar = patch(
     }
 }
 
-fun getPivotBarItemProto(pivotBarItem: Any): app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarItemBytes {
-    val bytes = if (pivotBarItem is ByteArray) {
-        pivotBarItem
-    } else {
-        val protoObj = runCatching {
-            val field = pivotBarItem.javaClass.declaredFields.firstOrNull {
-                !java.lang.reflect.Modifier.isStatic(it.modifiers) &&
-                        it.type.name != "boolean" &&
-                        !it.type.name.startsWith("j$.util.Optional") &&
-                        !it.type.name.startsWith("java.lang")
-            } ?: pivotBarItem.javaClass.getDeclaredField("a")
-            field.isAccessible = true
-            field.get(pivotBarItem)
-        }.getOrNull() ?: pivotBarItem
-        protoObj.javaClass.getMethod("toByteArray").invoke(protoObj) as ByteArray
+private fun getPivotBarBytes(pivotBarItem: Any): ByteArray {
+    if (pivotBarItem is ByteArray) return pivotBarItem
+    if (runCatching { pivotBarItem.javaClass.getMethod("toByteArray") }.isSuccess) {
+        return pivotBarItem.javaClass.getMethod("toByteArray").invoke(pivotBarItem) as ByteArray
     }
-    return app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarItemBytes.parseFrom(bytes)
+    var cls: Class<*>? = pivotBarItem.javaClass
+    while (cls != null && cls != Any::class.java) {
+        for (field in cls.declaredFields) {
+            if (java.lang.reflect.Modifier.isStatic(field.modifiers) || field.type.isPrimitive) continue
+            field.isAccessible = true
+            val value = runCatching { field.get(pivotBarItem) }.getOrNull() ?: continue
+            if (runCatching { value.javaClass.getMethod("toByteArray") }.isSuccess) {
+                return value.javaClass.getMethod("toByteArray").invoke(value) as ByteArray
+            }
+        }
+        cls = cls.superclass
+    }
+    return ByteArray(0)
+}
+
+fun getPivotBarItemProto(pivotBarItem: Any): app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarItemBytes {
+    return app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarItemBytes.parseFrom(getPivotBarBytes(pivotBarItem))
 }
 
 fun getPivotBarItemRenderer(pivotBarItem: Any): app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarItemRenderer? {
-    return runCatching {
-        val item = getPivotBarItemProto(pivotBarItem)
-        if (item.hasPivotBarItemRenderer()) {
-            app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarItemRenderer.parseFrom(item.pivotBarItemRenderer)
-        } else if (item.hasPivotBarIconOnlyItemRenderer()) {
-            val iconOnly = app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarIconOnlyItemRendererBytes.parseFrom(item.pivotBarIconOnlyItemRenderer)
+    val bytes = runCatching { getPivotBarBytes(pivotBarItem) }.getOrNull() ?: return null
+    if (bytes.isEmpty()) return null
+
+    val fromWrapper = runCatching {
+        val item = app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarItemBytes.parseFrom(bytes)
+        when {
+            item.hasPivotBarItemRenderer() ->
+                app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarItemRenderer.parseFrom(item.pivotBarItemRenderer)
+            item.hasPivotBarIconOnlyItemRenderer() -> {
+                val iconOnly = app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarIconOnlyItemRendererBytes.parseFrom(item.pivotBarIconOnlyItemRenderer)
+                app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarItemRenderer.newBuilder()
+                    .setPivotIdentifier(iconOnly.pivotIdentifier)
+                    .setAccessibility(
+                        app.morphe.extension.shared.innertube.GuideResponseOuterClass.Accessibility.newBuilder()
+                            .setAccessibilityData(
+                                app.morphe.extension.shared.innertube.GuideResponseOuterClass.AccessibilityData.newBuilder()
+                                    .setLabel(iconOnly.accessibility.runs.text)
+                            )
+                    )
+                    .build()
+            }
+            else -> null
+        }
+    }.getOrNull()
+    if (fromWrapper != null) return fromWrapper
+
+    val fromDirect = runCatching {
+        app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarItemRenderer.parseFrom(bytes)
+    }.getOrNull()?.takeIf { it.pivotIdentifier.isNotEmpty() }
+    if (fromDirect != null) return fromDirect
+
+    val fromIconOnly = runCatching {
+        val iconOnly = app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarIconOnlyItemRendererBytes.parseFrom(bytes)
+        if (iconOnly.pivotIdentifier.isNotEmpty()) {
             app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarItemRenderer.newBuilder()
                 .setPivotIdentifier(iconOnly.pivotIdentifier)
                 .setAccessibility(
@@ -551,14 +677,29 @@ fun getPivotBarItemRenderer(pivotBarItem: Any): app.morphe.extension.shared.inne
                         )
                 )
                 .build()
-        } else {
-            val bytes = if (pivotBarItem is ByteArray) pivotBarItem else {
-                val protoObj = runCatching {
-                    pivotBarItem.javaClass.getDeclaredField("a").apply { isAccessible = true }.get(pivotBarItem)
-                }.getOrNull() ?: pivotBarItem
-                protoObj.javaClass.getMethod("toByteArray").invoke(protoObj) as ByteArray
+        } else null
+    }.getOrNull()
+    if (fromIconOnly != null) return fromIconOnly
+
+    // Fallback: scan raw protobuf bytes for top-level string field 1 (pivotIdentifier) or nested 117501096 / 318370163
+    return runCatching {
+        val cis = com.google.protobuf.CodedInputStream.newInstance(bytes)
+        var pivotId: String? = null
+        while (!cis.isAtEnd) {
+            val tag = cis.readTag()
+            if (tag == 0) break
+            val fieldNumber = tag ushr 3
+            val wireType = tag and 7
+            if (fieldNumber == 1 && wireType == 2) {
+                pivotId = cis.readString()
+                break
             }
-            app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarItemRenderer.parseFrom(bytes)
+            cis.skipField(tag)
+        }
+        pivotId?.takeIf { it.isNotEmpty() }?.let { id ->
+            app.morphe.extension.shared.innertube.GuideResponseOuterClass.PivotBarItemRenderer.newBuilder()
+                .setPivotIdentifier(id)
+                .build()
         }
     }.getOrNull()
 }

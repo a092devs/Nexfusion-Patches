@@ -37,7 +37,7 @@ public final class DisableAdBreaksPatch {
     /**
      * Delay before the first update, so the native ads service is running.
      */
-    private static final long INITIAL_DELAY_SECONDS = 10;
+    private static final long INITIAL_DELAY_SECONDS = 2;
 
     /**
      * The slots are disabled again periodically, in case the app or the server enables them again.
@@ -94,9 +94,29 @@ public final class DisableAdBreaksPatch {
             ClassLoader classLoader = transportClass.getClassLoader();
             Class<?> callbackClass = Class.forName(RESOLVE_CALLBACK_CLASS, false, classLoader);
 
-            Method createRequest = transportClass.getDeclaredMethod(
-                    "access$createRequest", transportClass, String.class, String.class, byte[].class, String.class
-            );
+            Method createRequest = null;
+            try {
+                createRequest = transportClass.getDeclaredMethod(
+                        "access$createRequest", transportClass, String.class, String.class, byte[].class, String.class
+                );
+            } catch (NoSuchMethodException ignored) {
+                for (Method m : transportClass.getDeclaredMethods()) {
+                    Class<?>[] pts = m.getParameterTypes();
+                    if (java.lang.reflect.Modifier.isStatic(m.getModifiers())
+                            && pts.length == 5
+                            && pts[0] == transportClass
+                            && pts[1] == String.class
+                            && pts[2] == String.class
+                            && pts[3] == byte[].class
+                            && pts[4] == String.class) {
+                        createRequest = m;
+                        break;
+                    }
+                }
+            }
+            if (createRequest == null) {
+                throw new NoSuchMethodException("createRequest not found in " + transportClass);
+            }
             createRequest.setAccessible(true);
 
             Field routerField = transportClass.getDeclaredField("router");

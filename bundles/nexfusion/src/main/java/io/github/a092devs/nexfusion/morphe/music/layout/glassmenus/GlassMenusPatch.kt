@@ -26,15 +26,18 @@ val GlassMenus = patch(
                 SwitchPreference("morphe_glass_menus", summary = true),
                 NonInteractivePreference(
                     key = "morphe_glass_menus_opacity",
-                    tag = app.morphe.extension.shared.settings.preference.SeekBarPreference::class.java
+                    tag = app.morphe.extension.shared.settings.preference.SeekBarPreference::class.java,
+                    selectable = true,
                 ),
                 NonInteractivePreference(
                     key = "morphe_glass_menus_blur",
-                    tag = app.morphe.extension.shared.settings.preference.SeekBarPreference::class.java
+                    tag = app.morphe.extension.shared.settings.preference.SeekBarPreference::class.java,
+                    selectable = true,
                 ),
                 NonInteractivePreference(
                     key = "morphe_glass_menus_dim",
-                    tag = app.morphe.extension.shared.settings.preference.SeekBarPreference::class.java
+                    tag = app.morphe.extension.shared.settings.preference.SeekBarPreference::class.java,
+                    selectable = true,
                 ),
             ),
         )

@@ -1210,37 +1210,6 @@ val TelegramHideStories = patch(
     }
 }
 
-val TelegramHideStoriesRead = patch(
-    name = "Hide Stories read status",
-    description = "Prevents the client from sending Stories read receipts.",
-    use = false,
-) {
-    runCatching {
-        val cm = runCatching { classLoader.loadClass("org.telegram.tgnet.ConnectionsManager") }.getOrNull()
-        if (cm != null) {
-            XposedBridge.hookAllMethods(cm, "sendRequest", object : XC_MethodHook() {
-                override fun beforeHookedMethod(param: MethodHookParam) {
-                    val req = param.args.firstOrNull() ?: return
-                    if (req.javaClass.name.contains("readStories", ignoreCase = true)) {
-                        param.result = 0
-                    }
-                }
-            })
-        }
-    }
-    runCatching {
-        val sc = resolveStoriesController()
-        if (sc != null) {
-            sc.declaredMethods.filter {
-                (it.name.contains("read", ignoreCase = true) || it.name.contains("mark", ignoreCase = true)) &&
-                    it.returnType == java.lang.Boolean.TYPE
-            }.forEach { method ->
-                XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(true))
-            }
-        }
-    }
-}
-
 val TelegramBypassContentRestrictions = patch(
     name = "Bypass content restrictions",
     description = "Allows saving and forwarding content from restricted channels, chats, and users.",
@@ -1545,13 +1514,33 @@ val TelegramDisableDoubleTapReaction = patch(
 
 val TelegramRevealSpoilers = patch(
     name = "Auto-reveal spoilers",
-    description = "Automatically reveals hidden spoiler text without tapping.",
+    description = "Automatically reveals hidden spoiler text and media without tapping.",
     use = false,
 ) {
     runCatching {
         val spoilerClass = resolveSpoilerEffect()
         if (spoilerClass != null) {
-            XposedBridge.hookAllMethods(spoilerClass, "isRippling", XC_MethodReplacement.returnConstant(false))
+            XposedBridge.hookAllMethods(spoilerClass, "isRevealed", XC_MethodReplacement.returnConstant(true))
+            XposedBridge.hookAllMethods(spoilerClass, "setRevealed", object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (param.args.isNotEmpty() && param.args[0] is Boolean) {
+                        param.args[0] = true
+                    }
+                }
+            })
+            XposedBridge.hookAllMethods(spoilerClass, "draw", XC_MethodReplacement.DO_NOTHING)
+        }
+    }
+
+    runCatching {
+        val spoiler2Class = classLoader.loadClass("org.telegram.ui.Components.spoilers.SpoilerEffect2")
+        XposedBridge.hookAllMethods(spoiler2Class, "draw", XC_MethodReplacement.DO_NOTHING)
+    }
+
+    runCatching {
+        val mo = resolveMessageObject()
+        if (mo != null) {
+            XposedBridge.hookAllMethods(mo, "hasMediaSpoilers", XC_MethodReplacement.returnConstant(false))
         }
     }
 }
@@ -1584,58 +1573,47 @@ val TelegramShowSeconds = patch(
     use = false,
 ) {
     runCatching {
-        val lcClasses = linkedSetOf<Class<*>>()
-        resolveLocaleController()?.let { lcClasses.add(it) }
-        for (name in listOf("org.telegram.messenger.LocaleController", "org.telegram.messenger.dd")) {
-            runCatching { classLoader.loadClass(name) }.getOrNull()?.let { lcClasses.add(it) }
-        }
-        for (formatter in lcClasses) {
-            val targetMethods = formatter.declaredMethods.filter {
-                it.name == "formatDateChat" && it.parameterCount >= 1 && it.returnType == String::class.java
-            }.ifEmpty {
-                val m1 = runCatching {
-                    dexkit.getMethodDirectOrNull("tg_format_date_chat_1") {
-                        findMethod {
-                            matcher {
-                                declaredClass = formatter.name
-                                usingStrings("formatDateChat")
-                                returnType = "java.lang.String"
-                                paramTypes("long")
-                            }
-                        }.first()
-                    }
-                }.getOrNull()
-                val m2 = runCatching {
-                    dexkit.getMethodDirectOrNull("tg_format_date_chat_2") {
-                        findMethod {
-                            matcher {
-                                declaredClass = formatter.name
-                                usingStrings("formatDateChat")
-                                returnType = "java.lang.String"
-                                paramTypes("long", "boolean")
-                            }
-                        }.first()
-                    }
-                }.getOrNull()
-                val dkNames = listOfNotNull(m1?.name, m2?.name).toSet()
-                formatter.declaredMethods.filter {
-                    it.name in dkNames && it.parameterCount >= 1 && it.returnType == String::class.java
+        val fastDateFormat = classLoader.loadClass("org.telegram.messenger.time.FastDateFormat")
+        val formatMethod = fastDateFormat.getMethod("format", Long::class.javaPrimitiveType)
+        val clockRegex = Regex("""(?<![:\d])\d{1,2}:\d{2}(?![:\d])""")
+        val editedId = appContext.resources.getIdentifier("EditedMessage", "string", appContext.packageName)
+
+        val timeMethod = dexkit.getMethodDirectOrNull("tg_time_method") {
+            findMethod {
+                matcher {
+                    if (editedId != 0) addUsingNumber(editedId)
                 }
+            }.first {
+                it.paramTypeNames.any { p -> p.endsWith("MessageObject") } &&
+                    (it.returnTypeName == "void" || it.returnTypeName == "java.lang.String")
             }
-            targetMethods.forEach { method ->
-                XposedBridge.hookMethod(method, object : XC_MethodHook() {
+        }
+
+        val inTimeMethod = ThreadLocal.withInitial { 0 }
+        if (timeMethod != null) {
+            runCatching {
+                timeMethod.hookMethod(object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        inTimeMethod.set(inTimeMethod.get() + 1)
+                    }
                     override fun afterHookedMethod(param: MethodHookParam) {
-                        val timestamp = (param.args[0] as? Number)?.toLong() ?: return
-                        val cal = java.util.Calendar.getInstance().apply { timeInMillis = timestamp * 1000L }
-                        param.result = String.format("%02d:%02d:%02d",
-                            cal.get(java.util.Calendar.HOUR_OF_DAY),
-                            cal.get(java.util.Calendar.MINUTE),
-                            cal.get(java.util.Calendar.SECOND)
-                        )
+                        inTimeMethod.set((inTimeMethod.get() - 1).coerceAtLeast(0))
                     }
                 })
             }
         }
+
+        XposedBridge.hookMethod(formatMethod, object : XC_MethodHook() {
+            override fun afterHookedMethod(param: MethodHookParam) {
+                if (inTimeMethod.get() <= 0) return
+                val time = param.result as? String ?: return
+                val millis = (param.args.firstOrNull() as? Number)?.toLong() ?: return
+                val match = clockRegex.find(time) ?: return
+                val seconds = ((millis / 1000L) % 60L + 60L) % 60L
+                val secStr = if (seconds < 10L) ":0$seconds" else ":$seconds"
+                param.result = time.substring(0, match.range.last + 1) + secStr + time.substring(match.range.last + 1)
+            }
+        })
     }
 }
 
@@ -1768,15 +1746,50 @@ val TelegramDisableReactionEffects = patch(
 
 val TelegramSwipeBack = patch(
     name = "Swipe back on profiles",
-    description = "Enables right swipe on profile photos and media tabs to return to previous screen.",
+    description = "Makes a swipe right on a profile's photos or media tabs go back, like the rest of the profile.",
     use = false,
 ) {
     runCatching {
-        val ppv = runCatching { classLoader.loadClass("org.telegram.ui.ProfileActivity") }.getOrNull()
-        if (ppv != null) {
-            ppv.declaredMethods.filter { it.name == "hasCustomSwipeBack" || it.name == "isSwipeBackEnabled" }.forEach { m ->
-                XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(true))
-            }
+        val profileClass = classLoader.loadClass("org.telegram.ui.ProfileActivity")
+        val motionEventClass = android.view.MotionEvent::class.java
+        val swipeMethod = profileClass.declaredMethods.firstOrNull {
+            (it.name == "isSwipeBackEnabled" || it.name == "hasCustomSwipeBack") &&
+                it.returnType == java.lang.Boolean.TYPE &&
+                it.parameterTypes.contentEquals(arrayOf(motionEventClass))
+        } ?: dexkit.getMethodDirectOrNull("tg_profile_swipe_back") {
+            findMethod {
+                matcher {
+                    declaredClass = "org.telegram.ui.ProfileActivity"
+                    returnType = "boolean"
+                    paramTypes("android.view.MotionEvent")
+                }
+            }.first()
+        }?.let { md ->
+            profileClass.getDeclaredMethod(md.name, motionEventClass)
+        }
+
+        if (swipeMethod != null) {
+            val inSwipeCheck = ThreadLocal.withInitial { 0 }
+            XposedBridge.hookMethod(swipeMethod, object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    inSwipeCheck.set(inSwipeCheck.get() + 1)
+                }
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    inSwipeCheck.set((inSwipeCheck.get() - 1).coerceAtLeast(0))
+                }
+            })
+            val rectContains = android.graphics.Rect::class.java.getMethod(
+                "contains",
+                Int::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType
+            )
+            XposedBridge.hookMethod(rectContains, object : XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    if (inSwipeCheck.get() > 0) {
+                        param.result = false
+                    }
+                }
+            })
         }
     }
 }
@@ -1829,23 +1842,6 @@ val TelegramDisableChatSwipe = patch(
             cls.declaredMethods.filter { it.name.contains("SwipeAction", ignoreCase = true) || it.name == "isSwipeActionEnabled" }.forEach { m ->
                 XposedBridge.hookMethod(m, XC_MethodReplacement.returnConstant(false))
             }
-        }
-    }
-}
-
-val TelegramBypassIntegrity = patch(
-    name = "Bypass integrity check",
-    description = "Spoofs certificate fingerprint so login works on patched APK.",
-    use = false,
-) {
-    runCatching {
-        val au = resolveAndroidUtilities()
-        if (au != null) {
-            XposedBridge.hookAllMethods(
-                au,
-                "getCertificateSHA256Fingerprint",
-                XC_MethodReplacement.returnConstant("49C1522548EBACD46CE322B6FD47F6092BB745D0F88082145CAF35E14DCC38E1"),
-            )
         }
     }
 }
@@ -2127,12 +2123,10 @@ val TelegramDisableCameraSwipe = patch(
 
 val TelegramPatches = arrayOf(
     TelegramAmoledBlack,
-    TelegramUnlockPremium,
     TelegramRemoveAds,
     TelegramAntiDelete,
     TelegramAntiDisappearingMedia,
     TelegramHideStories,
-    TelegramHideStoriesRead,
     TelegramBypassContentRestrictions,
     TelegramBypassChannelRestrictions,
     TelegramDownloadBoost,
@@ -2159,5 +2153,4 @@ val TelegramPatches = arrayOf(
     TelegramSwipeBack,
     TelegramStripLinkTracking,
     TelegramDisableChatSwipe,
-    TelegramBypassIntegrity,
 )

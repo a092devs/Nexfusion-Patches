@@ -13,6 +13,7 @@ val HideStatusBar = patch(
 ) {
     PreferenceScreen.GENERAL.addPreferences(
         SwitchPreference("morphe_hide_status_bar", summary = true),
+        SwitchPreference("morphe_hide_status_bar_avoid_cutout", summary = true),
         SwitchPreference("morphe_fix_status_bar_layout", summary = true),
     )
 
