@@ -100,9 +100,21 @@ jobs:
                   quote_open = "<blockquote expandable>"
                   quote_close = "</blockquote>"
                   full_inner = "\n".join(formatted_lines).strip() if formatted_lines else ""
-                  full_message = f"{header}\n\n{quote_open}{full_inner}{quote_close}\n\n{footer}" if full_inner else f"{header}\n\n{footer}"
-                  needs_followup = len(full_message) > 1024
-                  caption = f"{header}\n\n{footer}" if needs_followup else full_message
+
+                  def visible_len(s: str) -> int:
+                      return len(html.unescape(re.sub(r"<[^>]+>", "", s)))
+
+                  if full_inner:
+                      caption = f"{header}\n\n{quote_open}{full_inner}{quote_close}\n\n{footer}"
+                      if visible_len(caption) > 1000:
+                          kept_lines = list(formatted_lines)
+                          suffix = "\n• ..."
+                          while kept_lines and visible_len(f"{header}\n\n{quote_open}" + "\n".join(kept_lines).strip() + f"{suffix}{quote_close}\n\n{footer}") > 1000:
+                              kept_lines.pop()
+                          trimmed = "\n".join(kept_lines).strip()
+                          caption = f"{header}\n\n{quote_open}{trimmed}{suffix}{quote_close}\n\n{footer}" if trimmed else f"{header}\n\n{footer}"
+                  else:
+                      caption = f"{header}\n\n{footer}"
 
                   files = sorted(glob.glob("release-assets/*.nxb"))
                   if not files:
@@ -152,26 +164,4 @@ jobs:
                   except urllib.error.HTTPError as e:
                       print("Telegram sendMediaGroup failed:", e.code, e.read().decode("utf-8", errors="replace"), file=sys.stderr)
                       raise
-
-                  if needs_followup:
-                      reply_to = results[-1]["message_id"] if results else None
-                      msg_payload = {
-                          "chat_id": chat_id,
-                          "text": full_message[:4096],
-                          "parse_mode": "HTML",
-                          "disable_web_page_preview": True,
-                      }
-                      if reply_to:
-                          msg_payload["reply_to_message_id"] = reply_to
-                      msg_req = urllib.request.Request(
-                          f"https://api.telegram.org/bot{token}/sendMessage",
-                          data=json.dumps(msg_payload).encode("utf-8"),
-                          headers={"Content-Type": "application/json"},
-                      )
-                      try:
-                          with urllib.request.urlopen(msg_req, timeout=60) as resp:
-                              print("sendMessage ok")
-                      except urllib.error.HTTPError as e:
-                          print("Telegram sendMessage failed:", e.code, e.read().decode("utf-8", errors="replace"), file=sys.stderr)
-                          raise
                   PY
