@@ -26,6 +26,7 @@ jobs:
                   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                   TAG: ${{ inputs.tag }}
                   REPO: ${{ github.repository }}
+                  COMMIT_SHA: ${{ github.sha }}
               run: |
                   set -euo pipefail
                   mkdir -p release-assets
@@ -39,6 +40,7 @@ jobs:
                   TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
                   TAG: ${{ inputs.tag }}
                   REPO: ${{ github.repository }}
+                  COMMIT_SHA: ${{ github.sha }}
               run: |
                   set -euo pipefail
                   if [[ -z "${TELEGRAM_BOT_TOKEN:-}" || -z "${TELEGRAM_CHAT_ID:-}" ]]; then
@@ -53,6 +55,7 @@ jobs:
                   chat_id = os.environ["TELEGRAM_CHAT_ID"]
                   tag = os.environ["TAG"]
                   repo = os.environ["REPO"]
+                  commit_sha = os.environ.get("COMMIT_SHA", "")
 
                   notes = ""
                   if os.path.exists("release-notes.md"):
@@ -89,8 +92,9 @@ jobs:
                       formatted_lines.pop()
 
                   header = f"🧩 <b>NexFusion Patches {html.escape(tag)} Released</b>"
+                  commit_url = f"https://github.com/{repo}/commit/{commit_sha}" if commit_sha else f"https://github.com/{repo}"
                   footer = (
-                      f"🔗 <a href=\"https://github.com/{repo}/releases/tag/{urllib.parse.quote(tag)}\">GitHub Release</a>\n"
+                      f"🔗 <a href=\"{commit_url}\">GitHub Commit</a>\n"
                       f"📢 Channel: @nexfusion"
                   )
                   quote_open = "<blockquote expandable>"
