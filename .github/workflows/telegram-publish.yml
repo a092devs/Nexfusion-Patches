@@ -95,27 +95,10 @@ jobs:
                   )
                   quote_open = "<blockquote expandable>"
                   quote_close = "</blockquote>"
-                  max_inner = 1024 - len(header) - len(footer) - len(quote_open) - len(quote_close) - 10
-
-                  if formatted_lines:
-                      kept = []
-                      cur_len = 0
-                      truncated = False
-                      for ln in formatted_lines:
-                          add_len = len(ln) + (1 if kept else 0)
-                          if cur_len + add_len > max_inner:
-                              truncated = True
-                              break
-                          kept.append(ln)
-                          cur_len += add_len
-                      while kept and kept[-1] == "":
-                          kept.pop()
-                      inner = "\n".join(kept)
-                      if truncated:
-                          inner = (inner + "\n…") if inner else "…"
-                      caption = f"{header}\n\n{quote_open}{inner}{quote_close}\n\n{footer}"
-                  else:
-                      caption = f"{header}\n\n{footer}"
+                  full_inner = "\n".join(formatted_lines).strip() if formatted_lines else ""
+                  full_message = f"{header}\n\n{quote_open}{full_inner}{quote_close}\n\n{footer}" if full_inner else f"{header}\n\n{footer}"
+                  needs_followup = len(full_message) > 1024
+                  caption = f"{header}\n\n{footer}" if needs_followup else full_message
 
                   files = sorted(glob.glob("release-assets/*.nxb"))
                   if not files:
@@ -160,8 +143,31 @@ jobs:
                   try:
                       with urllib.request.urlopen(req, timeout=180) as resp:
                           res_data = json.loads(resp.read().decode("utf-8"))
-                          print("sendMediaGroup ok:", len(res_data.get("result", [])))
+                          results = res_data.get("result", [])
+                          print("sendMediaGroup ok:", len(results))
                   except urllib.error.HTTPError as e:
                       print("Telegram sendMediaGroup failed:", e.code, e.read().decode("utf-8", errors="replace"), file=sys.stderr)
                       raise
+
+                  if needs_followup:
+                      reply_to = results[-1]["message_id"] if results else None
+                      msg_payload = {
+                          "chat_id": chat_id,
+                          "text": full_message[:4096],
+                          "parse_mode": "HTML",
+                          "disable_web_page_preview": True,
+                      }
+                      if reply_to:
+                          msg_payload["reply_to_message_id"] = reply_to
+                      msg_req = urllib.request.Request(
+                          f"https://api.telegram.org/bot{token}/sendMessage",
+                          data=json.dumps(msg_payload).encode("utf-8"),
+                          headers={"Content-Type": "application/json"},
+                      )
+                      try:
+                          with urllib.request.urlopen(msg_req, timeout=60) as resp:
+                              print("sendMessage ok")
+                      except urllib.error.HTTPError as e:
+                          print("Telegram sendMessage failed:", e.code, e.read().decode("utf-8", errors="replace"), file=sys.stderr)
+                          raise
                   PY
