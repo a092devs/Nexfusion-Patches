@@ -7,6 +7,11 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.0.18
+
+- **Telegram:**
+  * Dropped Telegram and Telegram Web patch support.
+
 ## 5.0.17
 
 - **YouTube:**
