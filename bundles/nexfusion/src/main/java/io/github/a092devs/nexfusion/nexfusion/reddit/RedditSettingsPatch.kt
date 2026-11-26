@@ -76,6 +76,7 @@ val RedditSettings = patch(
         "app.morphe.extension.reddit.patches.ForceSystemFontPatch",
         "app.morphe.extension.reddit.patches.FullScreenReplyPatch",
         "app.morphe.extension.reddit.patches.FullWidthFeedMediaPatch",
+        "app.morphe.extension.reddit.patches.GlassNavigationBarPatch",
         "app.morphe.extension.reddit.patches.HideAdsPatch",
         "app.morphe.extension.reddit.patches.HideAskButtonPatch",
         "app.morphe.extension.reddit.patches.HideCommunitiesShelfPatch",
@@ -112,9 +113,11 @@ val RedditSettings = patch(
         "app.morphe.extension.reddit.patches.TabletGridFeedPatch",
         "app.morphe.extension.reddit.patches.VersionCheckPatch",
     )
+    val bundleLoader = RedditActivityHook::class.java.classLoader
     for (className in redditExtensionPatches) {
         runCatching {
-            val cls = runCatching { Class.forName(className, false, XposedBridge::class.java.classLoader) }.getOrNull()
+            val cls = runCatching { Class.forName(className, false, bundleLoader) }.getOrNull()
+                ?: runCatching { Class.forName(className, false, XposedBridge::class.java.classLoader) }.getOrNull()
                 ?: runCatching { classLoader.loadClass(className) }.getOrNull()
             if (cls != null) {
                 val method = cls.getDeclaredMethod("isPatchIncluded")

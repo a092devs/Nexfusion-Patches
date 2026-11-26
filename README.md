@@ -6,7 +6,7 @@
     <a href="https://github.com/a092devs/Nexfusion-Patches/releases"><img src="https://img.shields.io/github/v/release/a092devs/Nexfusion-Patches?style=flat&color=1f6feb&labelColor=21262d&logo=github&label=Release" alt="Latest Release" /></a>
     <img src="https://img.shields.io/badge/Format-.nxb%20(Signed%20APK)-8957e5?style=flat&labelColor=21262d" alt="Format: .nxb" />
     <img src="https://img.shields.io/badge/LSPosed-API%20101%2F102-8957e5?style=flat&labelColor=21262d" alt="LSPosed API 101/102" />
-    <img src="https://img.shields.io/badge/Targets-22%20Applications-238636?style=flat&labelColor=21262d" alt="Targets: 22 Applications" />
+    <img src="https://img.shields.io/badge/Targets-15%20Applications-238636?style=flat&labelColor=21262d" alt="Targets: 15 Applications" />
     <img src="https://img.shields.io/badge/Icon-Hardware%20Silicon%20Matrix-1f6feb?style=flat&labelColor=21262d" alt="Hardware Silicon Matrix" />
     <a href="https://t.me/NexFusion"><img src="https://img.shields.io/badge/Telegram%20Channel-@NexFusion-2f81f7?style=flat&labelColor=21262d&logo=telegram&logoColor=white" alt="Telegram Channel" /></a>
     <a href="https://t.me/a092devs"><img src="https://img.shields.io/badge/Telegram-@a092devs-2f81f7?style=flat&labelColor=21262d&logo=telegram&logoColor=white" alt="Telegram Support" /></a>
@@ -107,14 +107,14 @@ A `.nxb` file is a signed APK container loaded directly into process memory by N
 ### Curated Distributions
 
 - **`nexfusion`:** Streaming core patches for YouTube, YouTube Music, and Google Photos cloud storage spoofing.
-- **`nexfusion` (`NexFusion Patches`):** Unified community runtime distribution covering all **22 supported application targets** in a single `.nxb` package.
+- **`nexfusion` (`NexFusion Patches`):** Unified community runtime distribution covering all **15 supported application targets** in a single `.nxb` package.
 
 ---
 
 ### Supported Applications Matrix
 
 <details>
-<summary><b>🎥 Video, Audio & Streaming (4 Targets)</b> — <i>YouTube, YouTube Music, Crunchyroll, Stremio</i></summary>
+<summary><b>🎥 Video, Audio & Streaming (4 Targets)</b> — <i>YouTube, YouTube Music, Crunchyroll, Spotify</i></summary>
 <br>
 
 | Application | Package Identifier | Key Patch Capabilities |
@@ -122,12 +122,12 @@ A `.nxb` file is a signed APK container loaded directly into process memory by N
 | **YouTube** | `com.google.android.youtube` | Remove video and feed ads, SponsorBlock integration, background playback, link sanitization, custom playback speeds & quality selector, swipe volume/brightness controls, layout component filtering, DeArrow title/thumbnail replacement, Litho node bypass, Shorts resuming, Ambient mode, Miniplayer, PiP seek buttons, disable playlist autoplay, channel search fingerprint fix, guarded navigation bar hook against abstract methods. |
 | **YouTube Music** | `com.google.android.apps.youtube.music` | Background audio playback, audio ad removal, exclusive audio stream playback, hide upgrade buttons, suppress promotional banners, SoundProof AI blocker, Playlist tags, offline fullscreen player, mark downloaded songs, third-party lyrics enhancement. |
 | **Crunchyroll** | `com.crunchyroll.crunchyroid` | Native Picture-in-Picture mode with contextual Skip Intro and Skip Credits controls; remove titles from Continue Watching feed. Verified targets: 3.126.0, 3.117.0. |
-| **Stremio** | `com.stremio.one` | Auto & manual intro/credits skipping using embedded chapters and stream metadata; auto-pick best stream (resolves 4K/cached stream on tap); hide episode spoilers (synopses & thumbnails); avoid SDH subtitles; audio & subtitle track language memory; smoother playback buffer expansion (120s); seamless binge watching; external player progress & subtitle hand-off (MX Player, Vimu). |
+| **Spotify** | `com.spotify.music` | Disable ad breaks, mute audio ads, hide ad sections/views/upsells, hide Premium tab, show unavailable tracks, sanitize sharing links, fix third-party launcher widgets. |
 
 </details>
 
 <details>
-<summary><b>💬 Social Networks & Messaging (5 Targets)</b> — <i>Instagram, X (Twitter), Reddit, Discord, LinkedIn</i></summary>
+<summary><b>💬 Social Networks (4 Targets)</b> — <i>Instagram, X (Twitter), Reddit, LinkedIn</i></summary>
 <br>
 
 | Application | Package Identifier | Key Patch Capabilities |
@@ -135,7 +135,6 @@ A `.nxb` file is a signed APK container loaded directly into process memory by N
 | **Instagram** | `com.instagram.android` | Media downloader (posts, multi-photo carousels, Reels, Stories, Highlights, profile pictures) with custom save directory, per-username subfolders, and timestamp naming; sponsored post, Reels, and Story ad removal; anonymous Story and Live stream viewing; tracking link sanitizer; ghost mode; optimized non-blocking layout listener for fluid typing and instant keyboard pop-up. Verified targets: 456.0.0.53.78, 454.0.0.54.77, 453.0.0.57.79, 453.0.0.55.79, 452.1.0.53.64, 452.0.0.48.64, 451.0.0.53.80, 450.0.0.46.79, 447.0.0.55.81. |
 | **X (Twitter)** | `com.twitter.android` | Promoted post and ad removal; video and GIF download unlock; sanitize share links (strip tracking query parameters); disable timeline auto-refresh; bypass Compose sensitive media blur interstitials without tap-to-reveal; outdated-app warning and forced in-app update block; telemetry and analytics blackholing; Premium upsell removal; tracking link sanitizer. Verified targets: 12.38.1-prod.01, 12.38.0-prod.01, 12.37.2-prod.01, 12.36.1-prod.01, 12.35.0-prod.01. |
 | **Reddit** | `com.reddit.frontpage` | Unlock local Premium UI perks (custom app icons, avatar styling, premium badges); block AutoMod comments at top of threads; feed and comment ad removal; start as guest mode; sanitize sharing URLs; suppress screenshot banner; transparent navigation bar; colorize comment indent lines; custom feed sorting; Redgifs audio unmuting. Verified targets: 2026.43.1, 2026.43.0, 2026.42.0, 2026.41.0, 2026.38.0, 2026.37.0, 2026.36.0, 2026.24.0, 2026.14.0. |
-| **Discord** | `com.discord` | Background audio playback (voice messages & media continue playing when switching apps); passkey & security key clarification hint; suppress crash telemetry, analytics, touch logging, install attribution, and advertising identifiers; native phone font support. Verified targets: 351.11, 350.8, 349.9, 348.10. |
 | **LinkedIn** | `com.linkedin.android` | Anonymous profile viewing (browse profiles without alerting users in 'Who viewed your profile'); 1-tap media downloader for photos, multi-image carousels, and progressive MP4 videos with download overlay button; sanitize copy and share links; bypass `safety/go` interstitial redirects directly; hide suggested posts (`Suggested`, `Disarankan`); hide promoted jobs (`Promoted`, `Dipromosikan`); hide Premium upsell banners in navigation panel and SDUI feeds; feed filters (celebrations, job cards, reposts, videos, reaction counts, new posts pill); Material You dynamic wallpaper palette (Android 12+); suppress tracking telemetry. Universal compatibility across all LinkedIn versions (e.g. 4.1.1267, 4.1.1266, 4.1.1264, 4.1.1255+). |
 
 </details>

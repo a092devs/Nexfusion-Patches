@@ -472,6 +472,7 @@ val HideLayoutComponents = patch(
 //    addSpanFilter(SanitizeVideoSubtitleFilter())
 //    addSpanFilter(SearchLinksFilter())
     hookTreeNodeResult(CommentsFilter::hideCommentsFilterBarOptions)
+    hookElement(KeywordContentFilter::onElementLoaded)
 
     // region hide mix playlists
 
@@ -513,6 +514,9 @@ val HideLayoutComponents = patch(
 
     // post buttons
     hookElement(LayoutComponentsFilter::setPostButtons)
+
+    // hide 'Members only' chip
+    hookElement(LayoutComponentsFilter::hideMembersOnlyChip)
 
     // hide comments carousel
     hookElement(CommentsFilter::onCommentsLoaded)

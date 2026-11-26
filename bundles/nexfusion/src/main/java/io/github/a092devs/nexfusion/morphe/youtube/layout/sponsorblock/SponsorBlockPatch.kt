@@ -11,6 +11,7 @@ import app.morphe.extension.shared.ResourceUtils
 import app.morphe.extension.shared.sponsorblock.objects.SegmentCategoryPreference
 import app.morphe.extension.shared.sponsorblock.ui.SponsorBlockAboutPreference
 import app.morphe.extension.youtube.settings.preference.ChannelWhitelistPreference
+import app.morphe.extension.youtube.sponsorblock.SponsorBlockUtils
 import app.morphe.extension.youtube.sponsorblock.YouTubeSponsorBlockConfig
 import app.morphe.extension.youtube.sponsorblock.preferences.SponsorBlockApiUrlPreference
 import app.morphe.extension.youtube.sponsorblock.preferences.SponsorBlockCreateSegmentSwitchPreference
@@ -42,6 +43,7 @@ import io.github.a092devs.nexfusion.morphe.youtube.misc.playercontrols.initializ
 import io.github.a092devs.nexfusion.morphe.youtube.misc.playertype.PlayerTypeHook
 import io.github.a092devs.nexfusion.morphe.youtube.misc.playservice.is_21_36_or_greater
 import io.github.a092devs.nexfusion.morphe.youtube.misc.settings.PreferenceScreen
+import io.github.a092devs.nexfusion.morphe.youtube.video.information.SeekFingerprint
 import io.github.a092devs.nexfusion.morphe.youtube.video.information.VideoInformationPatch
 import io.github.a092devs.nexfusion.morphe.youtube.video.information.onCreateHook
 import io.github.a092devs.nexfusion.morphe.youtube.video.information.videoTimeHooks
@@ -184,6 +186,11 @@ val SponsorBlock = patch(
     // Hook the video time methods.
     videoTimeHooks.add { YouTubeSponsorBlockConfig.setVideoTime(it) }
     videoIdHooks.add { YouTubeSponsorBlockConfig.setCurrentVideoId(it) }
+    SeekFingerprint.hookMethod {
+        before { param ->
+            SponsorBlockUtils.onVideoSeek(param.args[0] as Long)
+        }
+    }
 
     // Seekbar drawing
     var rectSetOnce = false
