@@ -1,8 +1,10 @@
 package io.github.a092devs.nexfusion.morphe.youtube.layout.sponsorblock
 
 import android.graphics.Canvas
+import android.graphics.Paint
 import android.graphics.Rect
 import android.os.Build
+import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import app.morphe.extension.shared.ResourceUtils
@@ -185,12 +187,18 @@ val SponsorBlock = patch(
 
     // Seekbar drawing
     var rectSetOnce = false
+    val seekbarVisible = ThreadLocal.withInitial { true }
     ::seekbarOnDrawFingerprint.hookMethod {
         val sponsorBarRectField = ::SponsorBarRect.field
         before { param ->
             // Get left and right of seekbar rectangle.
             rectSetOnce = false
+            val view = param.thisObject as? View
+            seekbarVisible.set(view == null || (view.isShown && view.alpha > 0.01f))
             YouTubeSponsorBlockConfig.setSeekbarRectangle(sponsorBarRectField.get(param.thisObject) as Rect)
+        }
+        after {
+            seekbarVisible.set(true)
         }
     }
     val drawCircle =
@@ -212,6 +220,10 @@ val SponsorBlock = patch(
             // Find the drawCircle call and draw the segment before it.
             DexMethod(drawCircle).toMethod() to {
                 before { param ->
+                    if (!seekbarVisible.get()) return@before
+                    val radius = (param.args[2] as? Float) ?: 0f
+                    val paint = param.args[3] as? Paint
+                    if (radius <= 0f || (paint != null && paint.alpha <= 0)) return@before
                     YouTubeSponsorBlockConfig.drawSegmentTimeBars(
                         param.thisObject as Canvas, param.args[1] as Float
                     )
