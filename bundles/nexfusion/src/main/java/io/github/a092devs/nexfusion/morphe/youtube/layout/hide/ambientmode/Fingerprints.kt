@@ -3,6 +3,8 @@ package io.github.a092devs.nexfusion.morphe.youtube.layout.hide.ambientmode
 import io.github.a092devs.nexfusion.morphe.AccessFlags
 import io.github.a092devs.nexfusion.morphe.Fingerprint
 import io.github.a092devs.nexfusion.morphe.InstructionLocation.MatchAfterImmediately
+import io.github.a092devs.nexfusion.morphe.InstructionLocation.MatchAfterWithin
+import io.github.a092devs.nexfusion.morphe.findMethodDirect
 import io.github.a092devs.nexfusion.morphe.Opcode
 import io.github.a092devs.nexfusion.morphe.anyInstruction
 import io.github.a092devs.nexfusion.morphe.checkCast
@@ -11,6 +13,101 @@ import io.github.a092devs.nexfusion.morphe.literal
 import io.github.a092devs.nexfusion.morphe.methodCall
 import io.github.a092devs.nexfusion.morphe.opcode
 import io.github.a092devs.nexfusion.morphe.string
+
+/**
+ * Litho rounded-rect background drawable onBoundsChange (21.30+).
+ */
+internal object LithoOnBoundsChangeFingerprint : Fingerprint(
+    classFingerprint = Fingerprint(
+        accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.FINAL),
+        returnType = "V",
+        parameters = listOf(),
+        filters = listOf(
+            methodCall(smali = "Landroid/graphics/Path;->addRoundRect(Landroid/graphics/RectF;[FLandroid/graphics/Path\$Direction;)V"),
+            fieldAccess(
+                opcode = Opcode.IPUT_OBJECT,
+                definingClass = "this",
+                type = "Landroid/graphics/Path;"
+            )
+        )
+    ),
+    name = "onBoundsChange",
+    accessFlags = listOf(AccessFlags.PROTECTED, AccessFlags.FINAL),
+    returnType = "V",
+    parameters = listOf("Landroid/graphics/Rect;"),
+    filters = listOf(
+        fieldAccess(
+            opcode = Opcode.IGET_OBJECT,
+            definingClass = "this",
+            type = "Landroid/graphics/Paint;",
+            location = MatchAfterWithin(10)
+        ),
+        methodCall(
+            smali = "Landroid/graphics/Paint;->setColor(I)V",
+            location = MatchAfterImmediately()
+        )
+    )
+)
+
+/**
+ * Litho rounded-rect background drawable onBoundsChange (< 21.30).
+ */
+internal object LithoOnBoundsChangeLegacyFingerprint : Fingerprint(
+    name = "onBoundsChange",
+    accessFlags = listOf(AccessFlags.PROTECTED, AccessFlags.FINAL),
+    returnType = "V",
+    parameters = listOf("Landroid/graphics/Rect;"),
+    filters = listOf(
+        fieldAccess(
+            opcode = Opcode.IPUT_OBJECT,
+            definingClass = "this",
+            type = "Landroid/graphics/Path;"
+        ),
+        fieldAccess(
+            opcode = Opcode.IGET_OBJECT,
+            definingClass = "this",
+            type = "Landroid/graphics/Paint;",
+            location = MatchAfterWithin(10)
+        ),
+        methodCall(
+            smali = "Landroid/graphics/Paint;->setColor(I)V",
+            location = MatchAfterImmediately()
+        )
+    )
+)
+
+/**
+ * Draws the background of a view, such as a row of the playlist, and the touch feedback over it.
+ */
+internal object TouchFeedbackDrawableDrawFingerprint : Fingerprint(
+    definingClass = "Lcom/google/android/libraries/youtube/rendering/ui/spec/motion/TouchFeedbackDrawable;",
+    name = "draw",
+    returnType = "V",
+    parameters = listOf("Landroid/graphics/Canvas;"),
+    filters = listOf(
+        methodCall(smali = "Landroid/graphics/drawable/Drawable;->draw(Landroid/graphics/Canvas;)V")
+    )
+)
+
+/**
+ * Receives the Ambient mode toggle of the player flyout menu when the app resumes and whenever
+ * it changes, and saves it as the state of the menu item.
+ */
+internal object AmbientModeToggleFingerprint : Fingerprint(
+    filters = listOf(
+        checkCast("Ljava/lang/Boolean;"),
+        string("menu_item_cinematic_lighting", location = MatchAfterWithin(8)),
+        methodCall(
+            parameters = listOf("Ljava/lang/String;", "Ljava/lang/Boolean;"),
+            returnType = "V",
+            location = MatchAfterImmediately()
+        ),
+    )
+)
+
+internal val ambientModeToggleSetterMethod = findMethodDirect {
+    AmbientModeToggleFingerprint.match().instructionMatches.last().instruction.methodRef!!
+}
 
 /**
  * The (non-obfuscated) YouTube player view whose onLayout applies the fullscreen

@@ -7,6 +7,11 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.0.17
+
+- **YouTube:**
+  * Fixed Enhanced Ambient mode not working when enabled and added the missing strength, smoothing, and blur slider settings.
+
 ## 5.0.16
 
 - **YouTube:**

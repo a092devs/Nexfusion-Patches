@@ -1,23 +1,32 @@
 package io.github.a092devs.nexfusion.morphe.youtube.layout.hide.ambientmode
 
 import android.content.Context
-
+import android.graphics.Canvas
+import android.graphics.drawable.Drawable
 import android.view.View
+import android.view.ViewGroup
+import app.morphe.extension.shared.ResourceUtils
 import app.morphe.extension.shared.settings.preference.SeekBarPreference
+import app.morphe.extension.youtube.ambientlight.AmbientLightController
 import app.morphe.extension.youtube.patches.AmbientModePatch as ExtensionAmbientModePatch
 import app.morphe.extension.youtube.settings.Settings
 import io.github.a092devs.nexfusion.FindMethodFunc
 import io.github.a092devs.nexfusion.PatchExecutor
 import io.github.a092devs.nexfusion.PatcherLog
 import io.github.a092devs.nexfusion.hookMethod
-import io.github.a092devs.nexfusion.morphe.findMethodDirect
 import io.github.a092devs.nexfusion.morphe.findFieldFromToString
+import io.github.a092devs.nexfusion.morphe.findMethodDirect
 import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.NonInteractivePreference
 import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.PreferenceScreenPreference
 import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.SwitchPreference
 import io.github.a092devs.nexfusion.morphe.youtube.insertLiteralOverride
+import io.github.a092devs.nexfusion.morphe.youtube.layout.sponsorblock.controlsOverlayFingerprint
+import io.github.a092devs.nexfusion.morphe.youtube.layout.sponsorblock.inset_overlay_view_layout
+import io.github.a092devs.nexfusion.morphe.youtube.misc.playservice.is_21_30_or_greater
 import io.github.a092devs.nexfusion.morphe.youtube.misc.settings.PreferenceScreen
+import io.github.a092devs.nexfusion.morphe.youtube.video.information.videoTimeHooks
 import io.github.a092devs.nexfusion.patch
+import io.github.a092devs.nexfusion.scopedHook
 import org.luckypray.dexkit.util.InstanceUtil
 import org.luckypray.dexkit.wrap.DexField
 import org.luckypray.dexkit.wrap.DexMethod
@@ -316,6 +325,21 @@ val AmbientMode = patch(
             sorting = PreferenceScreenPreference.Sorting.UNSORTED,
             preferences = setOf(
                 SwitchPreference("morphe_enhanced_ambient_mode", summary = true),
+                NonInteractivePreference(
+                    key = "morphe_enhanced_ambient_mode_strength",
+                    tag = SeekBarPreference::class.java,
+                    selectable = true,
+                ),
+                NonInteractivePreference(
+                    key = "morphe_enhanced_ambient_mode_smoothing",
+                    tag = SeekBarPreference::class.java,
+                    selectable = true,
+                ),
+                NonInteractivePreference(
+                    key = "morphe_enhanced_ambient_mode_blur",
+                    tag = SeekBarPreference::class.java,
+                    selectable = true,
+                ),
                 SwitchPreference("morphe_enhanced_ambient_mode_readable_text", summary = true),
                 SwitchPreference("morphe_enhanced_ambient_mode_dim_while_scrolling", summary = true),
                 NonInteractivePreference(
@@ -329,6 +353,90 @@ val AmbientMode = patch(
             ),
         ),
     )
+
+    // Enhanced Ambient mode.
+    runCatching {
+        val lithoBoundsChangeFingerprint = if (is_21_30_or_greater) {
+            LithoOnBoundsChangeFingerprint
+        } else {
+            LithoOnBoundsChangeLegacyFingerprint
+        }
+        val activeLithoDrawable = ThreadLocal<Drawable?>()
+        lithoBoundsChangeFingerprint.hookMethod {
+            before { activeLithoDrawable.set(it.thisObject as? Drawable) }
+            after { activeLithoDrawable.remove() }
+        }
+        lithoBoundsChangeFingerprint.hookMethod(
+            scopedHook(DexMethod("Landroid/graphics/Paint;->setColor(I)V").toMember()) {
+                before { param ->
+                    val drawable = activeLithoDrawable.get() ?: return@before
+                    val origColor = param.args[0] as? Int ?: return@before
+                    param.args[0] = AmbientLightController.getLithoColor(drawable, origColor)
+                }
+            }
+        )
+    }.onFailure {
+        PatcherLog.info(it) { "Enhanced ambient mode litho hook skipped: ${it.message ?: it.javaClass.simpleName}" }
+    }
+
+    videoTimeHooks.add { AmbientLightController.setVideoTime(it) }
+
+    runCatching {
+        val activeFeedbackDrawable = ThreadLocal<Drawable?>()
+        TouchFeedbackDrawableDrawFingerprint.hookMethod {
+            before { activeFeedbackDrawable.set(it.thisObject as? Drawable) }
+            after { activeFeedbackDrawable.remove() }
+        }
+        TouchFeedbackDrawableDrawFingerprint.hookMethod(
+            scopedHook(DexMethod("Landroid/graphics/drawable/Drawable;->draw(Landroid/graphics/Canvas;)V").toMember()) {
+                before { param ->
+                    val feedback = activeFeedbackDrawable.get() ?: return@before
+                    val background = param.thisObject as? Drawable ?: return@before
+                    val canvas = param.args[0] as? Canvas ?: return@before
+                    activeFeedbackDrawable.remove()
+                    try {
+                        AmbientLightController.drawTouchFeedbackBackground(background, canvas, feedback)
+                        param.result = null
+                    } finally {
+                        activeFeedbackDrawable.set(feedback)
+                    }
+                }
+            }
+        )
+    }.onFailure {
+        PatcherLog.info(it) { "Enhanced ambient mode touch feedback hook skipped: ${it.message ?: it.javaClass.simpleName}" }
+    }
+
+    runCatching {
+        AmbientModeToggleFingerprint.hookMethod(
+            scopedHook(::ambientModeToggleSetterMethod.dexMethod.toMember()) {
+                before { param ->
+                    if (param.args.size >= 2 && param.args[0] == "menu_item_cinematic_lighting") {
+                        AmbientLightController.setAmbientModeToggle(param.args[1] as? Boolean)
+                    }
+                }
+            }
+        )
+    }.onFailure {
+        PatcherLog.info(it) { "Enhanced ambient mode toggle hook skipped: ${it.message ?: it.javaClass.simpleName}" }
+    }
+
+    runCatching {
+        val controlsOverlayLayout = ResourceUtils.getLayoutIdentifier("size_adjustable_youtube_controls_overlay")
+        val insetOverlayViewLayout = inset_overlay_view_layout
+        ::controlsOverlayFingerprint.hookMethod(
+            scopedHook(DexMethod("Landroid/view/LayoutInflater;->inflate(ILandroid/view/ViewGroup;)Landroid/view/View;").toMember()) {
+                after { param ->
+                    if (param.args[0] != controlsOverlayLayout) return@after
+                    val layout = param.result as? ViewGroup ?: return@after
+                    val overlayView = layout.findViewById<ViewGroup>(insetOverlayViewLayout) ?: return@after
+                    AmbientLightController.initialize(overlayView)
+                }
+            }
+        )
+    }.onFailure {
+        PatcherLog.info(it) { "Enhanced ambient mode controls overlay hook skipped: ${it.message ?: it.javaClass.simpleName}" }
+    }
 
     // Force ambient mode, unless it is disabled in the Morphe settings.
     // The flyout menu toggle of the player still turns it on and off.
