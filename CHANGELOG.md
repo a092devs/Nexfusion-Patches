@@ -10,12 +10,14 @@ bundles after CI succeeds.
 ## 5.0.20
 
 - **YouTube & YouTube Music:**
-  * Synced with upstream `morphe-patches` (`dev`): updated `yt-dlp-ejs`, SponsorBlock seek-to-start fix, Hide 'Members only' chip fix, Keyword content filter channel check, Comment search scroll lag fix, Voice over translation caption notice, Return YouTube Username feed card fix, Hide YouTube Premium exclusive videos, and YouTube Music third-party lyrics AI test + downloads fixes.
+  * Fixed SponsorBlock new-segment start timing, comment search scroll lag, and hiding the "Members only" channel filter chip.
+  * Improved keyword content filtering, Return YouTube Username in feed cards, voice-over translation caption notices, and hiding Premium-exclusive videos.
+  * Fixed YouTube Music third-party lyrics AI connection testing and downloaded song seeking/duration.
 - **Reddit:**
-  * Ported `Glass navigation bar` with zero-allocation runtime Compose adapters and enabled its customization options in Reddit's Morphe settings.
-  * Ported `Hide navigation buttons` (`Games`, `Answers`, `Chat`, `Communities`, `Create`) and Morphe hooks for `Full-screen reply`, `Hide Ask button`, `Show view count`, `Disable bottom bar auto-hide`, `Private browsing mode`, `Disable refresh on back to exit`, `Hide People also search for section`, `Swipe up for comments`, and `Keep media viewer in subreddit`.
+  * Added the floating Glass navigation bar with customization options inside Reddit's Morphe settings.
+  * Added support for hiding navigation bar buttons, disabling bottom bar auto-hide, private browsing mode, disabling refresh on back, hiding "People also search for", swipe up for comments, full-screen reply, and keeping the media viewer in the same subreddit.
 - **Documentation:**
-  * Removed dropped Stremio and Discord targets from `README.md` and updated the supported apps matrix.
+  * Removed dropped Stremio and Discord entries from the README.
 
 ## 5.0.19
 
