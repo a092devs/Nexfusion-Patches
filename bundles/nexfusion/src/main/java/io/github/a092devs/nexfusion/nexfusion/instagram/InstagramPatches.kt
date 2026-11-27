@@ -111,6 +111,7 @@ private fun igPatch(
 val HideAds = igPatch(
     name = "Hide ads",
     description = "Hides sponsored posts, reels, stories, and feed ad units without leaving gaps.",
+    use = true,
 ) {
     InstagramRequestFilter.enable(InstagramRequestFilter.Rule.ADS)
     InstagramRequestFilter.enable(InstagramRequestFilter.Rule.REELS_ADS)
@@ -131,6 +132,7 @@ val HideSuggestedPosts = igPatch(
 val HideReelsAds = igPatch(
     name = "Hide reels ads",
     description = "Suppresses sponsored reels in the Reels tab and viewer.",
+    use = true,
 ) {
     InstagramRequestFilter.enable(InstagramRequestFilter.Rule.REELS_ADS)
     InstagramRequestFilter.ensureHooks(classLoader)
@@ -287,7 +289,7 @@ val ViewDmMediaAnonymously = igPatch(
 val HideMetaAi = igPatch(
     name = "Hide Meta AI",
     description = "Removes Meta AI search suggestions, feed units, and chat integration.",
-    use = false,
+    use = true,
 ) {
     InstagramRequestFilter.enable(InstagramRequestFilter.Rule.META_AI)
     InstagramRequestFilter.ensureHooks(classLoader)
@@ -306,7 +308,7 @@ internal val buildExpiredLockoutMethod = findMethodDirect {
 val RemoveBuildExpiredPopup = igPatch(
     name = "Remove build expired popup",
     description = "Stops Instagram from locking you out with an update screen stating that the app build has expired.",
-    use = false,
+    use = true,
 ) {
     runCatching {
         ::buildExpiredLockoutMethod.hookMethod(object : XC_MethodHook() {
@@ -321,6 +323,7 @@ val RemoveBuildExpiredPopup = igPatch(
 val AllowScreenshots = igPatch(
     name = "Allow screenshots",
     description = "Clears FLAG_SECURE so screenshots and screen recordings work everywhere, including disappearing media.",
+    use = true,
 ) {
     val hook = object : XC_MethodHook() {
         override fun beforeHookedMethod(param: MethodHookParam) {
@@ -361,6 +364,7 @@ val AllowScreenshots = igPatch(
 val BlockScreenshotDetection = igPatch(
     name = "Block screenshot detection",
     description = "Stops Instagram from notifying people when you take screenshots or screen recordings.",
+    use = true,
 ) {
     var observerHooked = false
     var frameworkHooked = 0
@@ -414,6 +418,7 @@ val BlockScreenshotDetection = igPatch(
 val SanitizeShareLinks = igPatch(
     name = "Sanitize share links",
     description = "Strips tracking parameters (igsh, utm, fbclid) from shared URLs.",
+    use = true,
 ) {
     runCatching {
         // Hook clip data / text sharing
@@ -535,6 +540,7 @@ private fun isAdLink(activity: Activity, intent: Intent): Boolean {
 val DisableAnalytics = igPatch(
     name = "Disable analytics",
     description = "Stops sending usage reports, crash reports, and logging events to Meta.",
+    use = true,
 ) {
     InstagramRequestFilter.enable(InstagramRequestFilter.Rule.ANALYTICS)
     InstagramRequestFilter.ensureHooks(classLoader)
@@ -855,7 +861,7 @@ val DontSendReelWatchHistory = igPatch(
 val TurnOffHdrBoosts = igPatch(
     name = "Turn off HDR brightness boosts",
     description = "Prevents HDR reels and videos from boosting display brightness beyond SDR levels, and disables AV1 synthetic HDR tone mapping.",
-    use = false,
+    use = true,
 ) {
     if (Build.VERSION.SDK_INT >= 34) {
         runCatching {
@@ -950,7 +956,7 @@ val HideOtherStoryRings = igPatch(
 val SendKeyboardGifs = igPatch(
     name = "Send keyboard GIFs",
     description = "Sends GIFs committed from the keyboard's GIF picker as animated media in DMs, instead of showing \"Tap the sticker icon to find and send GIFs\".",
-    use = false,
+    use = true,
 ) {
     runCatching {
         // Allow GIF content types from keyboard in direct messaging
@@ -969,7 +975,7 @@ val SendKeyboardGifs = igPatch(
 val DirectChatBubbles = igPatch(
     name = "Direct chat bubbles",
     description = "Allows Instagram direct message notifications to open as floating Android chat bubbles.",
-    use = false,
+    use = true,
 ) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         runCatching {

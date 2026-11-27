@@ -746,7 +746,7 @@ val DownloadMedia = patch(
     description = "Adds download options to the menus of posts, reels and stories, and to profile pictures. " +
         "Files are saved to Download/NexFusion/Instagram by default; the download settings allow customizing " +
         "the folder path, save location, per-username subfolders and timestamp names.",
-    use = false,
+    use = true,
 ) {
     if (!isMainProcess) return@patch
     val app = appContext as? Application ?: appContext.applicationContext as? Application

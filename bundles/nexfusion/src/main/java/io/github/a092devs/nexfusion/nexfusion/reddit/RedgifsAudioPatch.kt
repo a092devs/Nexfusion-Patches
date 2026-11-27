@@ -439,7 +439,7 @@ val RedgifsAudio = patch(
 val RedgifsHd = patch(
     name = "Redgifs HD quality",
     description = "Plays HD Redgifs video if available. HD videos are larger and may load slower.",
-    use = false,
+    use = true,
 ) {
     RedgifsAudioHelper.preferHd = true
 }

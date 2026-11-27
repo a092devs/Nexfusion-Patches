@@ -19,7 +19,7 @@ import java.util.regex.Pattern
 val PostMenuItems = patch(
     name = "Post menu items",
     description = "Adds Copy text, Download media, and Save document as PDF to the ⋯ menu of posts.",
-    use = false,
+    use = true,
 ) {
     installPostMenuActivityInterceptor()
 }

@@ -9,7 +9,7 @@ import io.github.a092devs.nexfusion.nexfusion.spotify.coroutineClientBaseConstru
 val DisableAdBreaks = patch(
     name = "Disable ad breaks",
     description = "Disables the ad slots that play ads between songs. Experimental.",
-    use = false,
+    use = true,
 ) {
     runCatching {
         ::coroutineClientBaseConstructor.hookMethod {

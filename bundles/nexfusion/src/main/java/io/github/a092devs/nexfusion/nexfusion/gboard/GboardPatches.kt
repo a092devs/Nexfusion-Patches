@@ -15,7 +15,7 @@ import io.github.a092devs.nexfusion.patch
 val GboardCursorTrackpad = patch(
     name = "Cursor trackpad",
     description = "Enables free-cursor mode: slide on the spacebar to move the text cursor.",
-    use = false,
+    use = true,
 ) {
     gboardFlagOverrides(
         "free_cursor" to FlagOverride.promote(),
@@ -26,7 +26,7 @@ val GboardCursorTrackpad = patch(
 val GboardQuickInsert = patch(
     name = "Quick insert",
     description = "Enables Gboard's super-insert (quick insert) suggestions row with dynamic multi-view.",
-    use = false,
+    use = true,
 ) {
     gboardFlagOverrides(
         "super_insert" to FlagOverride.forceBoolean(),
@@ -42,70 +42,21 @@ val GboardQuickInsert = patch(
     )
 }
 
-val GboardEmojiSize = patch(
-    name = "Emoji size setting",
-    description = "Enables the emoji size slider in Gboard's emoji panel.",
-    use = false,
-) {
-    gboardFlagOverrides("emoji_scale_supported" to FlagOverride.promote())
-}
-
 val GboardAccessPointsMenu = patch(
-    name = "Access points menu redesign",
-    description = "Uses the redesigned toolbar access-points menu.",
-    use = false,
-) {
-    gboardFlagOverrides("enable_access_points_menu_redesign" to FlagOverride.forceBoolean())
-}
-
-val GboardBluetoothMicrophone = patch(
-    name = "Bluetooth microphone setting",
-    description = "Shows the setting that lets voice typing use a Bluetooth microphone.",
-    use = false,
-) {
-    gboardFlagOverrides("enable_use_bluetooth_setting" to FlagOverride.forceBoolean())
-}
-
-val GboardCloseProactiveSuggestions = patch(
-    name = "Close proactive suggestions",
-    description = "Adds the access point that closes the proactive suggestions row.",
-    use = false,
-) {
-    gboardFlagOverrides("enable_close_proactive_suggestions_access_point" to FlagOverride.forceBoolean())
-}
-
-val GboardAccessPointCount = patch(
-    name = "Access point count",
-    description = "Fixes the toolbar access-point count at 6 (upstream's default; range 3-8).",
-    use = false,
+    name = "Toolbar & access points",
+    description = "Enables the redesigned toolbar access-points menu, fixes toolbar count at 6, and adds the proactive suggestions close button.",
+    use = true,
 ) {
     gboardFlagOverrides(
+        "enable_access_points_menu_redesign" to FlagOverride.forceBoolean(),
+        "enable_close_proactive_suggestions_access_point" to FlagOverride.forceBoolean(),
         "config_max_access_points" to FlagOverride.forceLong(6L),
         "config_default_access_points_num_on_bar" to FlagOverride.forceLong(6L),
     )
 }
 
-val GboardClipboardCharacterLimit = patch(
-    name = "Clipboard character limit",
-    description = "Raises the clipboard item text limit to 20000 characters (upstream's default).",
-    use = false,
-) {
-    gboardFlagOverrides("text_clip_item_char_limit" to FlagOverride.forceLong(20_000L))
-}
-
-val GboardFlowMode = patch(
-    name = "Flow mode",
-    description = "Enables the llm_pc flow-mode keys for every language.",
-    use = false,
-) {
-    gboardFlagOverrides(
-        "enable_llm_pc" to FlagOverride.forceTrue(),
-        "enable_llm_pc_flow_mode" to FlagOverride.forceTrue(),
-    )
-}
-
 val GboardSettingsMenu = patch(
-    name = "Advanced settings menu",
+    name = "<Advanced settings menu>",
     description = "Adds the Material 3 'Advanced settings' screen at the bottom of Gboard settings, and cleans up promotional links.",
     use = false,
 ) {
@@ -118,12 +69,19 @@ val GboardSettingsMenu = patch(
 }
 
 val GboardRamblerVoiceTyping = patch(
-    name = "Gemini Rambler natural voice typing",
-    description = "Enables Gemini-powered Rambler natural voice typing with real-time speech cleanup, thought completion, auto-punctuation, multilingual fluidity, and battery-friendly lifecycle.",
-    use = false,
+    name = "Advanced & Gemini voice typing",
+    description = "Enables Gemini Rambler natural voice typing, NGA consolidated speech dictation, and Bluetooth microphone settings.",
+    use = true,
 ) {
     gboardFlagOverrides(
-        // Rambler core flags
+        // Rambler & NGA core flags
+        "enable_nga" to FlagOverride.forceTrue(),
+        "enable_advanced_features_in_consolidated_sd_stack" to FlagOverride.forceTrue(),
+        "enable_dictation_feature_split_install" to FlagOverride.forceTrue(),
+        "handle_fallback_inside_sd_stack" to FlagOverride.forceTrue(),
+        "enable_sticky_mic_background" to FlagOverride.forceTrue(),
+        "enable_soda_longform_experiment" to FlagOverride.forceTrue(),
+        "enable_use_bluetooth_setting" to FlagOverride.forceBoolean(),
         "show_rambler_dict_settings" to FlagOverride.forceTrue(),
         "ad_activation_type" to FlagOverride.forceLong(2L),
         "enable_agentic_dictation" to FlagOverride.forceTrue(),
@@ -182,35 +140,10 @@ val GboardRamblerVoiceTyping = patch(
     GboardRamblerHook.install(classLoader)
 }
 
-val GboardGrammarChecker = patch(
-    name = "Grammar checker",
-    description = "Enables Gboard's on-device grammar checker.",
-    use = false,
-) {
-    gboardFlagOverrides("enable_grammar_checker" to FlagOverride.forceTrue())
-}
-
-val GboardInlineSuggestions = patch(
-    name = "Inline suggestions",
-    description = "Enables client-side inline suggestions.",
-    use = false,
-) {
-    gboardFlagOverrides("enable_inline_suggestions_on_client_side" to FlagOverride.forceTrue())
-}
-
-val GboardKeyShapeSelection = patch(
-    name = "Key shape selection",
-    description = "Enables the extra key shapes in the theme editor (more_pill_keys).",
-    use = false,
-) {
-    gboardFlagOverrides("more_pill_keys" to FlagOverride.forceTrue())
-}
-
-
 val GboardRoundedKeycaps = patch(
-    name = "Rounded keycaps (Belka UI)",
-    description = "Enables Material 3 Belka rounded pill keycaps, circular layout styling, and persistent preference.",
-    use = false,
+    name = "Rounded keycaps & shapes",
+    description = "Enables Material 3 Belka rounded pill keycaps, extra theme editor key shapes, and persistent preference.",
+    use = true,
 ) {
     gboardFlagOverrides(
         "belka_rounded_keyboard" to FlagOverride.forceTrue(),
@@ -229,7 +162,7 @@ val GboardRoundedKeycaps = patch(
 val GboardScanTextOcr = patch(
     name = "Scan text (Camera OCR)",
     description = "Unlocks the Camera OCR scan text viewfinder in the Gboard toolbar to extract physical text.",
-    use = false,
+    use = true,
 ) {
     gboardFlagOverrides(
         "enable_ocr" to FlagOverride.forceTrue(),
@@ -238,43 +171,23 @@ val GboardScanTextOcr = patch(
     )
 }
 
-val GboardScreenshotChips = patch(
-    name = "Screenshot suggestion chips",
-    description = "Shows floating suggestion chips for recently captured screenshots and clipboard images.",
-    use = false,
-) {
-    gboardFlagOverrides(
-        "enable_screenshot_in_clipboard" to FlagOverride.forceTrue(),
-        "enable_clipboard_image_suggestion" to FlagOverride.forceTrue(),
-        "enable_screenshot_notification_flow" to FlagOverride.forceTrue(),
-        "enable_screenshot_chip" to FlagOverride.forceTrue(),
-        "enable_clipboard_recent_screenshot" to FlagOverride.forceTrue(),
-        "clipboard_screenshot_enabled_at_least_once" to FlagOverride.forceTrue(),
-        "should_auto_enable_enable_screenshot_in_clipboard" to FlagOverride.forceTrue(),
-        "enable_extended_clipboard_history" to FlagOverride.forceTrue(),
-        "enable_system_clipboard_direct_paste_for_quick_paste" to FlagOverride.forceTrue(),
-        "enable_auto_paste_chips" to FlagOverride.forceTrue(),
-        "pref_key_enable_clipboard_suggestion" to FlagOverride.forceTrue(),
-    )
-    enableGboardScreenshotPreferences()
-}
-
 val GboardEmojiPaletteV2 = patch(
-    name = "Emoji Palette V2",
-    description = "Enables the redesigned emoji drawer layout with dedicated frequent/recent emoji tabs.",
-    use = false,
+    name = "Emoji Palette V2 & size slider",
+    description = "Enables the redesigned emoji drawer layout with frequent/recent tabs and the emoji size slider.",
+    use = true,
 ) {
     gboardFlagOverrides(
         "emoji_palette_v2" to FlagOverride.promote(),
         "enable_frequent_emoji_recent_tab" to FlagOverride.promote(),
         "enable_emoji_frequent_recent_switch_option" to FlagOverride.promote(),
+        "emoji_scale_supported" to FlagOverride.promote(),
     )
 }
 
 val GboardSmartCompose = patch(
     name = "Smart Compose autocompletion",
-    description = "Enables in-line predictive text completion and ghost text across all input fields.",
-    use = false,
+    description = "Enables in-line predictive text completion, ghost text, and client-side inline suggestions across all input fields.",
+    use = true,
 ) {
     gboardFlagOverrides(
         "enable_smart_compose" to FlagOverride.promote(),
@@ -287,11 +200,12 @@ val GboardSmartCompose = patch(
 }
 
 val GboardSpellCheckerChips = patch(
-    name = "Spell checker suggestion chips",
-    description = "Forces modern inline spell checker suggestion chips and grammar highlight strip on Android 12+.",
-    use = false,
+    name = "Grammar & spell checker chips",
+    description = "Enables Gboard's on-device grammar checker and modern inline spell checker suggestion chips on Android 12+.",
+    use = true,
 ) {
     gboardFlagOverrides(
+        "enable_grammar_checker" to FlagOverride.forceTrue(),
         "enable_spellchecker_chips_ui" to FlagOverride.forceTrue(),
         "enable_spellchecker_chips_ui_web_view" to FlagOverride.forceTrue(),
         "spellchecker_enable_chips_ui" to FlagOverride.forceTrue(),
@@ -304,24 +218,10 @@ val GboardSpellCheckerChips = patch(
     GboardRamblerHook.install(classLoader)
 }
 
-val GboardEmogen = patch(
-    name = "Emogen (GenAI Emoji Maker)",
-    description = "Enables Gboard's generative AI emoji maker and access point.",
-    use = false,
-) {
-    gboardFlagOverrides(
-        "enable_emogen" to FlagOverride.forceBoolean(),
-        "emogen_entry_point" to FlagOverride.forceBoolean(),
-        "emogen_feature_enabled" to FlagOverride.forceBoolean(),
-        "emogen_in_access_points" to FlagOverride.forceBoolean(),
-        "gboard_imagen_api_host" to FlagOverride.forceString("staging-gboard-imagen-pa.sandbox.googleapis.com"),
-    )
-}
-
 val GboardSignToText = patch(
     name = "Sign-to-Text (Signboard ASL)",
     description = "Enables Sign-to-Text camera translation for American Sign Language.",
-    use = false,
+    use = true,
 ) {
     gboardFlagOverrides(
         "enable_signboard" to FlagOverride.forceBoolean(),
@@ -339,7 +239,7 @@ val GboardSignToText = patch(
 val GboardIncognitoMode = patch(
     name = "Manual Incognito mode toggle",
     description = "Adds a manual Incognito mode toggle button in Gboard's toolbar access points.",
-    use = false,
+    use = true,
 ) {
     gboardFlagOverrides(
         "enable_incognito_mode_entry_point" to FlagOverride.forceBoolean(),
@@ -350,7 +250,7 @@ val GboardIncognitoMode = patch(
 val GboardSmartAutoCorrection = patch(
     name = "Smart auto-correction & fast learning",
     description = "Enhances auto-correction accuracy, enables reverting auto-corrected words on backspace, and optimizes user history learning.",
-    use = false,
+    use = true,
 ) {
     gboardFlagOverrides(
         "auto_correct_with_replace_text" to FlagOverride.forceBoolean(),
@@ -384,7 +284,7 @@ val GboardSmartAutoCorrection = patch(
 val GboardCandidateEmojiVibrancy = patch(
     name = "Candidate strip emoji vibrancy",
     description = "Ensures emoji glyphs in suggestion candidates render at full opacity (alpha 255) and positions suggested emojis in the right slot.",
-    use = false,
+    use = true,
 ) {
     runCatching {
         val autoCenterClass = classLoader.loadClass("com.google.android.libraries.inputmethod.widgets.text.AutoCenterScaleTextView")
@@ -424,14 +324,25 @@ val GboardCandidateEmojiVibrancy = patch(
 }
 
 val GboardClipboardHistorySlider = patch(
-    name = "Extended clipboard history retention slider",
-    description = "Configures Gboard's native clipboard history retention slider with discrete duration choices (1h, 24h, 7d, 30d, Never).",
-    use = false,
+    name = "Extended clipboard & screenshot chips",
+    description = "Enables 20,000-char clipboard items, retention slider (1h, 24h, 7d, 30d, Never), and floating screenshot suggestion chips.",
+    use = true,
 ) {
     gboardFlagOverrides(
+        "text_clip_item_char_limit" to FlagOverride.forceLong(20_000L),
+        "enable_screenshot_in_clipboard" to FlagOverride.forceTrue(),
+        "enable_clipboard_image_suggestion" to FlagOverride.forceTrue(),
+        "enable_screenshot_notification_flow" to FlagOverride.forceTrue(),
+        "enable_screenshot_chip" to FlagOverride.forceTrue(),
+        "enable_clipboard_recent_screenshot" to FlagOverride.forceTrue(),
+        "clipboard_screenshot_enabled_at_least_once" to FlagOverride.forceTrue(),
+        "should_auto_enable_enable_screenshot_in_clipboard" to FlagOverride.forceTrue(),
+        "enable_auto_paste_chips" to FlagOverride.forceTrue(),
+        "pref_key_enable_clipboard_suggestion" to FlagOverride.forceTrue(),
         "enable_extended_clipboard_history" to FlagOverride.forceBoolean(),
         "enable_system_clipboard_direct_paste_for_quick_paste" to FlagOverride.forceBoolean(),
     )
+    enableGboardScreenshotPreferences()
     GboardClipboardHistoryRuntime.install(classLoader)
 }
 
@@ -446,7 +357,7 @@ val GboardSignatureBypass = patch(
 val GboardGoogleSansTypography = patch(
     name = "Google Sans Flex typography",
     description = "Enables Google Sans Flex keycap font styling and GM3 expressive design.",
-    use = false,
+    use = true,
 ) {
     gboardFlagOverrides(
         "google_sans_flex" to FlagOverride.forceTrue(),
@@ -458,7 +369,7 @@ val GboardGoogleSansTypography = patch(
 val GboardUndoControls = patch(
     name = "Undo action controls",
     description = "Enables proactive 1-tap Undo buttons in the suggestion strip after text replacements and autocorrection.",
-    use = false,
+    use = true,
 ) {
     gboardFlagOverrides(
         "undo_proactive_post_correction" to FlagOverride.forceTrue(),
@@ -475,11 +386,16 @@ val GboardUndoControls = patch(
 }
 
 val GboardQuickAndMagicEmoji = patch(
-    name = "Quick & Magic Emoji (Emojify)",
-    description = "Enables the fast-access emoji bar and Gemini-powered Magic Emoji suggestion button.",
-    use = false,
+    name = "Quick, Magic & GenAI Emoji",
+    description = "Enables the fast-access emoji bar, Gemini Magic Emoji, and Emogen GenAI emoji maker.",
+    use = true,
 ) {
     gboardFlagOverrides(
+        "enable_emogen" to FlagOverride.forceBoolean(),
+        "emogen_entry_point" to FlagOverride.forceBoolean(),
+        "emogen_feature_enabled" to FlagOverride.forceBoolean(),
+        "emogen_in_access_points" to FlagOverride.forceBoolean(),
+        "gboard_imagen_api_host" to FlagOverride.forceString("staging-gboard-imagen-pa.sandbox.googleapis.com"),
         "enable_fast_access_bar" to FlagOverride.promote(),
         "fast_access_bar_app_whitelist" to FlagOverride.forceString("*"),
         "enable_emojify" to FlagOverride.forceTrue(),
@@ -500,7 +416,7 @@ val GboardQuickAndMagicEmoji = patch(
 val GboardKeypressHaptics = patch(
     name = "Keypress vibration intensity control",
     description = "Enables hardware VibrationEffect vibration strength and intensity slider on Android 11+.",
-    use = false,
+    use = true,
 ) {
     gboardFlagOverrides(
         "vibration_effect_min_sdk" to FlagOverride.forceLong(30L),
@@ -526,7 +442,7 @@ val GboardSplitKeyboard = patch(
 val GboardTerminalPasteAndSelectAll = patch(
     name = "Terminal paste & auto select-all",
     description = "Fixes paste shortcuts in raw terminal input fields (Termux) and automatically selects all text before copy/cut when nothing is selected.",
-    use = false,
+    use = true,
 ) {
     GboardEditingHook.install(classLoader)
 }
@@ -554,7 +470,7 @@ val GboardDeveloperOptions = patch(
 val GboardBackupRestore = patch(
     name = "Backup & Restore settings",
     description = "Enables Gboard personal dictionary, preferences, and custom theme backup and restore options.",
-    use = false,
+    use = true,
 ) {
     gboardFlagOverrides(
         "enable_backup_restore" to FlagOverride.forceTrue(),
@@ -563,11 +479,13 @@ val GboardBackupRestore = patch(
 }
 
 val GboardWritingTools = patch(
-    name = "AI Writing Tools",
-    description = "Enables AI Writing Tools proofread, rewrite stylization, cooperative mode, and smart edit commands.",
-    use = false,
+    name = "AI Writing Tools & Flow mode",
+    description = "Enables AI Writing Tools (proofread, rewrite, smart edit) and llm_pc flow-mode keys for every language.",
+    use = true,
 ) {
     gboardFlagOverrides(
+        "enable_llm_pc" to FlagOverride.forceTrue(),
+        "enable_llm_pc_flow_mode" to FlagOverride.forceTrue(),
         "writing_tools" to FlagOverride.forceTrue(),
         "writing_helper" to FlagOverride.forceTrue(),
         "config_proofread" to FlagOverride.forceTrue(),
@@ -622,25 +540,10 @@ val GboardWritingTools = patch(
     )
 }
 
-val GboardAdvancedVoiceTyping = patch(
-    name = "Advanced voice typing (NGA)",
-    description = "Enables Next Generation Assistant consolidated speech dictation stack and longform voice input.",
-    use = false,
-) {
-    gboardFlagOverrides(
-        "enable_nga" to FlagOverride.forceTrue(),
-        "enable_advanced_features_in_consolidated_sd_stack" to FlagOverride.forceTrue(),
-        "enable_dictation_feature_split_install" to FlagOverride.forceTrue(),
-        "handle_fallback_inside_sd_stack" to FlagOverride.forceTrue(),
-        "enable_sticky_mic_background" to FlagOverride.forceTrue(),
-        "enable_soda_longform_experiment" to FlagOverride.forceTrue(),
-    )
-}
-
 val GboardAccessibilityLayout = patch(
     name = "Accessibility layout",
     description = "Enables physical keyboard simulator and accessibility keyboard layout mode.",
-    use = false,
+    use = true,
 ) {
     gboardFlagOverrides(
         "enable_pk_simulator" to FlagOverride.forceTrue(),
@@ -694,25 +597,13 @@ val GboardPatches = arrayOf(
     GboardDeveloperOptions,
     GboardBackupRestore,
     GboardWritingTools,
-    GboardAdvancedVoiceTyping,
     GboardAccessibilityLayout,
     GboardCursorTrackpad,
     GboardQuickInsert,
-    GboardEmojiSize,
     GboardAccessPointsMenu,
-    GboardBluetoothMicrophone,
-    GboardCloseProactiveSuggestions,
-    GboardAccessPointCount,
-    GboardClipboardCharacterLimit,
-    GboardFlowMode,
-    GboardGrammarChecker,
-    GboardInlineSuggestions,
-    GboardKeyShapeSelection,
     GboardScanTextOcr,
-    GboardScreenshotChips,
     GboardEmojiPaletteV2,
     GboardSmartCompose,
-    GboardEmogen,
     GboardSignToText,
     GboardIncognitoMode,
     GboardHideIncognitoIcon,

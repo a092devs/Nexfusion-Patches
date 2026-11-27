@@ -96,7 +96,7 @@ val DisableAutoRefresh = patch(
 val DisableHomeRedirect = patch(
     name = "Disable Reddit home screen redirect",
     description = "Stops Reddit from redirecting to the home screen when the app resumes from the background.",
-    use = false,
+    use = true,
 ) {
     AppResumeRedirectFingerprint.memberOrNull?.let { member ->
         XposedBridge.hookMethod(member, object : XC_MethodHook() {
@@ -341,7 +341,7 @@ val OpenLinksExternally = patch(
 val RedditUnlockPremium = patch(
     name = "Unlock Premium",
     description = "Enables local Reddit Premium UI perks (custom app icons, premium styling, avatar styling). Server-side perks cannot be unlocked.",
-    use = false,
+    use = true,
 ) {
     // 1. Hook Account and MyAccount models (current logged in user and other accounts)
     listOf("com.reddit.domain.model.Account", "com.reddit.domain.model.MyAccount").forEach { className ->
@@ -862,7 +862,7 @@ val HideInteractivePosts = patch(
 val HideAutoEnforceBanner = patch(
     name = "Hide mod queue auto-enforce banner",
     description = "Hides the auto-enforce promotion banner in the moderator queue.",
-    use = false,
+    use = true,
 ) {
     runCatching {
         val adapterClass = runCatching { classLoader.loadClass("androidx.recyclerview.widget.RecyclerView\$Adapter") }.getOrNull()

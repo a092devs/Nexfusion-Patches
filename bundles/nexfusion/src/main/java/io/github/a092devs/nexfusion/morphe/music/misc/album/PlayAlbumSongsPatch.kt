@@ -14,7 +14,7 @@ import io.github.a092devs.nexfusion.morphe.music.misc.settings.PreferenceScreen
 import io.github.a092devs.nexfusion.patch
 
 internal object WatchNextResponseModelConstructorFingerprint : Fingerprint(
-    name = "<init>",
+    name = "init",
     returnType = "V",
     parameters = listOf("L"),
     filters = listOf(literal(51779735L))

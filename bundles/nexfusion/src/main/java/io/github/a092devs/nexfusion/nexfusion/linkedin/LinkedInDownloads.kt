@@ -37,7 +37,7 @@ import java.util.WeakHashMap
 val DownloadMedia = patch(
     name = "Download media",
     description = "Adds a download button to the full-screen photo and video viewer.",
-    use = false,
+    use = true,
 ) {
     installSduiMediaCollectorHook()
     installSduiFragmentLifecycleHooks()

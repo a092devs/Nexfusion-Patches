@@ -71,7 +71,7 @@ internal object ReelPlaybackFingerprint : Fingerprint(
             opcode = Opcode.SGET_OBJECT
         ),
         methodCall(
-            name = "<init>",
+            name = "init",
             parameters = listOf("I", "L", "L", "Z"),
             location = MatchAfterWithin(15)
         ),
@@ -95,7 +95,7 @@ internal object ReelPlaybackLegacyFingerprint : Fingerprint(
             opcode = Opcode.SGET_OBJECT
         ),
         methodCall(
-            name = "<init>",
+            name = "init",
             parameters = listOf("I", "L", "L"),
             location = MatchAfterWithin(15)
         ),

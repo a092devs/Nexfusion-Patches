@@ -7,6 +7,16 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.1.01
+
+- **YouTube:**
+  * Fixed a crash when opening YouTube Shorts on newer YouTube versions.
+- **Gboard:**
+  * Cleaned up duplicate and overlapping toggles so the list is shorter and easier to use without losing any features.
+- **All Apps & Languages:**
+  * Restored patch toggles across apps with sensible defaults already turned on.
+  * Added Chinese translations for patch names and descriptions, with English as the default language.
+
 ## 5.0.20
 
 - **YouTube & YouTube Music:**

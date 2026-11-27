@@ -11,6 +11,8 @@ import io.github.a092devs.nexfusion.morphe.youtube.layout.buttons.navigation.Nav
 import io.github.a092devs.nexfusion.morphe.youtube.misc.engagement.EngagementPanelHook
 import io.github.a092devs.nexfusion.morphe.youtube.misc.litho.filter.LithoFilter
 import io.github.a092devs.nexfusion.morphe.youtube.misc.litho.observer.LayoutReloadObserver
+import io.github.a092devs.nexfusion.morphe.youtube.misc.playservice.VersionCheck
+import io.github.a092devs.nexfusion.morphe.youtube.misc.playservice.is_21_42_or_greater
 import io.github.a092devs.nexfusion.morphe.youtube.misc.settings.PreferenceScreen
 import io.github.a092devs.nexfusion.patch
 import org.luckypray.dexkit.wrap.DexMethod
@@ -24,7 +26,8 @@ val HideShortsComponents = patch(
         EngagementPanelHook,
         LayoutReloadObserver,
         LithoFilter,
-        NavigationBar
+        NavigationBar,
+        VersionCheck
     )
 
     PreferenceScreen.addShortsPlayerPreferences(
@@ -108,16 +111,20 @@ val HideShortsComponents = patch(
     // Since the buttons are native components and not Litho, it should be possible to
     // fix the RYD Shorts loading delay by asynchronously loading RYD and updating
     // the button text after RYD has loaded.
-    ShortsExperimentalPlayerFeatureFlagFingerprint.hookMethod(
-        XC_MethodReplacement.returnConstant(
-            false
+    // Skipped on 21.42+ where disabling the experimental Shorts player / RenderNext UI flags
+    // causes Shorts to crash (ClassPropertiesConverter.nativeResolveStyle: FlexDirection must have an identifier value).
+    if (!is_21_42_or_greater) {
+        ShortsExperimentalPlayerFeatureFlagFingerprint.hookMethod(
+            XC_MethodReplacement.returnConstant(
+                false
+            )
         )
-    )
 
-    // Experimental UI renderer must also be disabled since it requires the
-    // experimental Shorts player. If this is enabled but Shorts player
-    // is disabled then the app crashes when the Shorts player is opened.
-    RenderNextUIFeatureFlagFingerprint.hookMethod(XC_MethodReplacement.returnConstant(false))
+        // Experimental UI renderer must also be disabled since it requires the
+        // experimental Shorts player. If this is enabled but Shorts player
+        // is disabled then the app crashes when the Shorts player is opened.
+        RenderNextUIFeatureFlagFingerprint.hookMethod(XC_MethodReplacement.returnConstant(false))
+    }
     // endregion
 
     // region Disable double-tap to like.

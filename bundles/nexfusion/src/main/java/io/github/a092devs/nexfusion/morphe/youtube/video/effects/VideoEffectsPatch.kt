@@ -31,7 +31,7 @@ internal object PassthroughShaderDrawFingerprint : Fingerprint(
 
 internal object PassthroughShaderConstructorFingerprint : Fingerprint(
     classFingerprint = PassthroughShaderDrawFingerprint,
-    name = "<init>",
+    name = "init",
     filters = listOf(
         string("texCoordVar = (texTransMat * vTexCoord).xy;", StringComparisonType.CONTAINS),
         string("gl_FragColor = texture2D(texture, texCoordVar);", StringComparisonType.CONTAINS)

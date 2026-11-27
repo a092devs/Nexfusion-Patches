@@ -166,7 +166,7 @@ private val resolveCaptionsInPipAnchors: FindMethodFunc = findMethodDirect {
     // changed by mutating the state passed to the captions overlay's visibility check.
     val visibilityFingerprint = Fingerprint(
         filters = listOf(
-            methodCall(definingClass = stateTypeDescriptor, name = "<init>"),
+            methodCall(definingClass = stateTypeDescriptor, name = "init"),
             methodCall(
                 opcode = Opcode.INVOKE_INTERFACE,
                 parameters = listOf(stateTypeDescriptor),

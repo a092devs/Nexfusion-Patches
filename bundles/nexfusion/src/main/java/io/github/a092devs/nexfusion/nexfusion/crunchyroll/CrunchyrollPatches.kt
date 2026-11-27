@@ -15,7 +15,7 @@ import io.github.a092devs.nexfusion.patch
 val EnablePictureInPicture = patch(
     name = "Enable Picture-in-Picture",
     description = "Enables Crunchyroll's native Picture-in-Picture with contextual skip intro and skip credits controls.",
-    use = false,
+    use = true,
 ) {
     // 1. Enable Crunchyroll's native PiP provider configuration
     runCatching {
@@ -133,7 +133,7 @@ val EnablePictureInPicture = patch(
 val RemoveFromContinueWatching = patch(
     name = "Remove from Continue Watching",
     description = "Adds an option in the overflow menu to remove titles from Continue Watching.",
-    use = false,
+    use = true,
 ) {
     // Initialize preferences cache early if appContext is ready
     runCatching {

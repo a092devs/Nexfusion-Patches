@@ -28,7 +28,7 @@ import io.github.a092devs.nexfusion.patch
 val CopyText = patch(
     name = "Copy text",
     description = "Long press a post, comment, or any text to select and copy it in place or in a sheet.",
-    use = false,
+    use = true,
 ) {
     try {
         val composeViewClass = classLoader.loadClass("androidx.compose.ui.platform.AndroidComposeView")

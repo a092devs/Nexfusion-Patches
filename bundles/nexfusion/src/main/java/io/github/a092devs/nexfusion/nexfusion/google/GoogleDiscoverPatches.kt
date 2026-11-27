@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap
 val FilterDiscoverAds = patch(
     name = "Filter Discover ads",
     description = "Filters promoted ad cards from the Google Discover feed.",
-    use = false,
+    use = true,
 ) {
     ::streamRenderableListFingerprint.hookMethod {
         after { param ->

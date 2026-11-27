@@ -68,7 +68,7 @@ import io.github.a092devs.nexfusion.morphe.youtube.misc.settings.PreferenceScree
 import io.github.a092devs.nexfusion.patch
 import org.luckypray.dexkit.wrap.DexMethod
 
-val ExtensionHook = patch(name = "<ExtensionHook>") {
+val ExtensionHook = patch(name = "ExtensionHook") {
     dependsOn(VersionCheck)
     injectHostClassLoaderToSelf(bundle.classLoader, classLoader)
     hookExtensionClassLoading(bundle.classLoader)
@@ -247,7 +247,7 @@ val ReturnYouTubeDislike = patch(
         val endpointSuper = dexkit.getClassDirectOrNull("ryd_dislike_super") {
             findMethod {
                 matcher {
-                    name = "<init>"
+                    name = "init"
                     returnType = "void"
                     usingStrings("like/dislike")
                 }

@@ -74,7 +74,7 @@ internal object NavBarStateChangeFingerprint : Fingerprint(
     filters = listOf(
         methodCall(
             definingClass = "Lcom/reddit/launch/bottomnav/BottomNavScreen\$onNavBarStateChange\$1",
-            name = "<init>",
+            name = "init",
         ),
     ),
 )
@@ -145,7 +145,7 @@ internal object VerticalChainingFingerprint : Fingerprint(
 )
 
 internal object VerticalChainingLegacyFingerprint : Fingerprint(
-    name = "<init>",
+    name = "init",
     returnType = "V",
     filters = listOf(
         methodCall(returnType = "Z", parameters = listOf()),
@@ -161,7 +161,7 @@ private fun recommendedPostsRequestFilters(endpointClass: String) = listOf(
     methodCall(definingClass = MEDIA_CONTEXT_CLASS, name = "getSeedSubredditIds"),
     methodCall(definingClass = MEDIA_CONTEXT_CLASS, name = "getListingType"),
     fieldAccess(definingClass = endpointClass, name = "COMMUNITY"),
-    methodCall(definingClass = "Lcom/reddit/domain/model/listing/Listing;", name = "<init>"),
+    methodCall(definingClass = "Lcom/reddit/domain/model/listing/Listing;", name = "init"),
 )
 
 internal object RecommendedMediaRequestFingerprint : Fingerprint(
