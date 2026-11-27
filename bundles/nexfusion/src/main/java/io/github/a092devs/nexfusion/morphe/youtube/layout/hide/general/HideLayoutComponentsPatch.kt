@@ -132,7 +132,7 @@ val HideLayoutComponents = patch(
                 SwitchPreference("morphe_hide_comments_community_guidelines"),
                 SwitchPreference("morphe_hide_comments_contexts"),
                 SwitchPreference("morphe_hide_comments_create_a_short_button"),
-                SwitchPreference("morphe_hide_comments_dislike_button"),
+                SwitchPreference("morphe_hide_comments_dislike_button", titleKey = "morphe_hide_dislike_button_title"),
                 SwitchPreference("morphe_hide_comments_emoji_button"),
                 SwitchPreference("morphe_hide_comments_filter_bar_options", summary = true),
                 SwitchPreference("morphe_hide_comments_gift_animation_and_cards"),
@@ -148,7 +148,7 @@ val HideLayoutComponents = patch(
                 SwitchPreference("morphe_hide_comments_timed_reactions", summary = true),
                 SwitchPreference("morphe_hide_comments_timestamp_button"),
                 SwitchPreference("morphe_hide_comments_top_fans_button"),
-                SwitchPreference("morphe_hide_comments_translate_button"),
+                SwitchPreference("morphe_hide_comments_translate_button", titleKey = "morphe_hide_translate_button_title"),
 //                SwitchPreference("morphe_sanitize_comments_highlighted_search_links", summary = true)
             ),
             sorting = Sorting.UNSORTED
@@ -334,12 +334,12 @@ val HideLayoutComponents = patch(
         PreferenceScreenPreference(
             key = "morphe_hide_filter_bar_screen",
             preferences = setOf(
-                SwitchPreference("morphe_hide_filter_bar_in_channel_page"),
+                SwitchPreference("morphe_hide_filter_bar_in_channel_page", titleKey = "morphe_hide_in_channel_page_title"),
                 SwitchPreference("morphe_hide_filter_bar_in_comments"),
                 SwitchPreference("morphe_hide_filter_bar_in_feed"),
                 SwitchPreference("morphe_hide_filter_bar_in_related_videos"),
-                SwitchPreference("morphe_hide_filter_bar_in_search"),
-                SwitchPreference("morphe_hide_filter_bar_in_history")
+                SwitchPreference("morphe_hide_filter_bar_in_search", titleKey = "morphe_hide_in_search_results_title"),
+                SwitchPreference("morphe_hide_filter_bar_in_history", titleKey = "morphe_hide_in_watch_history_title")
             ),
         ),
         PreferenceScreenPreference(
@@ -371,8 +371,8 @@ val HideLayoutComponents = patch(
             sorting = Sorting.UNSORTED,
             preferences = setOf(
                 ListPreference("morphe_post_buttons_layout"),
-                SwitchPreference("morphe_hide_post_like_dislike_buttons"),
-                SwitchPreference("morphe_hide_post_dislike_button", summary = true),
+                SwitchPreference("morphe_hide_post_like_dislike_buttons", titleKey = "morphe_hide_like_dislike_buttons_title"),
+                SwitchPreference("morphe_hide_post_dislike_button", titleKey = "morphe_hide_dislike_button_title", summary = true),
                 SwitchPreference("morphe_hide_post_comment_button"),
                 SwitchPreference("morphe_hide_post_share_button", summary = true),
                 SwitchPreference("morphe_hide_post_comments_preview", summary = true)

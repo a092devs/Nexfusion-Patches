@@ -83,7 +83,7 @@ val SponsorBlock = patch(
                 SwitchPreference("morphe_sb_compact_skip_button", summary = true),
                 SwitchPreference("morphe_sb_auto_hide_skip_button", summary = true),
                 ListPreference(key = "morphe_sb_auto_hide_skip_button_duration"),
-                SwitchPreference("morphe_sb_toast_on_skip", summary = true),
+                SwitchPreference("morphe_sb_toast_on_skip", titleKey = "morphe_toast_on_skip_title", summary = true),
                 ListPreference(key = "morphe_sb_toast_on_skip_duration"),
                 SwitchPreference("morphe_sb_video_length_without_segments", summary = true),
                 SwitchPreference("morphe_sb_square_layout", summary = true)
@@ -130,7 +130,7 @@ val SponsorBlock = patch(
             key = "morphe_sb_general",
             sorting = PreferenceScreenPreference.Sorting.UNSORTED,
             preferences = setOf(
-                SwitchPreference("morphe_sb_toast_on_connection_error", summary = true),
+                SwitchPreference("morphe_sb_toast_on_connection_error", titleKey = "morphe_toast_on_connection_error_title", summary = true),
                 SwitchPreference("morphe_sb_track_skip_count", summary = true),
                 TextPreference(
                     key = "morphe_sb_min_segment_duration",

@@ -2,10 +2,13 @@ package io.github.a092devs.nexfusion.morphe.music.ad
 
 import android.view.View
 import app.morphe.extension.music.patches.HideAdsPatch
+import app.morphe.extension.music.patches.components.AdsFilter
 import app.morphe.extension.shared.Logger
 import app.morphe.extension.shared.ResourceUtils
+import io.github.a092devs.nexfusion.morphe.music.misc.litho.filter.LithoFilter
 import io.github.a092devs.nexfusion.morphe.music.misc.settings.PreferenceScreen
 import io.github.a092devs.nexfusion.morphe.shared.ad.HideFullscreenAds
+import io.github.a092devs.nexfusion.morphe.shared.misc.litho.filter.addLithoFilter
 import io.github.a092devs.nexfusion.morphe.shared.misc.settings.preference.SwitchPreference
 import io.github.a092devs.nexfusion.patch
 
@@ -15,16 +18,17 @@ val HideAds = patch(
     use = false,
 ) {
     dependsOn(
+        LithoFilter,
         HideFullscreenAds(PreferenceScreen.ADS),
     )
 
     PreferenceScreen.ADS.addPreferences(
         SwitchPreference("morphe_music_hide_get_premium_label"),
-//        SwitchPreference("morphe_music_hide_music_premium_promotions"),
-        SwitchPreference("morphe_music_hide_video_ads"),
+        SwitchPreference("morphe_music_hide_music_premium_promotions"),
+        SwitchPreference("morphe_music_hide_video_ads", titleKey = "morphe_hide_video_ads_title"),
     )
 
-    // TODO addLithoFilter(ADS_FILTER)
+    addLithoFilter(AdsFilter())
 
     // Hide 'Get Music Premium' label
     HideGetPremiumFingerprint.hookMethod {

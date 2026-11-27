@@ -106,6 +106,7 @@ val SettingsHook = patch(
     // Add an "About" preference to the top.
     preferences += NonInteractivePreference(
         key = "morphe_settings_screen_00_about",
+        titleKey = "morphe_about_screen_title",
         icon = "@drawable/morphe_settings_screen_00_about",
         iconBold = "@drawable/morphe_settings_screen_00_about_bold",
         layout = "@layout/preference_with_icon",
@@ -198,6 +199,7 @@ object PreferenceScreen : BasePreferenceScreen() {
     // If no preferences are added to a screen, the screen will not be added to the settings.
     val ADS = Screen(
         key = "morphe_settings_screen_01_ads",
+        titleKey = "morphe_ads_screen_title",
         summaryKey = null,
         icon = "@drawable/morphe_settings_screen_01_ads",
         iconBold = "@drawable/morphe_settings_screen_01_ads_bold",
@@ -213,6 +215,7 @@ object PreferenceScreen : BasePreferenceScreen() {
     )
     val FEED = Screen(
         key = "morphe_settings_screen_03_feed",
+        titleKey = "morphe_feed_screen_title",
         summaryKey = null,
         icon = "@drawable/morphe_settings_screen_03_feed",
         iconBold = "@drawable/morphe_settings_screen_03_feed_bold",
@@ -220,6 +223,7 @@ object PreferenceScreen : BasePreferenceScreen() {
     )
     val GENERAL = Screen(
         key = "morphe_settings_screen_04_general",
+        titleKey = "morphe_general_title",
         summaryKey = null,
         icon = "@drawable/morphe_settings_screen_04_general",
         iconBold = "@drawable/morphe_settings_screen_04_general_bold",
@@ -227,6 +231,7 @@ object PreferenceScreen : BasePreferenceScreen() {
     )
     val PLAYER = Screen(
         key = "morphe_settings_screen_05_player",
+        titleKey = "morphe_player_screen_title",
         summaryKey = null,
         icon = "@drawable/morphe_settings_screen_05_player",
         iconBold = "@drawable/morphe_settings_screen_05_player_bold",
@@ -234,6 +239,7 @@ object PreferenceScreen : BasePreferenceScreen() {
     )
     val SHORTS = Screen(
         key = "morphe_settings_screen_06_shorts",
+        titleKey = "morphe_shorts_title",
         summaryKey = null,
         icon = "@drawable/morphe_settings_screen_06_shorts",
         iconBold = "@drawable/morphe_settings_screen_06_shorts_bold",
@@ -241,6 +247,7 @@ object PreferenceScreen : BasePreferenceScreen() {
     )
     val SEEKBAR = Screen(
         key = "morphe_settings_screen_07_seekbar",
+        titleKey = "morphe_settings_screen_07_seekbar_title",
         summaryKey = null,
         icon = "@drawable/morphe_settings_screen_07_seekbar",
         iconBold = "@drawable/morphe_settings_screen_07_seekbar_bold",
@@ -248,6 +255,7 @@ object PreferenceScreen : BasePreferenceScreen() {
     )
     val SWIPE_CONTROLS = Screen(
         key = "morphe_settings_screen_08_swipe_controls",
+        titleKey = "morphe_settings_screen_08_swipe_controls_title",
         summaryKey = null,
         icon = "@drawable/morphe_settings_screen_08_swipe_controls",
         iconBold = "@drawable/morphe_settings_screen_08_swipe_controls_bold",
@@ -256,6 +264,7 @@ object PreferenceScreen : BasePreferenceScreen() {
     )
     val RETURN_YOUTUBE_DISLIKE = Screen(
         key = "morphe_settings_screen_09_return_youtube_dislike",
+        titleKey = "morphe_ryd_screen_title",
         summaryKey = null,
         icon = "@drawable/morphe_settings_screen_09_return_youtube_dislike",
         iconBold = "@drawable/morphe_settings_screen_09_return_youtube_dislike_bold",
@@ -264,6 +273,7 @@ object PreferenceScreen : BasePreferenceScreen() {
     )
     val SPONSORBLOCK = Screen(
         key = "morphe_settings_screen_10_sponsorblock",
+        titleKey = "morphe_sponsorblock_screen_title",
         summaryKey = null,
         icon = "@drawable/morphe_settings_screen_10_sponsorblock",
         iconBold = "@drawable/morphe_settings_screen_10_sponsorblock_bold",
@@ -272,6 +282,7 @@ object PreferenceScreen : BasePreferenceScreen() {
     )
     val MISC = Screen(
         key = "morphe_settings_screen_11_misc",
+        titleKey = "morphe_misc_screen_title",
         summaryKey = null,
         icon = "@drawable/morphe_settings_screen_11_misc",
         iconBold = "@drawable/morphe_settings_screen_11_misc_bold",
@@ -279,6 +290,7 @@ object PreferenceScreen : BasePreferenceScreen() {
     )
     val VIDEO = Screen(
         key = "morphe_settings_screen_12_video",
+        titleKey = "morphe_video_screen_title",
         summaryKey = null,
         icon = "@drawable/morphe_settings_screen_12_video",
         iconBold = "@drawable/morphe_settings_screen_12_video_bold",

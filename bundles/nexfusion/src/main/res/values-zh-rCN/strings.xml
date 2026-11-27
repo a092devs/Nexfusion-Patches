@@ -27,4 +27,7 @@
     <string name="morphe_show_settings_button_type_summary">启用时，点击打开 Morphe 设置，长按打开 YouTube 设置；禁用则互换</string>
     <string name="morphe_show_toolbar_settings_button_type_title">设置按钮操作</string>
     <string name="morphe_show_toolbar_settings_button_type_summary">启用时，点击打开 Morphe 设置，长按打开 YouTube 设置；禁用则互换</string>
+
+    <string name="morphe_music_exclusive_audio_playback_title">启用纯音频播放</string>
+    <string name="morphe_music_background_playback_title">移除后台播放限制</string>
 </resources>

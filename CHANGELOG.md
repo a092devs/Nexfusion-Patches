@@ -7,6 +7,17 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.1.06
+
+- **YouTube Music:**
+  * Ported the full YouTube Music patch suite, including SponsorBlock, Navigation bar customization, A-B loop, Playback speed, Skip silence, Remember repeat/shuffle state, Third-party lyrics, Scrobbling (Last.fm & ListenBrainz), SoundProof, Apple Music animated artwork, Sonos Cast, Downloads, Android Auto, Playlist track tap action, Queue likes filter, Disable dislike redirection, and Remove viewer discretion dialog.
+  * Fixed missing Morphe settings categories (SponsorBlock, Return YouTube Dislike, Ads, Lyrics, Scrobbling, Video) so all sections and options display properly.
+  * Fixed startup crashes and hook/toast errors across YouTube Music patches.
+- **YouTube:**
+  * Fixed SponsorBlock, DeArrow, Swipe controls, Navigation bar, Video action buttons, and layout/Shorts component hooks and settings compatibility.
+- **Languages:**
+  * Added Simplified Chinese translations for newly added strings.
+
 ## 5.1.05
 
 - **YouTube Music:**

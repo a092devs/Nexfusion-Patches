@@ -41,4 +41,8 @@
     <string name="morphe_show_settings_button_type_summary">When enabled, tap opens Morphe settings and long press opens YouTube settings, disable to swap</string>
     <string name="morphe_show_toolbar_settings_button_type_title">Settings button action</string>
     <string name="morphe_show_toolbar_settings_button_type_summary">When enabled, tap opens Morphe settings and long press opens YouTube settings, disable to swap</string>
+
+    <!-- Fallback titles for Music toggles -->
+    <string name="morphe_music_exclusive_audio_playback_title">Enable exclusive audio playback</string>
+    <string name="morphe_music_background_playback_title">Remove background playback restrictions</string>
 </resources>

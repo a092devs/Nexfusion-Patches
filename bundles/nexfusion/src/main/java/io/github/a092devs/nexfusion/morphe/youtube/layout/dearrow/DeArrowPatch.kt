@@ -85,7 +85,7 @@ val deArrowPatch = patch(
             sorting = Sorting.UNSORTED,
             preferences = setOf(
                 TextPreference("morphe_dearrow_api_url"),
-                SwitchPreference("morphe_dearrow_connection_toast", summary = true),
+                SwitchPreference("morphe_dearrow_connection_toast", titleKey = "morphe_toast_on_connection_error_title", summary = true),
             )
         ),
         screenInfoPreferenceCategory(

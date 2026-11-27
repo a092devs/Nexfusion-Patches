@@ -108,7 +108,7 @@ val NavigationBar = patch(
         SwitchPreference("morphe_hide_toolbar_create_button", titleKey = "morphe_hide_create_button_title"),
         SwitchPreference("morphe_hide_toolbar_microphone_button"),
         SwitchPreference("morphe_hide_toolbar_notification_button", titleKey = "morphe_hide_notifications_button_title"),
-        SwitchPreference("morphe_hide_toolbar_search_button"),
+        SwitchPreference("morphe_hide_toolbar_search_button", titleKey = "morphe_hide_search_button_title"),
         SwitchPreference("morphe_show_toolbar_settings_button", titleKey = "morphe_show_settings_button_title"),
         SwitchPreference(
             "morphe_show_toolbar_settings_button_type",
