@@ -16,7 +16,18 @@
         https://developer.android.com/about/versions/marshmallow/android-6.0-changes#behavior-text-selection
 -->
 <resources>
-    <style name="Theme.Morphe.YouTubeMusic.Settings" parent="android:ThemeOverlay.Material.Dark">
+    <style name="Theme.Morphe.YouTubeMusic.Settings" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:colorBackground">@android:color/black</item>
+        <item name="android:statusBarColor">@android:color/black</item>
+        <item name="android:navigationBarColor">@android:color/black</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textColorPrimary">@android:color/white</item>
+        <item name="android:textColorSecondary">#B3FFFFFF</item>
+        <item name="android:textColorHint">#80FFFFFF</item>
+        <item name="android:textColorTertiary">#B3FFFFFF</item>
+        <item name="android:colorAccent">@android:color/white</item>
+        <item name="android:listDivider">@null</item>
     </style>
 
     <style name="YouTubePlayerButton" parent="">

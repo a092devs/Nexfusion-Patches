@@ -192,7 +192,8 @@ val SettingsHook = patch(
         ::googleApiActivityFingerprint.hookMethod {
             before { param ->
                 val activity = param.thisObject as Activity
-                activity.setTheme(ResourceUtils.getStyleIdentifier("@style/Theme.YouTubeMusic"))
+                val baseTheme = ResourceUtils.getStyleIdentifier("Theme.YouTubeMusic")
+                if (baseTheme != 0) activity.setTheme(baseTheme)
                 MusicActivityHook.initialize(activity)
                 activity.theme.applyStyle(R.style.ListDividerNull, true)
                 superOnCreate.invokeSpecial(param.thisObject, *param.args)

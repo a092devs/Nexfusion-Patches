@@ -7,6 +7,11 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.1.05
+
+- **YouTube Music:**
+  * Fixed Morphe settings text appearing invisible (black on black) by applying a proper dark theme with visible text colors.
+
 ## 5.1.04
 
 - **YouTube Music:**
