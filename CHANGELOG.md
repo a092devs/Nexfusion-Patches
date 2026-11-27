@@ -7,6 +7,12 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.1.04
+
+- **YouTube Music:**
+  * Fixed an error when applying the "Play album songs" patch and prevented it from blocking track playback.
+  * Fixed YouTube Music extension class loading and module asset setup so patches and playback work properly.
+
 ## 5.1.03
 
 - **YouTube (SponsorBlock):**

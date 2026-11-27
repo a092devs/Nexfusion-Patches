@@ -39,7 +39,9 @@ val PlayAlbumSongs = patch(
         SwitchPreference("morphe_music_play_album_songs", summary = true)
     )
 
-    setExtensionIsPatchIncluded(PlayAlbumSongsExt::class.java)
+    runCatching {
+        setExtensionIsPatchIncluded(PlayAlbumSongsExt::class.java)
+    }
 
     runCatching {
         // Implement extension bridge methods using reflection/proxies
@@ -69,7 +71,8 @@ val PlayAlbumSongs = patch(
     runCatching {
         WatchNextResponseModelConstructorFingerprint.hookMethod {
             before { param ->
-                param.args[0] = PlayAlbumSongsExt.rewriteWatchNextResponse(param.args[0])
+                runCatching { PlayAlbumSongsExt.rewriteWatchNextResponse(param.args[0]) }
+                    .getOrNull()?.let { param.args[0] = it }
             }
         }
     }
@@ -77,7 +80,8 @@ val PlayAlbumSongs = patch(
     runCatching {
         CommandResolverFingerprint.hookMethod {
             before { param ->
-                param.args[0] = PlayAlbumSongsExt.overrideCommand(param.args[0])
+                runCatching { PlayAlbumSongsExt.overrideCommand(param.args[0]) }
+                    .getOrNull()?.let { param.args[0] = it }
             }
         }
     }
