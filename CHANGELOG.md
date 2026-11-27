@@ -7,6 +7,11 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.1.02
+
+- **YouTube (SponsorBlock):**
+  * Fixed a SponsorBlock initialization error when opening videos on some YouTube versions.
+
 ## 5.1.01
 
 - **YouTube:**

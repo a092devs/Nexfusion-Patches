@@ -116,7 +116,8 @@ private inline fun MethodHookParam.inflateExtension(name: String, create: () -> 
     try {
         result = create()
     } catch (e: Exception) {
-        throwable = InflateException("Error inflating module class $name", e)
+        val root = (e as? java.lang.reflect.InvocationTargetException)?.targetException ?: e
+        throwable = InflateException("Error inflating module class $name: ${root.message}", root)
     }
 }
 

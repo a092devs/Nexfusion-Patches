@@ -183,6 +183,35 @@ val SponsorBlock = patch(
         R.id.morphe_sb_create_segment_button
     )
 
+    // Fallback for YouTube versions where SkipSponsorButton's host dimen/color resources are missing.
+    runCatching {
+        val getDimen = ResourceUtils::class.java.getDeclaredMethod("getDimensionPixelSize", String::class.java)
+        io.github.a092devs.nexfusion.compat.XposedBridge.hookMethod(getDimen, object : io.github.a092devs.nexfusion.compat.XC_MethodHook() {
+            override fun afterHookedMethod(param: MethodHookParam) {
+                if (param.throwable == null) return
+                val fallbackDp = when (param.args[0] as? String) {
+                    "ad_skip_ad_button_min_height" -> 36f
+                    "skip_button_cta_bottom_margin" -> 48f
+                    "skip_button_default_bottom_margin" -> 24f
+                    else -> return
+                }
+                val density = app.morphe.extension.shared.Utils.getContext().resources.displayMetrics.density
+                param.throwable = null
+                param.result = (fallbackDp * density).toInt()
+            }
+        })
+        val getColor = ResourceUtils::class.java.getDeclaredMethod("getColor", String::class.java)
+        io.github.a092devs.nexfusion.compat.XposedBridge.hookMethod(getColor, object : io.github.a092devs.nexfusion.compat.XC_MethodHook() {
+            override fun afterHookedMethod(param: MethodHookParam) {
+                if (param.throwable == null) return
+                if (param.args[0] == "skip_ad_button_background_color") {
+                    param.throwable = null
+                    param.result = 0xCC000000.toInt()
+                }
+            }
+        })
+    }
+
     // Hook the video time methods.
     videoTimeHooks.add { YouTubeSponsorBlockConfig.setVideoTime(it) }
     videoIdHooks.add { YouTubeSponsorBlockConfig.setCurrentVideoId(it) }
