@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap
 val HideSponsoredMessages = patch(
     name = "Hide sponsored messages",
     description = "Removes sponsored InMail conversations from the messaging list.",
-    use = true,
+    use = false,
 ) {
     try {
         val input = classLoader.loadClass(
@@ -138,7 +138,7 @@ val DisableDoubleTapLike = patch(
 val HideFeedAds = patch(
     name = "Hide feed ads",
     description = "Removes promoted posts from the feed, in the server-driven and legacy lists.",
-    use = true,
+    use = false,
 ) {
     hookSduiTransformer { component -> isSponsoredComponent(component) }
 
@@ -164,7 +164,7 @@ val HideFeedAds = patch(
 val HideSuggestedPosts = patch(
     name = "Hide suggested posts",
     description = "Removes \"Suggested\" posts from outside your network from the feed.",
-    use = true,
+    use = false,
 ) {
     hookSduiTransformer { component -> isSuggestedComponent(component) }
 }
@@ -172,7 +172,7 @@ val HideSuggestedPosts = patch(
 val HidePromotedJobs = patch(
     name = "Hide promoted jobs",
     description = "Removes promoted job listings from the Jobs tab and job search.",
-    use = true,
+    use = false,
 ) {
     hookSduiTransformer { component -> isPromotedJobComponent(component) }
 }
@@ -180,7 +180,7 @@ val HidePromotedJobs = patch(
 val HidePremiumUpsells = patch(
     name = "Hide Premium upsells",
     description = "Removes Premium and AI upsell cards and banners, including on profiles and the Me panel.",
-    use = true,
+    use = false,
 ) {
     hookSduiTransformer { component -> isPremiumUpsellComponent(component) }
 
@@ -203,7 +203,7 @@ val HidePremiumUpsells = patch(
 val ExpandPosts = patch(
     name = "Expand posts",
     description = "Shows posts fully expanded by default without having to tap '...see more'.",
-    use = true,
+    use = false,
 ) {
     registerSduiTransformer { component, viewName, payload ->
         if (viewName == "feed-commentary" && payload != null) {

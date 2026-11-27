@@ -117,6 +117,7 @@ private inline fun MethodHookParam.inflateExtension(name: String, create: () -> 
         result = create()
     } catch (e: Exception) {
         val root = (e as? java.lang.reflect.InvocationTargetException)?.targetException ?: e
+        XposedBridge.log(root)
         throwable = InflateException("Error inflating module class $name: ${root.message}", root)
     }
 }

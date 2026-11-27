@@ -22,7 +22,7 @@ import org.luckypray.dexkit.wrap.DexMethod
 val SanitizeShareLinks = patch(
     name = "Sanitize share links",
     description = "Removes tracking parameters from LinkedIn links when they are copied or shared.",
-    use = true,
+    use = false,
 ) {
     hookBefore("Landroid/content/ClipboardManager;->setPrimaryClip(Landroid/content/ClipData;)V") { param ->
         val clip = param.args.getOrNull(0) as? ClipData ?: return@hookBefore
@@ -39,7 +39,7 @@ val SanitizeShareLinks = patch(
 val OpenLinksDirectly = patch(
     name = "Open links directly",
     description = "Opens external links without LinkedIn's safety/go warning page.",
-    use = true,
+    use = false,
 ) {
     // Upstream injects unwrap at the start of the NavigateToUrlActionViewData constructor (feed,
     // profiles, ...), before the Uri is stored. The middle parameter types are wildcarded upstream,
@@ -77,7 +77,7 @@ val OpenLinksDirectly = patch(
 val BlockTracking = patch(
     name = "Block tracking",
     description = "Stops most LinkedIn analytics events from being sent. Off by default, like upstream.",
-    use = true,
+    use = false,
 ) {
     // MetricQueue.queueMetric(IMetricAdapter, Tracker, CustomTrackingEventBuilder, CopyOnWriteArraySet)
     // returns early when the upstream setting is on; here the manager toggle plays that part.

@@ -7,6 +7,14 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.1.03
+
+- **YouTube (SponsorBlock):**
+  * Fixed an issue where SponsorBlock failed to show its skip button and on-screen controls when opening videos.
+- **YouTube, YouTube Music & Reddit:**
+  * Restored several video, Shorts, and feed enhancements that stopped applying properly after the previous update.
+  * Synced the latest upstream Morphe patch fixes and improvements.
+
 ## 5.1.02
 
 - **YouTube (SponsorBlock):**

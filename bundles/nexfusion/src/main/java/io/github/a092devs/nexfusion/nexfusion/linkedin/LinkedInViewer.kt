@@ -47,7 +47,7 @@ val ViewerTapToHide = patch(
 val DocumentPdfDownload = patch(
     name = "Save document as PDF",
     description = "Saves multi-page documents and carousels as a unified PDF in Downloads.",
-    use = true,
+    use = false,
 ) {
     installDocumentCaptureHook()
 }

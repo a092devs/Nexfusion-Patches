@@ -15,7 +15,7 @@ import io.github.a092devs.nexfusion.patch
 val GboardCursorTrackpad = patch(
     name = "Cursor trackpad",
     description = "Enables free-cursor mode: slide on the spacebar to move the text cursor.",
-    use = true,
+    use = false,
 ) {
     gboardFlagOverrides(
         "free_cursor" to FlagOverride.promote(),
@@ -26,7 +26,7 @@ val GboardCursorTrackpad = patch(
 val GboardQuickInsert = patch(
     name = "Quick insert",
     description = "Enables Gboard's super-insert (quick insert) suggestions row with dynamic multi-view.",
-    use = true,
+    use = false,
 ) {
     gboardFlagOverrides(
         "super_insert" to FlagOverride.forceBoolean(),
@@ -45,7 +45,7 @@ val GboardQuickInsert = patch(
 val GboardAccessPointsMenu = patch(
     name = "Toolbar & access points",
     description = "Enables the redesigned toolbar access-points menu, fixes toolbar count at 6, and adds the proactive suggestions close button.",
-    use = true,
+    use = false,
 ) {
     gboardFlagOverrides(
         "enable_access_points_menu_redesign" to FlagOverride.forceBoolean(),
@@ -71,7 +71,7 @@ val GboardSettingsMenu = patch(
 val GboardRamblerVoiceTyping = patch(
     name = "Advanced & Gemini voice typing",
     description = "Enables Gemini Rambler natural voice typing, NGA consolidated speech dictation, and Bluetooth microphone settings.",
-    use = true,
+    use = false,
 ) {
     gboardFlagOverrides(
         // Rambler & NGA core flags
@@ -143,7 +143,7 @@ val GboardRamblerVoiceTyping = patch(
 val GboardRoundedKeycaps = patch(
     name = "Rounded keycaps & shapes",
     description = "Enables Material 3 Belka rounded pill keycaps, extra theme editor key shapes, and persistent preference.",
-    use = true,
+    use = false,
 ) {
     gboardFlagOverrides(
         "belka_rounded_keyboard" to FlagOverride.forceTrue(),
@@ -162,7 +162,7 @@ val GboardRoundedKeycaps = patch(
 val GboardScanTextOcr = patch(
     name = "Scan text (Camera OCR)",
     description = "Unlocks the Camera OCR scan text viewfinder in the Gboard toolbar to extract physical text.",
-    use = true,
+    use = false,
 ) {
     gboardFlagOverrides(
         "enable_ocr" to FlagOverride.forceTrue(),
@@ -174,7 +174,7 @@ val GboardScanTextOcr = patch(
 val GboardEmojiPaletteV2 = patch(
     name = "Emoji Palette V2 & size slider",
     description = "Enables the redesigned emoji drawer layout with frequent/recent tabs and the emoji size slider.",
-    use = true,
+    use = false,
 ) {
     gboardFlagOverrides(
         "emoji_palette_v2" to FlagOverride.promote(),
@@ -187,7 +187,7 @@ val GboardEmojiPaletteV2 = patch(
 val GboardSmartCompose = patch(
     name = "Smart Compose autocompletion",
     description = "Enables in-line predictive text completion, ghost text, and client-side inline suggestions across all input fields.",
-    use = true,
+    use = false,
 ) {
     gboardFlagOverrides(
         "enable_smart_compose" to FlagOverride.promote(),
@@ -202,7 +202,7 @@ val GboardSmartCompose = patch(
 val GboardSpellCheckerChips = patch(
     name = "Grammar & spell checker chips",
     description = "Enables Gboard's on-device grammar checker and modern inline spell checker suggestion chips on Android 12+.",
-    use = true,
+    use = false,
 ) {
     gboardFlagOverrides(
         "enable_grammar_checker" to FlagOverride.forceTrue(),
@@ -221,7 +221,7 @@ val GboardSpellCheckerChips = patch(
 val GboardSignToText = patch(
     name = "Sign-to-Text (Signboard ASL)",
     description = "Enables Sign-to-Text camera translation for American Sign Language.",
-    use = true,
+    use = false,
 ) {
     gboardFlagOverrides(
         "enable_signboard" to FlagOverride.forceBoolean(),
@@ -239,7 +239,7 @@ val GboardSignToText = patch(
 val GboardIncognitoMode = patch(
     name = "Manual Incognito mode toggle",
     description = "Adds a manual Incognito mode toggle button in Gboard's toolbar access points.",
-    use = true,
+    use = false,
 ) {
     gboardFlagOverrides(
         "enable_incognito_mode_entry_point" to FlagOverride.forceBoolean(),
@@ -250,7 +250,7 @@ val GboardIncognitoMode = patch(
 val GboardSmartAutoCorrection = patch(
     name = "Smart auto-correction & fast learning",
     description = "Enhances auto-correction accuracy, enables reverting auto-corrected words on backspace, and optimizes user history learning.",
-    use = true,
+    use = false,
 ) {
     gboardFlagOverrides(
         "auto_correct_with_replace_text" to FlagOverride.forceBoolean(),
@@ -284,7 +284,7 @@ val GboardSmartAutoCorrection = patch(
 val GboardCandidateEmojiVibrancy = patch(
     name = "Candidate strip emoji vibrancy",
     description = "Ensures emoji glyphs in suggestion candidates render at full opacity (alpha 255) and positions suggested emojis in the right slot.",
-    use = true,
+    use = false,
 ) {
     runCatching {
         val autoCenterClass = classLoader.loadClass("com.google.android.libraries.inputmethod.widgets.text.AutoCenterScaleTextView")
@@ -326,7 +326,7 @@ val GboardCandidateEmojiVibrancy = patch(
 val GboardClipboardHistorySlider = patch(
     name = "Extended clipboard & screenshot chips",
     description = "Enables 20,000-char clipboard items, retention slider (1h, 24h, 7d, 30d, Never), and floating screenshot suggestion chips.",
-    use = true,
+    use = false,
 ) {
     gboardFlagOverrides(
         "text_clip_item_char_limit" to FlagOverride.forceLong(20_000L),
@@ -357,7 +357,7 @@ val GboardSignatureBypass = patch(
 val GboardGoogleSansTypography = patch(
     name = "Google Sans Flex typography",
     description = "Enables Google Sans Flex keycap font styling and GM3 expressive design.",
-    use = true,
+    use = false,
 ) {
     gboardFlagOverrides(
         "google_sans_flex" to FlagOverride.forceTrue(),
@@ -369,7 +369,7 @@ val GboardGoogleSansTypography = patch(
 val GboardUndoControls = patch(
     name = "Undo action controls",
     description = "Enables proactive 1-tap Undo buttons in the suggestion strip after text replacements and autocorrection.",
-    use = true,
+    use = false,
 ) {
     gboardFlagOverrides(
         "undo_proactive_post_correction" to FlagOverride.forceTrue(),
@@ -388,7 +388,7 @@ val GboardUndoControls = patch(
 val GboardQuickAndMagicEmoji = patch(
     name = "Quick, Magic & GenAI Emoji",
     description = "Enables the fast-access emoji bar, Gemini Magic Emoji, and Emogen GenAI emoji maker.",
-    use = true,
+    use = false,
 ) {
     gboardFlagOverrides(
         "enable_emogen" to FlagOverride.forceBoolean(),
@@ -416,7 +416,7 @@ val GboardQuickAndMagicEmoji = patch(
 val GboardKeypressHaptics = patch(
     name = "Keypress vibration intensity control",
     description = "Enables hardware VibrationEffect vibration strength and intensity slider on Android 11+.",
-    use = true,
+    use = false,
 ) {
     gboardFlagOverrides(
         "vibration_effect_min_sdk" to FlagOverride.forceLong(30L),
@@ -442,7 +442,7 @@ val GboardSplitKeyboard = patch(
 val GboardTerminalPasteAndSelectAll = patch(
     name = "Terminal paste & auto select-all",
     description = "Fixes paste shortcuts in raw terminal input fields (Termux) and automatically selects all text before copy/cut when nothing is selected.",
-    use = true,
+    use = false,
 ) {
     GboardEditingHook.install(classLoader)
 }
@@ -470,7 +470,7 @@ val GboardDeveloperOptions = patch(
 val GboardBackupRestore = patch(
     name = "Backup & Restore settings",
     description = "Enables Gboard personal dictionary, preferences, and custom theme backup and restore options.",
-    use = true,
+    use = false,
 ) {
     gboardFlagOverrides(
         "enable_backup_restore" to FlagOverride.forceTrue(),
@@ -481,7 +481,7 @@ val GboardBackupRestore = patch(
 val GboardWritingTools = patch(
     name = "AI Writing Tools & Flow mode",
     description = "Enables AI Writing Tools (proofread, rewrite, smart edit) and llm_pc flow-mode keys for every language.",
-    use = true,
+    use = false,
 ) {
     gboardFlagOverrides(
         "enable_llm_pc" to FlagOverride.forceTrue(),
@@ -543,7 +543,7 @@ val GboardWritingTools = patch(
 val GboardAccessibilityLayout = patch(
     name = "Accessibility layout",
     description = "Enables physical keyboard simulator and accessibility keyboard layout mode.",
-    use = true,
+    use = false,
 ) {
     gboardFlagOverrides(
         "enable_pk_simulator" to FlagOverride.forceTrue(),

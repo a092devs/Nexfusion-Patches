@@ -25,11 +25,11 @@ android {
 
     defaultConfig {
         applicationId = "io.github.a092devs.nexfusion"
-        versionCode = 140
+        versionCode = 141
         val patchVersion = Properties().apply {
             rootProject.file("morphe-patches/gradle.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
         }["version"]
-        versionName = "5.1.02"
+        versionName = "5.1.03"
         buildConfigField("String", "PATCH_VERSION", "\"$patchVersion\"")
     }
     packaging {

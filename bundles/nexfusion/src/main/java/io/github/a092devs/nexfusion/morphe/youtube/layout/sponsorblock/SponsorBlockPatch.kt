@@ -23,6 +23,7 @@ import app.morphe.extension.youtube.sponsorblock.ui.CreateSegmentButton
 import app.morphe.extension.youtube.sponsorblock.ui.SponsorBlockStatsPreferenceCategory
 import app.morphe.extension.youtube.sponsorblock.ui.SponsorBlockViewController
 import app.morphe.extension.youtube.sponsorblock.ui.VotingButton
+import io.github.a092devs.nexfusion.addModuleAssets
 import io.github.a092devs.nexfusion.patches.R
 import io.github.a092devs.nexfusion.morphe.youtube.shared.seekbarOnDrawFingerprint
 import io.github.a092devs.nexfusion.morphe.youtube.misc.playservice.VersionCheck
@@ -183,35 +184,6 @@ val SponsorBlock = patch(
         R.id.morphe_sb_create_segment_button
     )
 
-    // Fallback for YouTube versions where SkipSponsorButton's host dimen/color resources are missing.
-    runCatching {
-        val getDimen = ResourceUtils::class.java.getDeclaredMethod("getDimensionPixelSize", String::class.java)
-        io.github.a092devs.nexfusion.compat.XposedBridge.hookMethod(getDimen, object : io.github.a092devs.nexfusion.compat.XC_MethodHook() {
-            override fun afterHookedMethod(param: MethodHookParam) {
-                if (param.throwable == null) return
-                val fallbackDp = when (param.args[0] as? String) {
-                    "ad_skip_ad_button_min_height" -> 36f
-                    "skip_button_cta_bottom_margin" -> 48f
-                    "skip_button_default_bottom_margin" -> 24f
-                    else -> return
-                }
-                val density = app.morphe.extension.shared.Utils.getContext().resources.displayMetrics.density
-                param.throwable = null
-                param.result = (fallbackDp * density).toInt()
-            }
-        })
-        val getColor = ResourceUtils::class.java.getDeclaredMethod("getColor", String::class.java)
-        io.github.a092devs.nexfusion.compat.XposedBridge.hookMethod(getColor, object : io.github.a092devs.nexfusion.compat.XC_MethodHook() {
-            override fun afterHookedMethod(param: MethodHookParam) {
-                if (param.throwable == null) return
-                if (param.args[0] == "skip_ad_button_background_color") {
-                    param.throwable = null
-                    param.result = 0xCC000000.toInt()
-                }
-            }
-        })
-    }
-
     // Hook the video time methods.
     videoTimeHooks.add { YouTubeSponsorBlockConfig.setVideoTime(it) }
     videoIdHooks.add { YouTubeSponsorBlockConfig.setCurrentVideoId(it) }
@@ -301,6 +273,11 @@ val SponsorBlock = patch(
             if (param.args[0] != controls_overlay_layout) return@after
             val layout = param.result as ViewGroup
             val overlay_view = layout.findViewById<ViewGroup>(insetOverlayViewLayout)
+            runCatching {
+                overlay_view.context?.addModuleAssets()
+                app.morphe.extension.shared.Utils.getContext()?.addModuleAssets()
+                app.morphe.extension.shared.Utils.getActivity()?.addModuleAssets()
+            }
             SponsorBlockViewController.initialize(overlay_view)
         }
     })

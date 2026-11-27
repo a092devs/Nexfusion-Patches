@@ -32,6 +32,8 @@ private class ModifierAdapter(var raw: Any) : ComposeUtils.Modifier {
         bridge.paddingMethod.invoke(null, raw, start, top, end, bottom)!!
 
     override fun patch_windowInsetsPadding(insets: ComposeUtils.WindowInsets): Any = raw
+
+    override fun patch_clip(shape: Any): Any = raw
 }
 
 private fun unwrapModifier(obj: Any): Any =

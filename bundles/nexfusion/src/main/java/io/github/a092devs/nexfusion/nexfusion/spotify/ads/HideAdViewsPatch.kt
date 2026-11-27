@@ -83,7 +83,7 @@ private fun hideAdViewsInTree(view: View) {
 val HideAdViews = patch(
     name = "Hide ad views",
     description = "Hides ad banners, display ads, premium upsell cards, and promotional nudges.",
-    use = true,
+    use = false,
 ) {
     HideAdViewsPatch.AD_VIEW_CLASSES.forEach { className ->
         val adView = XposedHelpers.findClassIfExists(className, classLoader)
