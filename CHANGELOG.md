@@ -7,6 +7,16 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.1.09
+
+- **Proton VPN:**
+  * Fixed advanced settings and NetShield unlocking on newer Proton VPN versions.
+  * Added an option to continue as a guest on the welcome screen.
+- **Instagram:**
+  * Fixed saved photos sometimes downloading at lower quality or missing Ultra HDR data.
+- **Gboard:**
+  * Improved pasting plain text in terminal and raw text fields.
+
 ## 5.1.08
 
 - **YouTube, YouTube Music & Reddit:**

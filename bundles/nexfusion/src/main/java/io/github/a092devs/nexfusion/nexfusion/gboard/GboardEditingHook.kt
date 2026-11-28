@@ -55,7 +55,7 @@ object GboardEditingHook {
                     val connection = param.thisObject as? InputConnection ?: return
                     val service = currentIme.get()
 
-                    if (actionId == android.R.id.paste) {
+                    if (actionId == android.R.id.paste || actionId == android.R.id.pasteAsPlainText) {
                         val editorInfo = service?.currentInputEditorInfo
                         if (editorInfo != null && (editorInfo.inputType and InputType.TYPE_MASK_CLASS) == InputType.TYPE_NULL) {
                             if (pasteRawText(service, connection)) {

@@ -10,7 +10,7 @@ class ProtonVpnPatchesTest {
 
     @Test
     fun `bundle includes all expected proton vpn patches`() {
-        assertEquals(8, ProtonVpnPatches.size)
+        assertEquals(9, ProtonVpnPatches.size)
         val names = ProtonVpnPatches.map { it.name }.toSet()
         assertTrue(names.contains("Disable telemetry"))
         assertTrue(names.contains("Remove server change delay"))
@@ -20,6 +20,7 @@ class ProtonVpnPatchesTest {
         assertTrue(names.contains("Hide upgrade promotions"))
         assertTrue(names.contains("Plus UI badge"))
         assertTrue(names.contains("Disable in-app update checks"))
+        assertTrue(names.contains("Enable guest mode"))
     }
 
     @Test
@@ -27,7 +28,7 @@ class ProtonVpnPatchesTest {
         val protonApp = NexFusionPatches.apps.firstOrNull { it.packageName == "ch.protonvpn.android" }
         assertNotNull(protonApp)
         assertEquals("Proton VPN", protonApp.appName)
-        assertEquals(8, protonApp.patches.size)
+        assertEquals(9, protonApp.patches.size)
         assertTrue(protonApp.targets.isEmpty(), "Proton VPN uses universal dynamic hooks")
     }
 }

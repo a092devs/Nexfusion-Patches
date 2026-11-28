@@ -108,6 +108,25 @@ private val mainHandler by lazy { Handler(Looper.getMainLooper()) }
  * The file name of [item], the last path segment of its URL or a new name, with the time of the save added when
  * [DownloadSettings.timestamp] is on.
  */
+private fun wholeImageUrl(url: String): String {
+    val uri = Uri.parse(url)
+    val scheme = uri.scheme
+    val host = uri.host?.lowercase(Locale.ROOT) ?: return url
+    if (!(scheme.equals("https", ignoreCase = true) || scheme.equals("http", ignoreCase = true))) return url
+    if (host != "cdninstagram.com" && !host.endsWith(".cdninstagram.com") && !host.endsWith(".fbcdn.net")) return url
+    val query = uri.encodedQuery ?: return url
+    val kept = ArrayList<String>()
+    var removed = false
+    for (param in query.split("&")) {
+        if (param.startsWith("se=")) removed = true else kept.add(param)
+    }
+    if (!removed) return url
+    return uri.buildUpon()
+        .encodedQuery(if (kept.isEmpty()) null else kept.joinToString("&"))
+        .build()
+        .toString()
+}
+
 private fun fileName(item: MediaExtractor.Item, timestamp: Boolean): String {
     val extension = if (item.isVideo) ".mp4" else ".jpg"
     val name = Uri.parse(item.url).lastPathSegment?.takeIf { it.contains('.') }
@@ -135,7 +154,8 @@ private fun String.withTimestamp(timestamp: Boolean): String {
 private fun save(context: Context, item: MediaExtractor.Item, settings: DownloadSettings, username: String?) {
     val name = fileName(item, settings.timestamp)
     val mimeType = if (item.isVideo) "video/mp4" else if (name.endsWith(".webp")) "image/webp" else "image/jpeg"
-    val connection = URL(item.url).openConnection() as HttpURLConnection
+    val targetUrl = if (item.isVideo) item.url else wholeImageUrl(item.url)
+    val connection = URL(targetUrl).openConnection() as HttpURLConnection
     try {
         connection.connectTimeout = 15_000
         connection.readTimeout = 30_000
@@ -325,7 +345,8 @@ private fun extractAndSaveAudio(
     val tempVideo = File.createTempFile("nex_vid_", ".mp4", cacheDir)
     val tempAudio = File.createTempFile("nex_aud_", ".m4a", cacheDir)
     try {
-        val connection = URL(item.url).openConnection() as HttpURLConnection
+        val targetUrl = if (item.isVideo) item.url else wholeImageUrl(item.url)
+    val connection = URL(targetUrl).openConnection() as HttpURLConnection
         connection.connectTimeout = 15_000
         connection.readTimeout = 30_000
         if (connection.responseCode !in 200..299) return false

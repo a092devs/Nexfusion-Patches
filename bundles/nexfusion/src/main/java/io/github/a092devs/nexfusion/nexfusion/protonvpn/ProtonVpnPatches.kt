@@ -3,7 +3,45 @@ package io.github.a092devs.nexfusion.nexfusion.protonvpn
 import io.github.a092devs.nexfusion.compat.XC_MethodHook
 import io.github.a092devs.nexfusion.compat.XposedBridge
 import io.github.a092devs.nexfusion.compat.XposedHelpers
+import io.github.a092devs.nexfusion.hookMethod
+import io.github.a092devs.nexfusion.morphe.AccessFlags
+import io.github.a092devs.nexfusion.morphe.Fingerprint
+import io.github.a092devs.nexfusion.morphe.InstructionLocation.MatchAfterImmediately
+import io.github.a092devs.nexfusion.morphe.Opcode
+import io.github.a092devs.nexfusion.morphe.StringComparisonType
+import io.github.a092devs.nexfusion.morphe.methodCall
+import io.github.a092devs.nexfusion.morphe.opcode
+import io.github.a092devs.nexfusion.morphe.string
 import io.github.a092devs.nexfusion.patch
+
+private object VpnUserToStringFingerprint : Fingerprint(
+    name = "toString",
+    returnType = "Ljava/lang/String;",
+    parameters = emptyList(),
+    filters = listOf(string("VpnUser(userId=", comparison = StringComparisonType.STARTS_WITH)),
+)
+
+private object VpnUserIsFreeUserFingerprint : Fingerprint(
+    classFingerprint = VpnUserToStringFingerprint,
+    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.FINAL),
+    returnType = "Z",
+    parameters = emptyList(),
+    filters = listOf(
+        methodCall(definingClass = "Ljava/lang/Integer;", name = "intValue"),
+        opcode(Opcode.MOVE_RESULT, MatchAfterImmediately()),
+        opcode(Opcode.IF_NEZ, MatchAfterImmediately()),
+    ),
+)
+
+private object NetShieldAvailabilityValuesFingerprint : Fingerprint(
+    classFingerprint = Fingerprint(
+        name = "<clinit>",
+        strings = listOf("AVAILABLE", "UPGRADE_VPN_PLUS"),
+    ),
+    name = "values",
+    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.STATIC),
+    parameters = emptyList(),
+)
 
 // Ported from hxreborn/morphe-patches (GPL-3.0), hoo-dles/morphe-patches (GPL-3.0),
 // and Paresh-Maheshwari/paresh-patches (GPL-3.0):
@@ -205,27 +243,59 @@ val ProtonVpnUnlockSettings = patch(
     description = "Unlocks NetShield ad/tracker blocking, split tunneling, custom DNS, and LAN connections.",
     use = false,
 ) {
-    // NetShield availability -> AVAILABLE
+    // NetShield availability -> AVAILABLE (supports both unobfuscated & obfuscated builds)
     runCatching {
-        val netShieldEnumClass = classLoader.loadClass("com.protonvpn.android.netshield.NetShieldAvailability")
-        val availableConstant = netShieldEnumClass.enumConstants?.firstOrNull { (it as Enum<*>).name == "AVAILABLE" }
-        if (availableConstant != null) {
-            val netShieldManagerClass = classLoader.loadClass("com.protonvpn.android.netshield.NetShieldManager")
-            netShieldManagerClass.declaredMethods.filter { it.returnType == netShieldEnumClass }.forEach { method ->
+        val netShieldEnumClass = runCatching { NetShieldAvailabilityValuesFingerprint.method.declaringClass }.getOrNull()
+            ?: runCatching { classLoader.loadClass("com.protonvpn.android.netshield.NetShieldAvailability") }.getOrNull()
+        val availableConstant = netShieldEnumClass?.enumConstants?.firstOrNull { (it as Enum<*>).name == "AVAILABLE" }
+        if (netShieldEnumClass != null && availableConstant != null) {
+            val netShieldManagerClass = runCatching { classLoader.loadClass("com.protonvpn.android.netshield.NetShieldManager") }.getOrNull()
+            netShieldManagerClass?.declaredMethods?.filter { it.returnType == netShieldEnumClass }?.forEach { method ->
                 XposedBridge.hookMethod(method, object : XC_MethodHook() {
                     override fun beforeHookedMethod(param: MethodHookParam) {
                         param.result = availableConstant
                     }
                 })
             }
+            val upgradeConstant = netShieldEnumClass.enumConstants?.firstOrNull { (it as Enum<*>).name == "UPGRADE_VPN_PLUS" }
+            if (upgradeConstant != null) {
+                val enumDesc = "L${netShieldEnumClass.name.replace('.', '/')};"
+                val netShieldGetterFp = Fingerprint(
+                    returnType = enumDesc,
+                    filters = listOf(
+                        io.github.a092devs.nexfusion.morphe.fieldAccess(
+                            opcode = Opcode.SGET_OBJECT,
+                            definingClass = enumDesc,
+                            type = enumDesc,
+                        )
+                    ),
+                )
+                netShieldGetterFp.hookMethod {
+                    after { param ->
+                        if (param.result == upgradeConstant) {
+                            param.result = availableConstant
+                        }
+                    }
+                }
+            }
         }
     }
 
-    // Hook VpnUser tier & free status to unlock client-side settings (supports both unobfuscated & 5.21+ obfuscated hi.a)
+    // Hook VpnUser tier & free status dynamically via DexKit (plus legacy class name fallbacks)
     runCatching {
-        val userCandidates = listOf("com.protonvpn.android.auth.data.VpnUser", "hi.a")
-        for (className in userCandidates) {
-            val userClass = runCatching { classLoader.loadClass(className) }.getOrNull() ?: continue
+        VpnUserIsFreeUserFingerprint.hookMethod {
+            before { param -> param.result = false }
+        }
+    }
+    runCatching {
+        val dynamicUserClass = runCatching { VpnUserToStringFingerprint.method.declaringClass }.getOrNull()
+        val userClasses = buildList {
+            if (dynamicUserClass != null) add(dynamicUserClass)
+            for (name in listOf("com.protonvpn.android.auth.data.VpnUser", "hi.a")) {
+                runCatching { classLoader.loadClass(name) }.getOrNull()?.let { add(it) }
+            }
+        }.distinct()
+        for (userClass in userClasses) {
             userClass.declaredMethods.forEach { method ->
                 val name = method.name
                 val returnType = method.returnType
@@ -487,6 +557,27 @@ val ProtonVpnDisableUpdateChecks = patch(
     }
 }
 
+val ProtonVpnEnableGuestMode = patch(
+    name = "Enable guest mode",
+    description = "Adds Continue as guest to the welcome screen.",
+    use = false,
+) {
+    runCatching {
+        val resClass = android.content.res.Resources::class.java
+        val method = resClass.getDeclaredMethod("getBoolean", Int::class.javaPrimitiveType)
+        XposedBridge.hookMethod(method, object : XC_MethodHook() {
+            override fun afterHookedMethod(param: MethodHookParam) {
+                val res = param.thisObject as? android.content.res.Resources ?: return
+                val id = param.args.firstOrNull() as? Int ?: return
+                val name = runCatching { res.getResourceEntryName(id) }.getOrNull() ?: return
+                if (name == "core_feature_credential_less_enabled") {
+                    param.result = true
+                }
+            }
+        })
+    }
+}
+
 val ProtonVpnPatches = arrayOf(
     ProtonVpnDisableTelemetry,
     ProtonVpnServerChangeDelay,
@@ -496,5 +587,6 @@ val ProtonVpnPatches = arrayOf(
     ProtonVpnHidePromotions,
     ProtonVpnPremiumUi,
     ProtonVpnDisableUpdateChecks,
+    ProtonVpnEnableGuestMode,
 )
 
