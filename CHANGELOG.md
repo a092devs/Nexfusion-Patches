@@ -7,6 +7,11 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.1.07
+
+- **Reddit:**
+  * Removed duplicate "Hide Ask button" patch entry and cleaned up legacy duplicate stub patches so each Reddit toggle appears only once.
+
 ## 5.1.06
 
 - **YouTube Music:**

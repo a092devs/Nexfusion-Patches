@@ -676,29 +676,6 @@ val HideTrendingShelves = patch(
     }
 }
 
-val HideAskButton = patch(
-    name = "Hide Ask button",
-    description = "Hides the Ask button in Reddit search and feeds.",
-    use = false,
-) {
-    runCatching {
-        val experimentClass = runCatching { classLoader.loadClass("com.reddit.config.ExperimentGate") }.getOrNull()
-            ?: runCatching { classLoader.loadClass("com.reddit.experiments.ExperimentGate") }.getOrNull()
-        if (experimentClass != null) {
-            experimentClass.declaredMethods.filter { it.returnType == java.lang.Boolean.TYPE }.forEach { method ->
-                XposedBridge.hookMethod(method, object : XC_MethodHook() {
-                    override fun beforeHookedMethod(param: MethodHookParam) {
-                        val experimentName = param.args.firstOrNull()?.toString() ?: return
-                        if (experimentName.contains("search_bar_ask") || experimentName.contains("ask_button")) {
-                            param.result = false
-                        }
-                    }
-                })
-            }
-        }
-    }
-}
-
 val DisableModernHome = patch(
     name = "Disable modern home",
     description = "Disables the modern home UI on supported Reddit versions.",
@@ -928,37 +905,9 @@ val SearchHiddenProfiles = patch(
 ) {
 }
 
-val PrivateBrowsingMode = patch(
-    name = "Private browsing mode",
-    description = "Enables private browsing and incognito mode options.",
-    use = false,
-) {
-}
-
-val SwipeUpForComments = patch(
-    name = "Swipe up for comments",
-    description = "Allows swiping up on media in the media viewer to open comments instead of the next video.",
-    use = false,
-) {
-}
-
-val FullScreenReply = patch(
-    name = "Full-screen reply",
-    description = "Opens comment replies in the full-screen editor instead of the inline composer.",
-    use = false,
-) {
-}
-
 val DownloadAllFromGallery = patch(
     name = "Download all from gallery",
     description = "Adds an option to download all media items from a gallery post at once.",
-    use = false,
-) {
-}
-
-val KeepMediaViewerInSubreddit = patch(
-    name = "Keep media viewer in subreddit",
-    description = "Keeps the media viewer within the current subreddit when swiping between posts.",
     use = false,
 ) {
 }
@@ -977,35 +926,6 @@ val CollapseAllComments = patch(
 ) {
 }
 
-val HidePeopleAlsoSearchFor = patch(
-    name = "Hide People also search for section",
-    description = "Adds an option to hide the 'People also search for' section from search results.",
-    use = false,
-) {
-}
-
-val RedditEnableDebugging = patch(
-    name = "Enable debugging",
-    description = "Enables debug logging for Reddit patches.",
-    use = false,
-) {
-}
-
-val DisableRefreshOnBack = patch(
-    name = "Disable refresh on back to exit",
-    description = "Adds an option to exit the app with back on the home feed without first scrolling to the top and reloading.",
-    use = false,
-) {
-    runCatching {
-        val cls = runCatching { Class.forName("app.morphe.extension.reddit.patches.DisableRefreshOnBackPatch", false, XposedBridge::class.java.classLoader) }.getOrNull()
-            ?: runCatching { classLoader.loadClass("app.morphe.extension.reddit.patches.DisableRefreshOnBackPatch") }.getOrNull()
-        if (cls != null) {
-            val method = cls.getDeclaredMethod("isPatchIncluded")
-            XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(true))
-        }
-    }
-}
-
 val AlwaysShowHide = patch(
     name = "Always show Hide",
     description = "Adds an option to always show Hide in the menu of feed posts, even when replaced by recommendations.",
@@ -1014,21 +934,6 @@ val AlwaysShowHide = patch(
     runCatching {
         val cls = runCatching { Class.forName("app.morphe.extension.reddit.patches.AlwaysShowHidePatch", false, XposedBridge::class.java.classLoader) }.getOrNull()
             ?: runCatching { classLoader.loadClass("app.morphe.extension.reddit.patches.AlwaysShowHidePatch") }.getOrNull()
-        if (cls != null) {
-            val method = cls.getDeclaredMethod("isPatchIncluded")
-            XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(true))
-        }
-    }
-}
-
-val DisableBottomBarAutoHide = patch(
-    name = "Disable bottom bar auto-hide",
-    description = "Adds an option to keep the bottom navigation bar visible while scrolling.",
-    use = false,
-) {
-    runCatching {
-        val cls = runCatching { Class.forName("app.morphe.extension.reddit.patches.DisableBottomBarAutoHidePatch", false, XposedBridge::class.java.classLoader) }.getOrNull()
-            ?: runCatching { classLoader.loadClass("app.morphe.extension.reddit.patches.DisableBottomBarAutoHidePatch") }.getOrNull()
         if (cls != null) {
             val method = cls.getDeclaredMethod("isPatchIncluded")
             XposedBridge.hookMethod(method, XC_MethodReplacement.returnConstant(true))
@@ -1061,7 +966,6 @@ val RedditPatches = arrayOf(
     MediaViewerBlackBackground,
     HideCommunitiesShelf,
     HideTrendingShelves,
-    HideAskButton,
     DisableModernHome,
     RememberCollapsedComments,
     CollapseAllComments,
