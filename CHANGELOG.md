@@ -7,6 +7,11 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.1.10
+
+- **Gboard:**
+  * Fixed AI Writing Tools, Sign-to-Text, and Scan text (Camera OCR) not working on Gboard 18.8.1 beta.
+
 ## 5.1.09
 
 - **Proton VPN:**

@@ -49,6 +49,7 @@ class FlagOverride private constructor(
  * `actb`, `actq`, and `actf` are the plain flag, metadata, and flag interface on Gboard 18.4.1.
  */
 private val KNOWN_FLAG_CLASS_NAMES = listOf(
+    "adfs",                                 // Gboard 18.8.1 beta
     "odo", "oki", "okj", "okl",           // Gboard 18.6.3, 18.5.9, 18.5.3 & 18.5.4 release
     "actb", "actq", "acug", "acul",         // Gboard 18.4.1 beta
     "odx", "ody",                           // Gboard 18.4.1 release
