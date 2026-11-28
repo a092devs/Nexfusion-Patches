@@ -7,6 +7,12 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.1.08
+
+- **YouTube, YouTube Music & Reddit:**
+  * Synced upstream Morphe (`v2.5.0-dev.2+`) and Morphe Patches Library (`v2.3.1`) updates.
+  * Improved Glass menus choice dialog styling, YouTube Music third-party lyrics scrolling, YouTube Music downloaded song playback UI, YouTube theme/ambient mode edge handling, feed card layout, and Reddit settings styling.
+
 ## 5.1.07
 
 - **Reddit:**
