@@ -148,6 +148,73 @@ val NavigationBar = patch(
         }
     })
 
+    // Align Subscriptions tab icon vertically with sibling tabs (e.g. when labels are hidden).
+    val alignedPivotBars = java.util.Collections.newSetFromMap(java.util.WeakHashMap<View, Boolean>())
+    CreatePivotBarFingerprint.hookMethod {
+        after { param ->
+            val pivotBar = param.args.firstOrNull() as? android.view.ViewGroup ?: return@after
+            if (!alignedPivotBars.add(pivotBar)) return@after
+            val pkg = pivotBar.context.packageName
+            val thumbnailId = pivotBar.resources.getIdentifier("thumbnail_layout", "id", pkg)
+            val imageId = pivotBar.resources.getIdentifier("image", "id", pkg)
+            if (thumbnailId == 0 && imageId == 0) return@after
+
+            fun findIcon(tab: View): View? {
+                val thumb = if (thumbnailId != 0) tab.findViewById<View>(thumbnailId) else null
+                if (thumb != null && thumb.visibility == View.VISIBLE && thumb.height > 0) return thumb
+                val img = if (imageId != 0) tab.findViewById<View>(imageId) else null
+                return if (img != null && img.visibility == View.VISIBLE && img.height > 0) img else null
+            }
+
+            fun topInTab(child: View, tab: View): Int {
+                var top = 0
+                var cur: View? = child
+                while (cur != null && cur !== tab) {
+                    top += cur.top
+                    cur = cur.parent as? View
+                }
+                return top
+            }
+
+            fun findTabContainer(root: android.view.ViewGroup): android.view.ViewGroup? {
+                var count = 0
+                for (i in 0 until root.childCount) {
+                    if (findIcon(root.getChildAt(i)) != null) count++
+                }
+                if (count >= 2) return root
+                for (i in 0 until root.childCount) {
+                    val child = root.getChildAt(i)
+                    if (child is android.view.ViewGroup) {
+                        findTabContainer(child)?.let { return it }
+                    }
+                }
+                return null
+            }
+
+            pivotBar.viewTreeObserver.addOnGlobalLayoutListener {
+                val tabContainer = findTabContainer(pivotBar) ?: return@addOnGlobalLayoutListener
+                var refTop = -1
+                for (i in 0 until tabContainer.childCount) {
+                    val tab = tabContainer.getChildAt(i)
+                    if (tab.visibility != View.VISIBLE) continue
+                    val icon = findIcon(tab) ?: continue
+                    val t = topInTab(icon, tab)
+                    if (t > refTop) refTop = t
+                }
+                if (refTop < 0) return@addOnGlobalLayoutListener
+                for (i in 0 until tabContainer.childCount) {
+                    val tab = tabContainer.getChildAt(i)
+                    if (tab.visibility != View.VISIBLE) continue
+                    val icon = findIcon(tab) ?: continue
+                    val delta = refTop - topInTab(icon, tab)
+                    if (delta > 0) {
+                        icon.offsetTopAndBottom(delta)
+                    }
+                }
+            }
+        }
+    }
+
     // Hook navigation button created, in order to hide them and initialize navigation bar styles.
     hookNavigationButtonCreated.add { button, view ->
         NavigationBarPatch.navigationTabCreated(button, view)

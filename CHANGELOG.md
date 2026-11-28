@@ -7,6 +7,11 @@ falling back to generated commit notes when no section exists. Android CI
 validates changes; the dedicated release workflow builds and publishes release
 bundles after CI succeeds.
 
+## 5.1.11
+
+- **YouTube:**
+  * Fixed the Subscriptions icon appearing slightly higher than the other icons in the bottom navigation bar.
+
 ## 5.1.10
 
 - **Gboard:**
